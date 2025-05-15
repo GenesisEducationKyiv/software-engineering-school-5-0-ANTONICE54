@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Subscribe to Weather Forecast</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .form-container {
+      background: #ffffff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333333;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555555;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #cccccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #007bff;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 500px) {
+      .form-container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h1>Subscribe</h1>
+    <form id="subscription-form">
+      <label for="email">Email:</label>
+      <input type="email" name="email" id="email" required>
+
+      <label for="city">City:</label>
+      <input type="text" name="city" id="city" required>
+
+      <label for="frequency">Frequency:</label>
+      <select name="frequency" id="frequency" required>
+        <option value="daily">Daily</option>
+        <option value="hourly">Hourly</option>
+      </select>
+
+      <button type="submit">Subscribe</button>
+    </form>
+
+    <div class="message" id="response-message"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("subscription-form");
+    const responseMessage = document.getElementById("response-message");
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const data = {
+        email: document.getElementById("email").value,
+        city: document.getElementById("city").value,
+        frequency: document.getElementById("frequency").value,
+      };
+
+      try {
+        const res = await fetch("/subscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+          responseMessage.textContent = "✅ Subscription successful! Please check your email to confirm it.";
+          responseMessage.style.color = "green";
+        } else {
+          const err = await res.text();
+          responseMessage.textContent = "❌ Error: " + err;
+          responseMessage.style.color = "red";
+        }
+      } catch (err) {
+        responseMessage.textContent = "❌ Failed to connect to server.";
+        responseMessage.style.color = "red";
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 # 🌤️ Weather Forecast 
 
-[🔗 Live Demo](http://weather-update.pp.ua)  
+[🔗 Live Demo](http://weather-update.pp.ua)  - link to the deployed service
 
 **Weather Forecast API** is a web service that allows users to subscribe to weather forecast updates for a selected city. The service supports two types of subscriptions: **hourly** and **daily**. After subscribing, users receive a confirmation email to activate their subscription.
 
@@ -53,9 +53,9 @@ Subscribe to weather updates (a confirmation email will be sent)
 ##### Example Input: 
 ```
 {
-  "email": "youremail@mail.com",
+	"email": "youremail@mail.com",
 	"city": "Kyiv",
-  "frequency": "hourly"
+	"frequency": "hourly"
 } 
 ```
 
@@ -79,7 +79,7 @@ Cancel the email subscription.
 - `token` – unsubscribe token (UUID format)
 
 ##### Example:
-`GET /confirm/3fa85f64-5717-4562-b3fc-2c963f66afa6`
+`GET /unsubscribe/3fa85f64-5717-4562-b3fc-2c963f66afa6`
 
 ---
 

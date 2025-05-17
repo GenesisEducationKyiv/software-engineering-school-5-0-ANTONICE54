@@ -27,7 +27,8 @@ The project includes a simple HTML page with a form for subscriptions:
 - City name
 - Frequency: hourly or daily
 
-![image](https://github.com/user-attachments/assets/55772f07-8c17-453e-aedb-94567e938449)
+![image](https://github.com/user-attachments/assets/a7f5197c-4099-47eb-960b-202520a3db92)
+
 
 
 ---

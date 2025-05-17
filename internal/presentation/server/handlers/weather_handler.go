@@ -20,7 +20,7 @@ type (
 		logger         logger.Logger
 	}
 
-	getWeatherInput struct {
+	getWeatherRequest struct {
 		City string `json:"city" binding:"required,alpha"`
 	}
 	getWeatherResponse struct {
@@ -38,7 +38,7 @@ func NewWeatherHandler(weatherService WeatherService, logger logger.Logger) *Wea
 }
 
 func (h *WeatherHandler) Get(ctx *gin.Context) {
-	var req getWeatherInput
+	var req getWeatherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
 		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSON())

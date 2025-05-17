@@ -106,8 +106,6 @@ func (r *SubscriptionRepository) GetByToken(ctx context.Context, token string) (
 	}
 
 	return nil, nil
-
-	return res.(*models.Subscription), nil
 }
 
 func (r *SubscriptionRepository) Update(ctx context.Context, subscription models.Subscription) (*models.Subscription, error) {

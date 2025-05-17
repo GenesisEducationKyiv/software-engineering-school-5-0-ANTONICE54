@@ -16,8 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//"Failed to unmarshal request: %s", "Key: 'getWeatherInput.City' Error:Field validation for 'City' failed on the 'alpha' tag"
-
 func errToString(errMsg map[string]any) string {
 
 	bytes, err := json.Marshal(errMsg)
@@ -28,24 +26,25 @@ func errToString(errMsg map[string]any) string {
 	return string(bytes)
 }
 
+type mockWeatherServiceBehavior func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest)
+
 func TestWeatherHandler_Get(t *testing.T) {
-	type mockBehavior func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherInput)
 
 	testTable := []struct {
 		name                 string
 		inputBody            string
-		inputCity            getWeatherInput
-		mockBehavior         mockBehavior
+		inputCity            getWeatherRequest
+		mockBehavior         mockWeatherServiceBehavior
 		expectedStatusCode   int
 		expectedResponseBody string
 	}{
 		{
 			name:      "Successful",
 			inputBody: `{"city":"Kyiv"}`,
-			inputCity: getWeatherInput{
+			inputCity: getWeatherRequest{
 				City: "Kyiv",
 			},
-			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherInput) {
+			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest) {
 				weather := models.Weather{
 					Temperature: 5.1,
 					Humidity:    80,
@@ -59,7 +58,7 @@ func TestWeatherHandler_Get(t *testing.T) {
 		{
 			name:      "Invalid input",
 			inputBody: `{"city":"АБВГ"}`,
-			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherInput) {
+			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
 			expectedStatusCode:   apperrors.InvalidRequestError.Status(),
@@ -68,10 +67,10 @@ func TestWeatherHandler_Get(t *testing.T) {
 		{
 			name:      "City not found",
 			inputBody: `{"city":"ABCD"}`,
-			inputCity: getWeatherInput{
+			inputCity: getWeatherRequest{
 				City: "ABCD",
 			},
-			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherInput) {
+			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest) {
 				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, apperrors.CityNotFoundError)
 			},
 			expectedStatusCode:   apperrors.CityNotFoundError.Status(),

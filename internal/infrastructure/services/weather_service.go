@@ -1,29 +1,30 @@
 package services
 
 import (
+	"context"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/logger"
 )
 
 type (
-	WeatherProviderI interface {
-		GetWeatherByCity(city string) (*models.Weather, error)
+	WeatherProvider interface {
+		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
 	}
 	WeatherService struct {
-		weatherProvider WeatherProviderI
+		weatherProvider WeatherProvider
 		logger          logger.Logger
 	}
 )
 
-func NewWeatherService(weatherProvider WeatherProviderI, logger logger.Logger) *WeatherService {
+func NewWeatherService(weatherProvider WeatherProvider, logger logger.Logger) *WeatherService {
 	return &WeatherService{
 		weatherProvider: weatherProvider,
 		logger:          logger,
 	}
 }
 
-func (s *WeatherService) GetWeatherByCity(city string) (*models.Weather, error) {
-	weather, err := s.weatherProvider.GetWeatherByCity(city)
+func (s *WeatherService) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+	weather, err := s.weatherProvider.GetWeatherByCity(ctx, city)
 	if err != nil {
 		return nil, err
 	}

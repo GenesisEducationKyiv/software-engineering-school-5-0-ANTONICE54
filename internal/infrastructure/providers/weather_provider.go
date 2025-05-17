@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -45,10 +46,10 @@ func NewWeatherProvider(apiURL, apiKey string, httpClient *http.Client, logger l
 	}
 }
 
-func (p *WeatherProvider) GetWeatherByCity(city string) (*models.Weather, error) {
+func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 	url := p.apiURL + fmt.Sprintf("?key=%s&q=%s", p.apiKey, city)
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		p.logger.Warnf("Failed to create get weather request: %s", err.Error())
 		return nil, apperrors.GetWeatherError

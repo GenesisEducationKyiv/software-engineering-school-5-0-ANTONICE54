@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/apperrors"
@@ -10,12 +11,12 @@ import (
 )
 
 type (
-	WeatherServiceI interface {
-		GetWeatherByCity(city string) (*models.Weather, error)
+	WeatherService interface {
+		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
 	}
 
 	WeatherHandler struct {
-		weatherService WeatherServiceI
+		weatherService WeatherService
 		logger         logger.Logger
 	}
 
@@ -29,7 +30,7 @@ type (
 	}
 )
 
-func NewWeatherHandler(weatherService WeatherServiceI, logger logger.Logger) *WeatherHandler {
+func NewWeatherHandler(weatherService WeatherService, logger logger.Logger) *WeatherHandler {
 	return &WeatherHandler{
 		weatherService: weatherService,
 		logger:         logger,
@@ -40,18 +41,18 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 	var req getWeatherInput
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSONMessage)
+		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSON())
 		return
 	}
 
-	weather, err := h.weatherService.GetWeatherByCity(req.City)
+	weather, err := h.weatherService.GetWeatherByCity(ctx, req.City)
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSONMessage)
+			ctx.JSON(appErr.Status(), appErr.JSON())
 			return
 		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSONMessage)
+		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
 		return
 	}
 

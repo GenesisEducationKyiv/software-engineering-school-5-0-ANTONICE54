@@ -7,30 +7,30 @@ import (
 )
 
 type (
-	WeatherHandlerI interface {
+	WeatherHandler interface {
 		Get(ctx *gin.Context)
 	}
-	SubscriptionHandlerI interface {
+	SubscriptionHandler interface {
 		Subscribe(ctx *gin.Context)
 		Confirm(ctx *gin.Context)
 		Unsubscribe(ctx *gin.Context)
 	}
 
-	SchedulerI interface {
-		Init()
+	Scheduler interface {
+		SetUp()
 		Run()
 	}
 
 	Server struct {
 		router              *gin.Engine
-		subscriptionHandler SubscriptionHandlerI
-		weatherHandler      WeatherHandlerI
-		scheduler           SchedulerI
+		subscriptionHandler SubscriptionHandler
+		weatherHandler      WeatherHandler
+		scheduler           Scheduler
 		logger              logger.Logger
 	}
 )
 
-func New(subscriptionHandler SubscriptionHandlerI, weatherHandeler WeatherHandlerI, scheduler SchedulerI, logger logger.Logger) *Server {
+func New(subscriptionHandler SubscriptionHandler, weatherHandeler WeatherHandler, scheduler Scheduler, logger logger.Logger) *Server {
 
 	s := &Server{
 		router:              gin.Default(),
@@ -39,7 +39,7 @@ func New(subscriptionHandler SubscriptionHandlerI, weatherHandeler WeatherHandle
 		scheduler:           scheduler,
 		logger:              logger,
 	}
-	s.scheduler.Init()
+	s.scheduler.SetUp()
 	s.setUpRoutes()
 	return s
 }

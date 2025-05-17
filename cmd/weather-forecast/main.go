@@ -8,6 +8,7 @@ import (
 	"weather-forecast/internal/infrastructure/logger"
 	"weather-forecast/internal/infrastructure/mailer"
 	"weather-forecast/internal/infrastructure/providers"
+	"weather-forecast/internal/infrastructure/repositories"
 	"weather-forecast/internal/infrastructure/scheduler"
 	"weather-forecast/internal/infrastructure/services"
 	"weather-forecast/internal/infrastructure/token"
@@ -50,7 +51,7 @@ func main() {
 	mailerUsername := viper.GetString("MAILER_USERNAME")
 	mailerPassword := viper.GetString("MAILER_PASSWORD")
 
-	subscRepo := database.NewSubscriptionRepository(db, logrusLog)
+	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
 	subscUseCase := usecases.NewSubscriptionUseCase(subscRepo, logrusLog)
 
 	serverHost := viper.GetString("SERVER_HOST")

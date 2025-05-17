@@ -6,7 +6,8 @@ type (
 	Frequency string
 
 	Subscription struct {
-		Email     string `gorm:"primaryKey"`
+		ID        int    `gorm:"primaryKey"`
+		Email     string `gorm:"unique"`
 		City      string
 		Token     string `gorm:"unique"`
 		Frequency Frequency

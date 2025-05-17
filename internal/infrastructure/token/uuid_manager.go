@@ -1,6 +1,10 @@
 package token
 
-import "github.com/google/uuid"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type UUIDManager struct {
 }
@@ -9,11 +13,11 @@ func NewUUIDManager() *UUIDManager {
 	return &UUIDManager{}
 }
 
-func (m *UUIDManager) Generate() string {
+func (m *UUIDManager) Generate(_ context.Context) string {
 	return uuid.New().String()
 }
 
-func (m *UUIDManager) Validate(token string) bool {
+func (m *UUIDManager) Validate(_ context.Context, token string) bool {
 	_, err := uuid.Parse(token)
 	if err != nil {
 		return false

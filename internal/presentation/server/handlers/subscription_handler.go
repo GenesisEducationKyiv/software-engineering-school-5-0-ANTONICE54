@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/apperrors"
@@ -10,25 +11,25 @@ import (
 )
 
 type (
-	SubsctiptionServiceI interface {
-		Subscribe(subscription models.Subscription) (*models.Subscription, error)
-		Confirm(token string) error
-		Unsubscribe(token string) error
+	SubsctiptionService interface {
+		Subscribe(ctx context.Context, email, frequency, city string) (*models.Subscription, error)
+		Confirm(ctx context.Context, token string) error
+		Unsubscribe(ctx context.Context, token string) error
 	}
 
 	SubscriptionHandler struct {
-		subscriptionService SubsctiptionServiceI
+		subscriptionService SubsctiptionService
 		logger              logger.Logger
 	}
 
-	SubscribeInput struct {
+	SubscribeRequest struct {
 		Email     string `json:"email" binding:"required,email"`
 		City      string `json:"city" binding:"required,alpha"`
 		Frequency string `json:"frequency" binding:"required,oneof=hourly daily"`
 	}
 )
 
-func NewSubscriptionHandler(subscriptionService SubsctiptionServiceI, logger logger.Logger) *SubscriptionHandler {
+func NewSubscriptionHandler(subscriptionService SubsctiptionService, logger logger.Logger) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		subscriptionService: subscriptionService,
 		logger:              logger,
@@ -36,27 +37,21 @@ func NewSubscriptionHandler(subscriptionService SubsctiptionServiceI, logger log
 }
 
 func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
-	var req SubscribeInput
+	var req SubscribeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSONMessage)
+		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSON())
 		return
 	}
 
-	subscription := models.Subscription{
-		Email:     req.Email,
-		Frequency: models.Frequency(req.Frequency),
-		City:      req.City,
-	}
-
-	_, err := h.subscriptionService.Subscribe(subscription)
+	_, err := h.subscriptionService.Subscribe(ctx, req.Email, req.Frequency, req.City)
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSONMessage)
+			ctx.JSON(appErr.Status(), appErr.JSON())
 			return
 		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSONMessage)
+		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
 		return
 	}
 
@@ -67,14 +62,14 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 	token := ctx.Param("token")
 
-	err := h.subscriptionService.Confirm(token)
+	err := h.subscriptionService.Confirm(ctx, token)
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSONMessage)
+			ctx.JSON(appErr.Status(), appErr.JSON())
 			return
 		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSONMessage)
+		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
 		return
 	}
 
@@ -85,14 +80,14 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 	token := ctx.Param("token")
 
-	err := h.subscriptionService.Unsubscribe(token)
+	err := h.subscriptionService.Unsubscribe(ctx, token)
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSONMessage)
+			ctx.JSON(appErr.Status(), appErr.JSON())
 			return
 		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSONMessage)
+		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
 		return
 	}
 

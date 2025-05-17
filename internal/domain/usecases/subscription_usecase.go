@@ -1,42 +1,43 @@
 package usecases
 
 import (
+	"context"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/apperrors"
 	"weather-forecast/internal/infrastructure/logger"
 )
 
 type (
-	SubscriptionRepositoryI interface {
-		Create(subscription models.Subscription) (*models.Subscription, error)
-		GetByEmail(email string) (*models.Subscription, error)
-		GetByToken(token string) (*models.Subscription, error)
-		Update(subscription models.Subscription) (*models.Subscription, error)
-		DeleteByToken(token string) error
-		ListConfirmedByFrequency(frequency models.Frequency) ([]models.Subscription, error)
+	SubscriptionRepository interface {
+		Create(ctx context.Context, subscription models.Subscription) (*models.Subscription, error)
+		GetByEmail(ctx context.Context, email string) (*models.Subscription, error)
+		GetByToken(ctx context.Context, token string) (*models.Subscription, error)
+		Update(ctx context.Context, subscription models.Subscription) (*models.Subscription, error)
+		DeleteByToken(ctx context.Context, token string) error
+		ListConfirmedByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error)
 	}
 	SubscriptionUseCase struct {
-		subscriptionRepository SubscriptionRepositoryI
+		subscriptionRepository SubscriptionRepository
 		logger                 logger.Logger
 	}
 )
 
-func NewSubscriptionUseCase(subscRepo SubscriptionRepositoryI, logger logger.Logger) *SubscriptionUseCase {
+func NewSubscriptionUseCase(subscRepo SubscriptionRepository, logger logger.Logger) *SubscriptionUseCase {
 	return &SubscriptionUseCase{
 		subscriptionRepository: subscRepo,
 		logger:                 logger,
 	}
 }
 
-func (u *SubscriptionUseCase) Subscribe(subscription models.Subscription) (*models.Subscription, error) {
-	receivedSubsc, _ := u.subscriptionRepository.GetByEmail(subscription.Email)
+func (u *SubscriptionUseCase) Subscribe(ctx context.Context, subscription models.Subscription) (*models.Subscription, error) {
+	receivedSubsc, _ := u.subscriptionRepository.GetByEmail(ctx, subscription.Email)
 
 	if receivedSubsc != nil {
 		u.logger.Warnf("Email %s already subscribed", subscription.Email)
 		return nil, apperrors.AlreadySubscribedError
 	}
 
-	createdSubscription, err := u.subscriptionRepository.Create(subscription)
+	createdSubscription, err := u.subscriptionRepository.Create(ctx, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +45,8 @@ func (u *SubscriptionUseCase) Subscribe(subscription models.Subscription) (*mode
 	return createdSubscription, nil
 }
 
-func (u *SubscriptionUseCase) Confirm(token string) (*models.Subscription, error) {
-	receivedSubsc, err := u.subscriptionRepository.GetByToken(token)
+func (u *SubscriptionUseCase) Confirm(ctx context.Context, token string) (*models.Subscription, error) {
+	receivedSubsc, err := u.subscriptionRepository.GetByToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func (u *SubscriptionUseCase) Confirm(token string) (*models.Subscription, error
 	}
 
 	receivedSubsc.Confirmed = true
-	updatedSubsc, err := u.subscriptionRepository.Update(*receivedSubsc)
+	updatedSubsc, err := u.subscriptionRepository.Update(ctx, *receivedSubsc)
 
 	if err != nil {
 		return nil, err
@@ -65,8 +66,8 @@ func (u *SubscriptionUseCase) Confirm(token string) (*models.Subscription, error
 
 }
 
-func (u *SubscriptionUseCase) Unsubscribe(token string) error {
-	receivedSubsc, err := u.subscriptionRepository.GetByToken(token)
+func (u *SubscriptionUseCase) Unsubscribe(ctx context.Context, token string) error {
+	receivedSubsc, err := u.subscriptionRepository.GetByToken(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func (u *SubscriptionUseCase) Unsubscribe(token string) error {
 		return apperrors.TokenNotFoundError
 	}
 
-	err = u.subscriptionRepository.DeleteByToken(token)
+	err = u.subscriptionRepository.DeleteByToken(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -83,8 +84,8 @@ func (u *SubscriptionUseCase) Unsubscribe(token string) error {
 	return nil
 }
 
-func (u *SubscriptionUseCase) ListByFrequency(frequency models.Frequency) ([]models.Subscription, error) {
-	receivedSubscriptions, err := u.subscriptionRepository.ListConfirmedByFrequency(frequency)
+func (u *SubscriptionUseCase) ListByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error) {
+	receivedSubscriptions, err := u.subscriptionRepository.ListConfirmedByFrequency(ctx, frequency, lastID, pageSize)
 	if err != nil {
 		return nil, err
 	}

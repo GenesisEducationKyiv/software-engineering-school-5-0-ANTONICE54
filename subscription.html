@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>Subscribe to Weather Forecast</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f4f8;
+      background: linear-gradient(135deg, #e0f7fa, #449ad3);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -43,6 +44,13 @@
       border: 1px solid #cccccc;
       border-radius: 5px;
       box-sizing: border-box;
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+
+    input:focus, select:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+      outline: none;
     }
 
     button {
@@ -62,8 +70,21 @@
     }
 
     .message {
+      font-size: 14px;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
       text-align: center;
-      margin-top: 10px;
+    }
+
+    .message.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .message.error {
+      background-color: #f8d7da;
+      color: #721c24;
     }
 
     @media (max-width: 500px) {
@@ -78,19 +99,19 @@
   <div class="form-container">
     <h1>Subscribe</h1>
     <form id="subscription-form">
-      <label for="email">Email:</label>
-      <input type="email" name="email" id="email" required>
+      <label for="email"> Email:</label>
+      <input type="email" name="email" id="email" required placeholder="you@example.com">
 
-      <label for="city">City:</label>
-      <input type="text" name="city" id="city" required>
+      <label for="city"> City:</label>
+      <input type="text" name="city" id="city" required placeholder="e.g. Kyiv">
 
-      <label for="frequency">Frequency:</label>
+      <label for="frequency"> Frequency:</label>
       <select name="frequency" id="frequency" required>
         <option value="daily">Daily</option>
         <option value="hourly">Hourly</option>
       </select>
 
-      <button type="submit">Subscribe</button>
+      <button type="submit" id="submit-btn">Subscribe</button>
     </form>
 
     <div class="message" id="response-message"></div>
@@ -99,9 +120,13 @@
   <script>
     const form = document.getElementById("subscription-form");
     const responseMessage = document.getElementById("response-message");
+    const submitBtn = document.getElementById("submit-btn");
 
     form.addEventListener("submit", async function(event) {
       event.preventDefault();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Subscribing...";
 
       const data = {
         email: document.getElementById("email").value,
@@ -118,18 +143,22 @@
           body: JSON.stringify(data)
         });
 
+        responseMessage.className = "message";
         if (res.ok) {
-          responseMessage.textContent = "✅ Subscription successful! Please check your email to confirm it.";
-          responseMessage.style.color = "green";
+          responseMessage.textContent = "✅ Subscription successful! Please check your email.";
+          responseMessage.classList.add("success");
         } else {
           const err = await res.text();
           responseMessage.textContent = "❌ Error: " + err;
-          responseMessage.style.color = "red";
+          responseMessage.classList.add("error");
         }
       } catch (err) {
         responseMessage.textContent = "❌ Failed to connect to server.";
-        responseMessage.style.color = "red";
+        responseMessage.className = "message error";
       }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Subscribe";
     });
   </script>
 

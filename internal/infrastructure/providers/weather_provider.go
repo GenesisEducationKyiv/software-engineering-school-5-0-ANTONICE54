@@ -11,6 +11,8 @@ import (
 	"weather-forecast/internal/infrastructure/logger"
 )
 
+const LOCATION_NOT_FOUND = 1006
+
 type (
 	getWeatherResponse struct {
 		Current struct {
@@ -76,7 +78,7 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 			return nil, apperrors.GetWeatherError
 		}
 
-		if errResponse.Error.Code == 1006 {
+		if errResponse.Error.Code == LOCATION_NOT_FOUND {
 			p.logger.Warnf("City not found: %s", city)
 			return nil, apperrors.CityNotFoundError
 		} else {

@@ -10,7 +10,7 @@ import (
 )
 
 const DAILY = "0 12 * * * "
-const HOURLY = "59 * * * * "
+const HOURLY = "16 * * * * "
 
 type (
 	NotificationService interface {

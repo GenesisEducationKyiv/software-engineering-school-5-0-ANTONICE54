@@ -16,8 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type (
+	mockSubscribeBehavior   func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, request SubscribeRequest)
+	mockConfirmBehavior     func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string)
+	mockUnsubscribeBehavior func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string)
+)
+
 func TestSubscriptionHandler_Subscribe(t *testing.T) {
-	type mockSubscribeBehavior func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, request SubscribeRequest)
 
 	testTable := []struct {
 		name                 string
@@ -103,7 +108,6 @@ func TestSubscriptionHandler_Subscribe(t *testing.T) {
 }
 
 func TestSubscriptionHandler_Confirm(t *testing.T) {
-	type mockConfirmBehavior func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string)
 
 	testTable := []struct {
 		name                 string
@@ -168,12 +172,11 @@ func TestSubscriptionHandler_Confirm(t *testing.T) {
 }
 
 func TestSubscriptionHandler_Unsubcribe(t *testing.T) {
-	type mockConfirmBehavior func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string)
 
 	testTable := []struct {
 		name                 string
 		token                string
-		mockBehavior         mockConfirmBehavior
+		mockBehavior         mockUnsubscribeBehavior
 		expectedStatusCode   int
 		expectedResponseBody string
 	}{

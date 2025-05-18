@@ -1,6 +1,7 @@
 package mailer
 
 import (
+	"context"
 	"fmt"
 	"net/smtp"
 	"weather-forecast/internal/infrastructure/logger"
@@ -29,7 +30,7 @@ func NewSMTPMailer(from, host, port, username, password string, logger logger.Lo
 	return &mailer
 }
 
-func (m *SMTPMailer) Send(subject string, body, email string) {
+func (m *SMTPMailer) Send(_ context.Context, subject string, body, email string) {
 	msg := []byte(
 		fmt.Sprintf("To: %s\r\n", email) +
 			fmt.Sprintf("From: %s\r\n", m.from) +

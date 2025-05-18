@@ -3,8 +3,6 @@ package apperrors
 import "net/http"
 
 type (
-	Type string
-
 	AppError struct {
 		status      int
 		message     string

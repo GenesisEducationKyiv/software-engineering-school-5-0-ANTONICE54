@@ -17,7 +17,7 @@ const (
 
 type (
 	Mailer interface {
-		Send(subject string, body, email string)
+		Send(ctx context.Context, subject string, body, email string)
 	}
 	ListSubscriptionUseCase interface {
 		ListByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error)
@@ -44,16 +44,16 @@ func NewNotificationService(mailer Mailer, subscriptionUC ListSubscriptionUseCas
 	}
 }
 
-func (s *NotificationService) SendConfirmation(_ context.Context, email, token string, frequency models.Frequency) {
+func (s *NotificationService) SendConfirmation(ctx context.Context, email, token string, frequency models.Frequency) {
 	subject := "Confirm your subscription"
 	body := fmt.Sprintf("You have signed up for an %s newsletter. \n Please, use this token to confirm your subscription: %s\nOr use this link: %s/confirm/%s", frequency, token, s.serverHost, token)
-	s.mailer.Send(subject, body, email)
+	s.mailer.Send(ctx, subject, body, email)
 }
 
-func (s *NotificationService) SendConfirmed(_ context.Context, email, token string, frequency models.Frequency) {
+func (s *NotificationService) SendConfirmed(ctx context.Context, email, token string, frequency models.Frequency) {
 	subject := "Subscription confirmed"
 	body := fmt.Sprintf("Congratulations, you have successfully confirmed your %s subscription.\n You can cancel your subscription using this token: %s\nOr use this link: %s/unsubscribe/%s", frequency, token, s.serverHost, token)
-	s.mailer.Send(subject, body, email)
+	s.mailer.Send(ctx, subject, body, email)
 }
 
 func (s *NotificationService) SendWeather(ctx context.Context, frequency models.Frequency) {
@@ -102,5 +102,5 @@ func (s *NotificationService) processWeatherEmail(ctx context.Context, email, ci
 			weather.Description,
 		)
 	}
-	s.mailer.Send(WEATHER_SUBJECT, body, email)
+	s.mailer.Send(ctx, WEATHER_SUBJECT, body, email)
 }

@@ -45,16 +45,15 @@ func main() {
 	weatherService := services.NewWeatherService(weatherProvider, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
+	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
+	subscUseCase := usecases.NewSubscriptionUseCase(subscRepo, logrusLog)
+
+	serverHost := viper.GetString("SERVER_HOST")
 	mailerFrom := viper.GetString("MAILER_FROM")
 	mailerHost := viper.GetString("MAILER_HOST")
 	mailerPort := viper.GetString("MAILER_PORT")
 	mailerUsername := viper.GetString("MAILER_USERNAME")
 	mailerPassword := viper.GetString("MAILER_PASSWORD")
-
-	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
-	subscUseCase := usecases.NewSubscriptionUseCase(subscRepo, logrusLog)
-
-	serverHost := viper.GetString("SERVER_HOST")
 	mailer := mailer.NewSMTPMailer(mailerFrom, mailerHost, mailerPort, mailerUsername, mailerPassword, logrusLog)
 	notificationService := services.NewNotificationService(mailer, subscUseCase, weatherService, serverHost, logrusLog)
 

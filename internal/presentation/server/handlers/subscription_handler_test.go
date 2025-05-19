@@ -80,6 +80,21 @@ func TestSubscriptionHandler_Subscribe(t *testing.T) {
 			expectedStatusCode:   apperrors.AlreadySubscribedError.Status(),
 			expectedResponseBody: errToString(apperrors.AlreadySubscribedError.JSON()),
 		},
+		{
+			name:      "Database error",
+			inputBody: `{"email":"test@test.com","city":"Kyiv","frequency":"hourly"}`,
+			inputData: SubscribeRequest{
+				Email:     "test@test.com",
+				City:      "Kyiv",
+				Frequency: "hourly",
+			},
+			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, request SubscribeRequest) {
+
+				s.EXPECT().Subscribe(gomock.Any(), request.Email, request.Frequency, request.City).Return(nil, apperrors.DatabaseError)
+			},
+			expectedStatusCode:   apperrors.DatabaseError.Status(),
+			expectedResponseBody: errToString(apperrors.DatabaseError.JSON()),
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -142,6 +157,15 @@ func TestSubscriptionHandler_Confirm(t *testing.T) {
 			},
 			expectedStatusCode:   apperrors.TokenNotFoundError.Status(),
 			expectedResponseBody: errToString(apperrors.TokenNotFoundError.JSON()),
+		},
+		{
+			name:  "Database error",
+			token: "59d29860-39fa-4c9b-845a-3e91eab42e4b",
+			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
+				s.EXPECT().Confirm(gomock.Any(), token).Return(apperrors.DatabaseError)
+			},
+			expectedStatusCode:   apperrors.DatabaseError.Status(),
+			expectedResponseBody: errToString(apperrors.DatabaseError.JSON()),
 		},
 	}
 
@@ -206,6 +230,15 @@ func TestSubscriptionHandler_Unsubcribe(t *testing.T) {
 			},
 			expectedStatusCode:   apperrors.TokenNotFoundError.Status(),
 			expectedResponseBody: errToString(apperrors.TokenNotFoundError.JSON()),
+		},
+		{
+			name:  "Database error",
+			token: "59d29860-39fa-4c9b-845a-3e91eab42e4b",
+			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
+				s.EXPECT().Unsubscribe(gomock.Any(), token).Return(apperrors.DatabaseError)
+			},
+			expectedStatusCode:   apperrors.DatabaseError.Status(),
+			expectedResponseBody: errToString(apperrors.DatabaseError.JSON()),
 		},
 	}
 

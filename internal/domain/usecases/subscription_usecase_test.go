@@ -14,9 +14,10 @@ import (
 )
 
 type (
-	mockSubscriveBehavior   func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, subscription models.Subscription)
-	mockConfirmBehavior     func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string)
-	mockUnsubscribeBehavior func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string)
+	mockSubscriveBehavior       func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, subscription models.Subscription)
+	mockConfirmBehavior         func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string)
+	mockUnsubscribeBehavior     func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string)
+	mockListByFrequencyBehavior func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, frequency string, lastID, pageSize int)
 )
 
 func TestSubscriptionUsecase_Subscribe(t *testing.T) {
@@ -86,6 +87,22 @@ func TestSubscriptionUsecase_Subscribe(t *testing.T) {
 			expectedResult: nil,
 			expectedError:  apperrors.AlreadySubscribedError,
 		},
+		{
+			name: "Database error",
+			passedSubscription: models.Subscription{
+				Email:     "test@gmail.com",
+				City:      "Kyiv",
+				Frequency: models.Hourly,
+				Token:     "5a57909b-b980-465f-a72a-606560278fa2",
+			},
+			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, subscription models.Subscription) {
+
+				repo.EXPECT().GetByEmail(gomock.Any(), subscription.Email).Return(nil, nil)
+				repo.EXPECT().Create(gomock.Any(), subscription).Return(nil, apperrors.DatabaseError)
+			},
+			expectedResult: nil,
+			expectedError:  apperrors.DatabaseError,
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -136,9 +153,8 @@ func TestSubscriptionUsecase_Confirm(t *testing.T) {
 				receivedSubscription := subscriptionTemplate
 				receivedSubscription.Confirmed = false
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
-				updatedSubscription := receivedSubscription
-				updatedSubscription.Confirmed = true
-				repo.EXPECT().Update(gomock.Any(), receivedSubscription).Return(&updatedSubscription, nil)
+				receivedSubscription.Confirmed = true
+				repo.EXPECT().Update(gomock.Any(), receivedSubscription).Return(&receivedSubscription, nil)
 			},
 			expectedResult: &subscriptionTemplate,
 			expectedError:  nil,
@@ -152,6 +168,29 @@ func TestSubscriptionUsecase_Confirm(t *testing.T) {
 			},
 			expectedResult: nil,
 			expectedError:  apperrors.TokenNotFoundError,
+		},
+		{
+			name:        "Database error getting token",
+			passedToken: "52a579r9b-b980-465f-a72a-606565254fa2",
+			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string) {
+
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, apperrors.DatabaseError)
+			},
+			expectedResult: nil,
+			expectedError:  apperrors.DatabaseError,
+		},
+		{
+			name:        "Database error updating subsc",
+			passedToken: "5a57909b-b980-465f-a72a-606560278fa2",
+			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string) {
+				receivedSubscription := subscriptionTemplate
+				receivedSubscription.Confirmed = false
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
+				receivedSubscription.Confirmed = true
+				repo.EXPECT().Update(gomock.Any(), receivedSubscription).Return(nil, apperrors.DatabaseError)
+			},
+			expectedResult: nil,
+			expectedError:  apperrors.DatabaseError,
 		},
 	}
 
@@ -214,6 +253,25 @@ func TestSubscriptionUsecase_Unsubscribe(t *testing.T) {
 			},
 			expectedError: apperrors.TokenNotFoundError,
 		},
+		{
+			name:        "Database error getting token",
+			passedToken: "52a579r9b-b980-465f-a72a-606565254fa2",
+			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string) {
+
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, apperrors.DatabaseError)
+			},
+			expectedError: apperrors.DatabaseError,
+		},
+		{
+			name:        "Database error deleting token",
+			passedToken: "5a57909b-b980-465f-a72a-606560278fa2",
+			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string) {
+				receivedSubscription := subscriptionTemplate
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
+				repo.EXPECT().DeleteByToken(gomock.Any(), receivedSubscription.Token).Return(apperrors.DatabaseError)
+			},
+			expectedError: apperrors.DatabaseError,
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -234,4 +292,79 @@ func TestSubscriptionUsecase_Unsubscribe(t *testing.T) {
 		})
 	}
 
+}
+
+func TestSubscriptionUsecase_ListByFrequency(t *testing.T) {
+	createdTime := time.Now()
+
+	subscriptionListTemplate := []models.Subscription{
+		{ID: 1,
+			Email:     "test@gmail.com",
+			City:      "Kyiv",
+			Frequency: models.Hourly,
+			Token:     "5a57909b-b980-465f-a72a-606560278fa2",
+			Confirmed: true,
+			CreatedAt: createdTime,
+		},
+		{ID: 1,
+			Email:     "test@gmail.com",
+			City:      "Kyiv",
+			Frequency: models.Hourly,
+			Token:     "5a57909b-b980-465f-a72a-606560278fa2",
+			Confirmed: true,
+			CreatedAt: createdTime,
+		},
+	}
+
+	testTable := []struct {
+		name           string
+		frequency      string
+		lastID         int
+		pageSize       int
+		mockBehavior   mockListByFrequencyBehavior
+		expectedResult []models.Subscription
+		expectedError  error
+	}{
+		{
+			name:      "Successful",
+			frequency: string(models.Daily),
+			lastID:    0,
+			pageSize:  100,
+			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, frequency string, lastID, pageSize int) {
+				repo.EXPECT().ListConfirmedByFrequency(gomock.Any(), models.Frequency(frequency), lastID, pageSize).Return(subscriptionListTemplate, nil)
+			},
+			expectedResult: subscriptionListTemplate,
+			expectedError:  nil,
+		},
+		{
+			name:      "Database error",
+			frequency: string(models.Daily),
+			lastID:    0,
+			pageSize:  100,
+			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, frequency string, lastID, pageSize int) {
+				repo.EXPECT().ListConfirmedByFrequency(gomock.Any(), models.Frequency(frequency), lastID, pageSize).Return(nil, apperrors.DatabaseError)
+			},
+			expectedResult: nil,
+			expectedError:  apperrors.DatabaseError,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			loggerMock := mock_logger.NewMockLogger(ctrl)
+			subscRepoMock := mock_usecases.NewMockSubscriptionRepository(ctrl)
+			subscUC := NewSubscriptionUseCase(subscRepoMock, loggerMock)
+
+			testCase.mockBehavior(subscRepoMock, loggerMock, testCase.frequency, testCase.lastID, testCase.pageSize)
+
+			res, err := subscUC.ListByFrequency(context.Background(), models.Frequency(testCase.frequency), testCase.lastID, testCase.pageSize)
+
+			assert.Equal(t, testCase.expectedError, err)
+			assert.ElementsMatch(t, testCase.expectedResult, res)
+
+		})
+	}
 }

@@ -62,7 +62,11 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 		p.logger.Warnf("Failed make get weather request: %s", err.Error())
 		return nil, apperrors.GetWeatherError
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			p.logger.Warnf("Failed to close response body: %s", err.Error())
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

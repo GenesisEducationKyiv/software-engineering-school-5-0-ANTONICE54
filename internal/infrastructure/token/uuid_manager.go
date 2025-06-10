@@ -19,8 +19,7 @@ func (m *UUIDManager) Generate(_ context.Context) string {
 
 func (m *UUIDManager) Validate(_ context.Context, token string) bool {
 	_, err := uuid.Parse(token)
-	if err != nil {
-		return false
-	}
-	return true
+
+	return err == nil
+
 }

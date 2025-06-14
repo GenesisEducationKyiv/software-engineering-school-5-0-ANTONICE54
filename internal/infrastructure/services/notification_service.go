@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"sync"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/logger"
 )
@@ -11,36 +10,25 @@ import (
 const (
 	WEATHER_SUBJECT     = "Weather Update"
 	ERROR_BODY_TEMPLATE = "Sorry, there was an error retrieving weather in your city: %s"
-	PAGE_SIZE           = 100
-	WORKER_AMOUNT       = 10
 )
 
 type (
 	Mailer interface {
 		Send(ctx context.Context, subject string, body, email string)
 	}
-	ListSubscriptionUseCase interface {
-		ListByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error)
-	}
-	WeatherServiceI interface {
-		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
-	}
+
 	NotificationService struct {
-		mailer              Mailer
-		subscriptionUseCase ListSubscriptionUseCase
-		weatherService      WeatherServiceI
-		serverHost          string
-		logger              logger.Logger
+		mailer     Mailer
+		serverHost string
+		logger     logger.Logger
 	}
 )
 
-func NewNotificationService(mailer Mailer, subscriptionUC ListSubscriptionUseCase, weatherService WeatherServiceI, serverHost string, logger logger.Logger) *NotificationService {
+func NewNotificationService(mailer Mailer, serverHost string, logger logger.Logger) *NotificationService {
 	return &NotificationService{
-		mailer:              mailer,
-		subscriptionUseCase: subscriptionUC,
-		weatherService:      weatherService,
-		serverHost:          serverHost,
-		logger:              logger,
+		mailer:     mailer,
+		serverHost: serverHost,
+		logger:     logger,
 	}
 }
 
@@ -56,51 +44,17 @@ func (s *NotificationService) SendConfirmed(ctx context.Context, email, token st
 	s.mailer.Send(ctx, subject, body, email)
 }
 
-func (s *NotificationService) SendWeather(ctx context.Context, frequency models.Frequency) {
-
-	sem := make(chan struct{}, WORKER_AMOUNT)
-	wg := &sync.WaitGroup{}
-	lastID := 0
-	for {
-		subscriptions, err := s.subscriptionUseCase.ListByFrequency(ctx, frequency, lastID, PAGE_SIZE)
-		if err != nil {
-			s.logger.Warnf("Failed to fetch subscriptions: %v", err)
-			break
-		}
-
-		if len(subscriptions) == 0 {
-			break
-		}
-
-		for _, subscription := range subscriptions {
-			lastID = subscription.ID
-
-			sem <- struct{}{}
-			wg.Add(1)
-
-			go func(sub models.Subscription) {
-				defer func() { <-sem }()
-
-				s.processWeatherEmail(ctx, sub.Email, sub.City, wg)
-			}(subscription)
-		}
-	}
-	wg.Wait()
+func (s *NotificationService) SendWeather(ctx context.Context, email, city string, weather *models.Weather) {
+	body := fmt.Sprintf("Here`s the latest weather update for your city: %s\n Temperature:%.1f C\n Humidity: %d%%\n Description: %s",
+		city,
+		weather.Temperature,
+		weather.Humidity,
+		weather.Description,
+	)
+	s.mailer.Send(ctx, WEATHER_SUBJECT, body, email)
 }
 
-func (s *NotificationService) processWeatherEmail(ctx context.Context, email, city string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	weather, err := s.weatherService.GetWeatherByCity(ctx, city)
-	var body string
-	if err != nil {
-		body = fmt.Sprintf(ERROR_BODY_TEMPLATE, city)
-	} else {
-		body = fmt.Sprintf("Here`s the latest weather update for your city: %s\n Temperature:%.1f C\n Humidity: %d%%\n Description: %s",
-			city,
-			weather.Temperature,
-			weather.Humidity,
-			weather.Description,
-		)
-	}
+func (s *NotificationService) SendError(ctx context.Context, email, city string) {
+	body := fmt.Sprintf(ERROR_BODY_TEMPLATE, city)
 	s.mailer.Send(ctx, WEATHER_SUBJECT, body, email)
 }

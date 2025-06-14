@@ -13,34 +13,34 @@ const DAILY = "0 12 * * * " //every day at 12 am
 const HOURLY = "0 * * * * " //every hour at 0 minute
 
 type (
-	NotificationService interface {
-		SendWeather(ctx context.Context, frequency models.Frequency)
+	WeatherBroadcastService interface {
+		Broadcast(ctx context.Context, frequency models.Frequency)
 	}
 
 	Scheduler struct {
-		cron                cron.Cron
-		notificationService NotificationService
-		logger              logger.Logger
+		cron             cron.Cron
+		broadcastService WeatherBroadcastService
+		logger           logger.Logger
 	}
 )
 
-func New(notificationService NotificationService, location *time.Location, logger logger.Logger) *Scheduler {
+func New(notificationService WeatherBroadcastService, location *time.Location, logger logger.Logger) *Scheduler {
 	return &Scheduler{
-		cron:                *cron.New(cron.WithLocation(location)),
-		notificationService: notificationService,
-		logger:              logger,
+		cron:             *cron.New(cron.WithLocation(location)),
+		broadcastService: notificationService,
+		logger:           logger,
 	}
 
 }
 
 func (s *Scheduler) SetUp() {
 
-	_, err := s.cron.AddFunc(DAILY, func() { s.notificationService.SendWeather(context.Background(), models.Daily) })
+	_, err := s.cron.AddFunc(DAILY, func() { s.broadcastService.Broadcast(context.Background(), models.Daily) })
 	if err != nil {
 		s.logger.Fatalf("Failed to setup daily sender: %s", err.Error())
 		return
 	}
-	_, err = s.cron.AddFunc(HOURLY, func() { s.notificationService.SendWeather(context.Background(), models.Hourly) })
+	_, err = s.cron.AddFunc(HOURLY, func() { s.broadcastService.Broadcast(context.Background(), models.Hourly) })
 	if err != nil {
 		s.logger.Fatalf("Failed to setup hourly sender: %s", err.Error())
 		return

@@ -55,7 +55,7 @@ func main() {
 	mailerUsername := viper.GetString("MAILER_USERNAME")
 	mailerPassword := viper.GetString("MAILER_PASSWORD")
 	mailer := mailer.NewSMTPMailer(mailerFrom, mailerHost, mailerPort, mailerUsername, mailerPassword, logrusLog)
-	notificationService := services.NewNotificationService(mailer, subscUseCase, weatherService, serverHost, logrusLog)
+	notificationService := services.NewNotificationService(mailer, serverHost, logrusLog)
 
 	tokenManager := token.NewUUIDManager()
 
@@ -68,7 +68,9 @@ func main() {
 		logrusLog.Fatalf("Failed to load timezone: %s", err.Error())
 	}
 
-	scheduler := scheduler.New(notificationService, location, logrusLog)
+	weatherBroadcastService := services.NewWeatherBroadcastService(subscUseCase, weatherService, notificationService, logrusLog)
+
+	scheduler := scheduler.New(weatherBroadcastService, location, logrusLog)
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)

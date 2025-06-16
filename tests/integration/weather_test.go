@@ -91,105 +91,87 @@ func TestGetWeather_Success(t *testing.T) {
 
 }
 
-func TestGetWeather_InvalidCity(t *testing.T) {
-	expectedResponseBody := `{"error":"invalid request"}`
-	city := "123"
-
-	weatherHandler := setupWeatherHandler("", "")
-	router := setupWeatherRouter(weatherHandler)
-
-	requestBody := handlers.GetWeatherRequest{
-		City: city,
-	}
-	body, err := json.Marshal(requestBody)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, expectedResponseBody, w.Body.String())
-}
-
-func TestGetWeather_CityNotFound(t *testing.T) {
-	expectedResponseBody := `{"error":"there is no city with such name"}`
-	city := "Odeca"
-	responseBody := providers.GetWeatherErrorResponse{
-		Error: providers.GetWeatherErrorDetails{
-			Code:    providers.LOCATION_NOT_FOUND,
-			Message: "No matching location found.",
+func TestGetWeather_ErrorScenarios(t *testing.T) {
+	testTable := []struct {
+		name              string
+		city              string
+		apiResponseBody   any
+		apiResponseCode   int
+		expectedCode      int
+		expectedErrorBody string
+	}{
+		{
+			name:              "Invalid City",
+			city:              "123",
+			apiResponseBody:   nil,
+			apiResponseCode:   0,
+			expectedCode:      http.StatusBadRequest,
+			expectedErrorBody: `{"error":"invalid request"}`,
+		},
+		{
+			name: "City Not Found",
+			city: "Odeca",
+			apiResponseBody: providers.GetWeatherErrorResponse{
+				Error: providers.GetWeatherErrorDetails{
+					Code:    providers.LOCATION_NOT_FOUND,
+					Message: "No matching location found.",
+				},
+			},
+			apiResponseCode:   http.StatusBadRequest,
+			expectedCode:      http.StatusNotFound,
+			expectedErrorBody: `{"error":"there is no city with such name"}`,
+		},
+		{
+			name: "Weather API Error",
+			city: "Odeca",
+			apiResponseBody: providers.GetWeatherErrorResponse{
+				Error: providers.GetWeatherErrorDetails{
+					Code:    9999,
+					Message: "Internal application error.",
+				},
+			},
+			apiResponseCode:   http.StatusBadRequest,
+			expectedCode:      http.StatusInternalServerError,
+			expectedErrorBody: `{"error":"failed to get weather"}`,
+		},
+		{
+			name:              "Timout Exceeded",
+			city:              "Odeca",
+			apiResponseBody:   nil,
+			apiResponseCode:   0,
+			expectedCode:      http.StatusInternalServerError,
+			expectedErrorBody: `{"error":"failed to get weather"}`,
 		},
 	}
 
-	weatherAPIServerMock := setupWeatherAPIMock(t, responseBody, http.StatusBadRequest, city)
-	defer weatherAPIServerMock.Close()
-	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, TEST_API_KEY)
-	router := setupWeatherRouter(weatherHandler)
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			var weatherHandler *handlers.WeatherHandler
+			if testCase.apiResponseBody != nil {
+				weatherAPIServerMock := setupWeatherAPIMock(t, testCase.apiResponseBody, testCase.apiResponseCode, testCase.city)
+				defer weatherAPIServerMock.Close()
+				weatherHandler = setupWeatherHandler(weatherAPIServerMock.URL, TEST_API_KEY)
 
-	requestBody := handlers.GetWeatherRequest{
-		City: city,
+			} else {
+				weatherHandler = setupWeatherHandler("", TEST_API_KEY)
+			}
+
+			router := setupWeatherRouter(weatherHandler)
+
+			requestBody := handlers.GetWeatherRequest{
+				City: testCase.city,
+			}
+			body, err := json.Marshal(requestBody)
+			require.NoError(t, err)
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, testCase.expectedCode, w.Code)
+			assert.Equal(t, testCase.expectedErrorBody, w.Body.String())
+
+		})
 	}
-	body, err := json.Marshal(requestBody)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusNotFound, w.Code)
-	assert.Equal(t, expectedResponseBody, w.Body.String())
-
-}
-
-func TestGetWeather_WeatherAPIError(t *testing.T) {
-	expectedResponseBody := `{"error":"failed to get weather"}`
-	city := "Odeca"
-	responseBody := providers.GetWeatherErrorResponse{
-		Error: providers.GetWeatherErrorDetails{
-			Code:    9999,
-			Message: "Internal application error.",
-		},
-	}
-
-	weatherAPIServerMock := setupWeatherAPIMock(t, responseBody, http.StatusBadRequest, city)
-	defer weatherAPIServerMock.Close()
-	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, TEST_API_KEY)
-	router := setupWeatherRouter(weatherHandler)
-
-	requestBody := handlers.GetWeatherRequest{
-		City: city,
-	}
-	body, err := json.Marshal(requestBody)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, expectedResponseBody, w.Body.String())
-
-}
-
-func TestGetWeather_TimeoutExceeded(t *testing.T) {
-	expectedResponseBody := `{"error":"failed to get weather"}`
-	city := "Odeca"
-
-	weatherHandler := setupWeatherHandler("", "")
-	router := setupWeatherRouter(weatherHandler)
-
-	requestBody := handlers.GetWeatherRequest{
-		City: city,
-	}
-	body, err := json.Marshal(requestBody)
-	require.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, expectedResponseBody, w.Body.String())
 
 }

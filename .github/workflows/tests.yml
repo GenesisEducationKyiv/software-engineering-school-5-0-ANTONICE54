@@ -27,4 +27,4 @@ jobs:
         with:
           go-version: stable
       - name: Run integration tests
-        run: go test ./test/integration/            
+        run: go test ./tests/integration/            

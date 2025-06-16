@@ -67,7 +67,7 @@ func TestWeatherHandler_Get(t *testing.T) {
 		{
 			name:      "City not found",
 			inputBody: `{"city":"ABCD"}`,
-			inputCity: getWeatherRequest{
+			inputCity: GetWeatherRequest{
 				City: "ABCD",
 			},
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest) {

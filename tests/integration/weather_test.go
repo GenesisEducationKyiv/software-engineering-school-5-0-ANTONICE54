@@ -18,6 +18,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const TEST_API_KEY = "testAPIKey"
+
 func setupWeatherHandler(testAPIURL, testAPIKey string) *handlers.WeatherHandler {
 	stubLogger := stub_logger.New()
 	weatherProvider := providers.NewWeatherProvider(testAPIURL, testAPIKey, &http.Client{}, stubLogger)
@@ -34,35 +36,42 @@ func setupWeatherRouter(handler *handlers.WeatherHandler) *gin.Engine {
 	return router
 }
 
+func setupWeatherAPIMock(t *testing.T, responseBody any, statusCode int, city string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/", r.URL.Path)
+		assert.Equal(t, fmt.Sprintf("key=%s&q=%s", TEST_API_KEY, city), r.URL.RawQuery)
+
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(responseBody)
+
+	}))
+}
+
 func TestGetWeather_Success(t *testing.T) {
-	testAPIKey := "testAPIKey"
+
 	city := "Kyiv"
-	weatherInfo := models.Weather{
+	weather := models.Weather{
 		Temperature: 22.5,
 		Humidity:    64,
 		Description: "Partly cloudy",
 	}
-	weatherAPIServerMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/", r.URL.Path)
-		assert.Equal(t, fmt.Sprintf("key=%s&q=%s", testAPIKey, city), r.URL.RawQuery)
+	responseBody := providers.GetWeatherSuccessResponse{
+		Current: providers.GetWeatherCurrentResponse{
+			TempC: weather.Temperature,
+			Condition: providers.GetWeatherConditionResponse{
+				Text: weather.Description,
+			},
+			Humidity: weather.Humidity,
+		},
+	}
 
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"current": map[string]interface{}{
-				"temp_c": weatherInfo.Temperature,
-				"condition": map[string]string{
-					"text": weatherInfo.Description,
-				},
-				"humidity": weatherInfo.Humidity,
-			}})
-
-	}))
+	weatherAPIServerMock := setupWeatherAPIMock(t, responseBody, http.StatusOK, city)
 	defer weatherAPIServerMock.Close()
-	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, testAPIKey)
+	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, TEST_API_KEY)
 	router := setupWeatherRouter(weatherHandler)
 
-	requestBody := map[string]string{
-		"city": city,
+	requestBody := handlers.GetWeatherRequest{
+		City: city,
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
@@ -72,29 +81,25 @@ func TestGetWeather_Success(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var response struct {
-		Temperature float64 `json:"temperature"`
-		Humidity    int     `json:"humidity"`
-		Description string  `json:"description"`
-	}
+	var response handlers.GetWeatherResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, weatherInfo.Temperature, response.Temperature)
-	assert.Equal(t, weatherInfo.Humidity, response.Humidity)
-	assert.Equal(t, weatherInfo.Description, response.Description)
+	assert.Equal(t, weather.Temperature, response.Temperature)
+	assert.Equal(t, weather.Humidity, response.Humidity)
+	assert.Equal(t, weather.Description, response.Description)
 
 }
 
 func TestGetWeather_InvalidCity(t *testing.T) {
 	expectedResponseBody := `{"error":"invalid request"}`
-
 	city := "123"
+
 	weatherHandler := setupWeatherHandler("", "")
 	router := setupWeatherRouter(weatherHandler)
 
-	requestBody := map[string]string{
-		"city": city,
+	requestBody := handlers.GetWeatherRequest{
+		City: city,
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
@@ -105,32 +110,25 @@ func TestGetWeather_InvalidCity(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, expectedResponseBody, w.Body.String())
-
 }
 
 func TestGetWeather_CityNotFound(t *testing.T) {
 	expectedResponseBody := `{"error":"there is no city with such name"}`
-
-	testAPIKey := "testAPIKey"
 	city := "Odeca"
-	weatherAPIServerMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/", r.URL.Path)
-		assert.Equal(t, fmt.Sprintf("key=%s&q=%s", testAPIKey, city), r.URL.RawQuery)
+	responseBody := providers.GetWeatherErrorResponse{
+		Error: providers.GetWeatherErrorDetails{
+			Code:    providers.LOCATION_NOT_FOUND,
+			Message: "No matching location found.",
+		},
+	}
 
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": map[string]interface{}{
-				"code":    1006,
-				"message": "No matching location found.",
-			}})
-
-	}))
+	weatherAPIServerMock := setupWeatherAPIMock(t, responseBody, http.StatusBadRequest, city)
 	defer weatherAPIServerMock.Close()
-	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, testAPIKey)
+	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, TEST_API_KEY)
 	router := setupWeatherRouter(weatherHandler)
 
-	requestBody := map[string]string{
-		"city": city,
+	requestBody := handlers.GetWeatherRequest{
+		City: city,
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
@@ -146,27 +144,21 @@ func TestGetWeather_CityNotFound(t *testing.T) {
 
 func TestGetWeather_WeatherAPIError(t *testing.T) {
 	expectedResponseBody := `{"error":"failed to get weather"}`
-
-	testAPIKey := "testAPIKey"
 	city := "Odeca"
-	weatherAPIServerMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/", r.URL.Path)
-		assert.Equal(t, fmt.Sprintf("key=%s&q=%s", testAPIKey, city), r.URL.RawQuery)
+	responseBody := providers.GetWeatherErrorResponse{
+		Error: providers.GetWeatherErrorDetails{
+			Code:    9999,
+			Message: "Internal application error.",
+		},
+	}
 
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": map[string]interface{}{
-				"code":    9999,
-				"message": "Internal application error.",
-			}})
-
-	}))
+	weatherAPIServerMock := setupWeatherAPIMock(t, responseBody, http.StatusBadRequest, city)
 	defer weatherAPIServerMock.Close()
-	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, testAPIKey)
+	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, TEST_API_KEY)
 	router := setupWeatherRouter(weatherHandler)
 
-	requestBody := map[string]string{
-		"city": city,
+	requestBody := handlers.GetWeatherRequest{
+		City: city,
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
@@ -182,13 +174,13 @@ func TestGetWeather_WeatherAPIError(t *testing.T) {
 
 func TestGetWeather_TimeoutExceeded(t *testing.T) {
 	expectedResponseBody := `{"error":"failed to get weather"}`
-
 	city := "Odeca"
+
 	weatherHandler := setupWeatherHandler("", "")
 	router := setupWeatherRouter(weatherHandler)
 
-	requestBody := map[string]string{
-		"city": city,
+	requestBody := handlers.GetWeatherRequest{
+		City: city,
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)

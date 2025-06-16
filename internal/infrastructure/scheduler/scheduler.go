@@ -21,26 +21,28 @@ type (
 		cron             cron.Cron
 		broadcastService WeatherBroadcastService
 		logger           logger.Logger
+		ctx              context.Context
 	}
 )
 
-func New(notificationService WeatherBroadcastService, location *time.Location, logger logger.Logger) *Scheduler {
+func New(ctx context.Context, notificationService WeatherBroadcastService, location *time.Location, logger logger.Logger) *Scheduler {
 	return &Scheduler{
 		cron:             *cron.New(cron.WithLocation(location)),
 		broadcastService: notificationService,
 		logger:           logger,
+		ctx:              ctx,
 	}
 
 }
 
 func (s *Scheduler) SetUp() {
 
-	_, err := s.cron.AddFunc(DAILY, func() { s.broadcastService.Broadcast(context.Background(), models.Daily) })
+	_, err := s.cron.AddFunc(DAILY, func() { s.broadcastService.Broadcast(s.ctx, models.Daily) })
 	if err != nil {
 		s.logger.Fatalf("Failed to setup daily sender: %s", err.Error())
 		return
 	}
-	_, err = s.cron.AddFunc(HOURLY, func() { s.broadcastService.Broadcast(context.Background(), models.Hourly) })
+	_, err = s.cron.AddFunc(HOURLY, func() { s.broadcastService.Broadcast(s.ctx, models.Hourly) })
 	if err != nil {
 		s.logger.Fatalf("Failed to setup hourly sender: %s", err.Error())
 		return

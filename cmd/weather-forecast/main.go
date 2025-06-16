@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"time"
 	"weather-forecast/internal/domain/usecases"
@@ -70,7 +71,10 @@ func main() {
 
 	weatherBroadcastService := services.NewWeatherBroadcastService(subscUseCase, weatherService, notificationService, logrusLog)
 
-	scheduler := scheduler.New(weatherBroadcastService, location, logrusLog)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	scheduler := scheduler.New(ctx, weatherBroadcastService, location, logrusLog)
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)

@@ -49,34 +49,39 @@ func TestConfirm_Success(t *testing.T) {
 
 }
 
-func TestConfirm_InvalidToken(t *testing.T) {
-	db := setupDB(t)
-	subscriptionHandler := setupSubscriptionHandler(db)
-	router := setupConfirmRouter(subscriptionHandler)
-	expectedResponseBody := `{"error":"invalid token"}`
-	requestToken := "invalidToken"
+func TestConfirm_ErrorScenarios(t *testing.T) {
+	testTable := []struct {
+		name                 string
+		requestToken         string
+		expectedResponseBody string
+		expectedCode         int
+	}{
+		{
+			name:                 "Invalid Token",
+			requestToken:         "invalidToken",
+			expectedResponseBody: `{"error":"invalid token"}`,
+			expectedCode:         http.StatusBadRequest,
+		},
+		{
+			name:                 "Token Not Found",
+			requestToken:         "59d29860-39fa-4c9b-845a-3e91eab42e4b",
+			expectedResponseBody: `{"error":"there is no subscription with such token"}`,
+			expectedCode:         http.StatusNotFound,
+		},
+	}
 
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/confirm/"+requestToken, nil)
-	router.ServeHTTP(w, req)
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			db := setupDB(t)
+			subscriptionHandler := setupSubscriptionHandler(db)
+			router := setupConfirmRouter(subscriptionHandler)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, expectedResponseBody, w.Body.String())
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/confirm/"+testCase.requestToken, nil)
+			router.ServeHTTP(w, req)
 
-}
-
-func TestConfirm_TokenNotFound(t *testing.T) {
-	db := setupDB(t)
-	subscriptionHandler := setupSubscriptionHandler(db)
-	router := setupConfirmRouter(subscriptionHandler)
-	expectedResponseBody := `{"error":"there is no subscription with such token"}`
-	requestToken := "59a29260-39fa-4c9b-845a-4a23bb342e4b"
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/confirm/"+requestToken, nil)
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusNotFound, w.Code)
-	assert.Equal(t, expectedResponseBody, w.Body.String())
-
+			assert.Equal(t, testCase.expectedCode, w.Code)
+			assert.Equal(t, testCase.expectedResponseBody, w.Body.String())
+		})
+	}
 }

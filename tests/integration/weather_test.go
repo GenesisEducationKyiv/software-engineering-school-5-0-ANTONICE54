@@ -42,7 +42,8 @@ func setupWeatherAPIMock(t *testing.T, responseBody any, statusCode int, city st
 		assert.Equal(t, fmt.Sprintf("key=%s&q=%s", TEST_API_KEY, city), r.URL.RawQuery)
 
 		w.WriteHeader(statusCode)
-		json.NewEncoder(w).Encode(responseBody)
+		err := json.NewEncoder(w).Encode(responseBody)
+		require.NoError(t, err)
 
 	}))
 }

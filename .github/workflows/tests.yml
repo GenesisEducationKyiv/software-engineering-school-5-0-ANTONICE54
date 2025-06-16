@@ -1,0 +1,30 @@
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+
+
+
+jobs:
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run unit tests
+        run: go test ./internal/...
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run integration tests
+        run: go test ./test/integration/            

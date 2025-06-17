@@ -27,4 +27,34 @@ jobs:
         with:
           go-version: stable
       - name: Run integration tests
-        run: go test ./tests/integration/            
+        run: go test ./tests/integration/
+  e2e:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
+          ports:
+            5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build test app
+        run: go build -o testapp_binary ./tests/e2e/testapp/main.go
+      - name: Run test app
+        run: ./testapp_binary&
+      - name: Run End-to-End tests
+        run: go test ./tests/e2e/
+

@@ -14,7 +14,7 @@ import (
 const LOCATION_NOT_FOUND = 1006
 
 type (
-	getWeatherResponse struct {
+	getWeatherAPIResponse struct {
 		Current struct {
 			TempC     float64 `json:"temp_c"`
 			Condition struct {
@@ -24,14 +24,14 @@ type (
 		} `json:"current"`
 	}
 
-	getWeatherErrorResponse struct {
+	getWeatherAPIErrorResponse struct {
 		Error struct {
 			Code    int    `json:"code"`
 			Message string `json:"message"`
 		} `json:"error"`
 	}
 
-	WeatherProvider struct {
+	WeatherAPIProvider struct {
 		apiURL string
 		apiKey string
 		client *http.Client
@@ -39,8 +39,8 @@ type (
 	}
 )
 
-func NewWeatherProvider(apiURL, apiKey string, httpClient *http.Client, logger logger.Logger) *WeatherProvider {
-	return &WeatherProvider{
+func NewWeatherAPIProvider(apiURL, apiKey string, httpClient *http.Client, logger logger.Logger) *WeatherAPIProvider {
+	return &WeatherAPIProvider{
 		apiURL: apiURL,
 		apiKey: apiKey,
 		client: httpClient,
@@ -48,7 +48,7 @@ func NewWeatherProvider(apiURL, apiKey string, httpClient *http.Client, logger l
 	}
 }
 
-func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 	url := p.apiURL + fmt.Sprintf("?key=%s&q=%s", p.apiKey, city)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -75,7 +75,7 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResponse getWeatherErrorResponse
+		var errResponse getWeatherAPIErrorResponse
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
 			p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
@@ -92,7 +92,7 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 
 	}
 
-	var weather getWeatherResponse
+	var weather getWeatherAPIResponse
 
 	if err := json.Unmarshal(body, &weather); err != nil {
 		p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())

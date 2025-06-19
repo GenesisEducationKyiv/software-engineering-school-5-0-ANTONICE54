@@ -41,7 +41,7 @@ func main() {
 	}
 	weatherApiURL := viper.GetString("WEATHER_API_URL")
 	weatherApiKey := viper.GetString("WEATHER_API_KEY")
-	weatherProvider := providers.NewWeatherProvider(weatherApiURL, weatherApiKey, &client, logrusLog)
+	weatherProvider := providers.NewWeatherAPIProvider(weatherApiURL, weatherApiKey, &client, logrusLog)
 	weatherService := services.NewWeatherService(weatherProvider, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 

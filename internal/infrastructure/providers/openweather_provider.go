@@ -36,7 +36,6 @@ type (
 	}
 
 	OpenWeatherProvider struct {
-		name   string
 		apiURL string
 		apiKey string
 		client *http.Client
@@ -44,17 +43,13 @@ type (
 	}
 )
 
-func NewOpenWeatherProvider(name, apiURL, apiKey string, client *http.Client, logger logger.Logger) *OpenWeatherProvider {
+func NewOpenWeatherProvider(apiURL, apiKey string, client *http.Client, logger logger.Logger) *OpenWeatherProvider {
 	return &OpenWeatherProvider{
 		apiURL: apiURL,
 		apiKey: apiKey,
 		client: client,
 		logger: logger,
 	}
-}
-
-func (p *OpenWeatherProvider) Name() string {
-	return p.name
 }
 
 func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {

@@ -32,7 +32,6 @@ type (
 	}
 
 	WeatherAPIProvider struct {
-		name   string
 		apiURL string
 		apiKey string
 		client *http.Client
@@ -40,18 +39,13 @@ type (
 	}
 )
 
-func NewWeatherAPIProvider(name, apiURL, apiKey string, httpClient *http.Client, logger logger.Logger) *WeatherAPIProvider {
+func NewWeatherAPIProvider(apiURL, apiKey string, httpClient *http.Client, logger logger.Logger) *WeatherAPIProvider {
 	return &WeatherAPIProvider{
-		name:   name,
 		apiURL: apiURL,
 		apiKey: apiKey,
 		client: httpClient,
 		logger: logger,
 	}
-}
-
-func (p *WeatherAPIProvider) Name() string {
-	return p.name
 }
 
 func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {

@@ -8,6 +8,7 @@ import (
 	"weather-forecast/internal/infrastructure/logger"
 	"weather-forecast/internal/infrastructure/mailer"
 	"weather-forecast/internal/infrastructure/providers"
+	"weather-forecast/internal/infrastructure/providers/roundtrip"
 	"weather-forecast/internal/infrastructure/repositories"
 	"weather-forecast/internal/infrastructure/scheduler"
 	"weather-forecast/internal/infrastructure/services"
@@ -36,11 +37,7 @@ func main() {
 	db := database.Connect(dbHost, dbUser, dbPassword, dbName, dbPort)
 	database.RunMigration(db)
 
-	client := http.Client{
-		Timeout: time.Second * 5,
-	}
-
-	fileLog, err := logger.NewFile("./logs/weather.log")
+	fileLog, err := logger.NewFile("./logs/weather.txt")
 	if err != nil {
 		logrusLog.Fatalf("Failed to create file logger: %s", err.Error())
 	}
@@ -50,20 +47,23 @@ func main() {
 		}
 	}()
 
-	weatherAPIName := viper.GetString("WEATHER_API_NAME")
+	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
+
+	client := http.Client{
+		Timeout:   time.Second * 5,
+		Transport: providerRoundTrip,
+	}
+
 	weatherAPIURL := viper.GetString("WEATHER_API_URL")
 	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
-	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIName, weatherAPIURL, weatherAPIKey, &client, logrusLog)
-	loggingWeatherAPIProvider := providers.NewLogging(weatherAPIProvider, fileLog)
+	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURL, weatherAPIKey, &client, logrusLog)
 
-	openWeatherName := viper.GetString("OPEN_WEATHER_NAME")
 	openWeatherURL := viper.GetString("OPEN_WEATHER_URL")
 	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
-	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherName, openWeatherURL, openWeatherKey, &client, logrusLog)
-	loggingOpenWeatherProvider := providers.NewLogging(openWeatherProvider, fileLog)
+	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURL, openWeatherKey, &client, logrusLog)
 
-	weatherAPIChainSection := providers.NewWeatherChain(loggingWeatherAPIProvider)
-	openWeatherChainSection := providers.NewWeatherChain(loggingOpenWeatherProvider)
+	weatherAPIChainSection := providers.NewChainLink(weatherAPIProvider)
+	openWeatherChainSection := providers.NewChainLink(openWeatherProvider)
 	weatherAPIChainSection.SetNext(openWeatherChainSection)
 
 	weatherService := services.NewWeatherService(weatherAPIChainSection, logrusLog)

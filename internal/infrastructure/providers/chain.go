@@ -10,29 +10,29 @@ type (
 		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
 	}
 
-	ChainSection interface {
+	ChainLinkLink interface {
 		WeatherProvider
-		SetNext(section ChainSection)
+		SetNext(section ChainLinkLink)
 	}
 
-	WeatherChain struct {
+	ChainLink struct {
 		provider    WeatherProvider
-		nextSection ChainSection
+		nextSection ChainLinkLink
 	}
 )
 
-func NewWeatherChain(provider WeatherProvider) *WeatherChain {
-	return &WeatherChain{
+func NewChainLink(provider WeatherProvider) *ChainLink {
+	return &ChainLink{
 		provider:    provider,
 		nextSection: nil,
 	}
 }
 
-func (c *WeatherChain) SetNext(section ChainSection) {
+func (c *ChainLink) SetNext(section ChainLinkLink) {
 	c.nextSection = section
 }
 
-func (c *WeatherChain) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+func (c *ChainLink) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
 	weather, err := c.provider.GetWeatherByCity(ctx, city)
 

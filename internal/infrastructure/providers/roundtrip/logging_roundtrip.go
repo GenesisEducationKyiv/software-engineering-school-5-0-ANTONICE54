@@ -25,7 +25,7 @@ func New(fileLog, consoleLog logger.Logger) *LoggingRoundTripper {
 
 func (rt *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
-	resp, err := rt.RoundTrip(req)
+	resp, err := rt.transport.RoundTrip(req)
 	if err != nil {
 		rt.consoleLogger.Warnf("Request to %s failed: %v", req.URL.String(), err)
 		return nil, err

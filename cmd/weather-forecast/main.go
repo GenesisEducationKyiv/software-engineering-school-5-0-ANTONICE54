@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"time"
 	"weather-forecast/internal/domain/usecases"
@@ -55,7 +56,7 @@ func main() {
 	mailerUsername := viper.GetString("MAILER_USERNAME")
 	mailerPassword := viper.GetString("MAILER_PASSWORD")
 	mailer := mailer.NewSMTPMailer(mailerFrom, mailerHost, mailerPort, mailerUsername, mailerPassword, logrusLog)
-	notificationService := services.NewNotificationService(mailer, subscUseCase, weatherService, serverHost, logrusLog)
+	notificationService := services.NewNotificationService(mailer, serverHost, logrusLog)
 
 	tokenManager := token.NewUUIDManager()
 
@@ -68,7 +69,12 @@ func main() {
 		logrusLog.Fatalf("Failed to load timezone: %s", err.Error())
 	}
 
-	scheduler := scheduler.New(notificationService, location, logrusLog)
+	weatherBroadcastService := services.NewWeatherBroadcastService(subscUseCase, weatherService, notificationService, logrusLog)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	scheduler := scheduler.New(ctx, weatherBroadcastService, location, logrusLog)
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)

@@ -26,14 +26,14 @@ func errToString(errMsg map[string]any) string {
 	return string(bytes)
 }
 
-type mockWeatherServiceBehavior func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest)
+type mockWeatherServiceBehavior func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest)
 
 func TestWeatherHandler_Get(t *testing.T) {
 
 	testTable := []struct {
 		name                 string
 		inputBody            string
-		inputCity            getWeatherRequest
+		inputCity            GetWeatherRequest
 		mockBehavior         mockWeatherServiceBehavior
 		expectedStatusCode   int
 		expectedResponseBody string
@@ -41,10 +41,10 @@ func TestWeatherHandler_Get(t *testing.T) {
 		{
 			name:      "Successful",
 			inputBody: `{"city":"Kyiv"}`,
-			inputCity: getWeatherRequest{
+			inputCity: GetWeatherRequest{
 				City: "Kyiv",
 			},
-			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest) {
+			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				weather := models.Weather{
 					Temperature: 5.1,
 					Humidity:    80,
@@ -58,7 +58,7 @@ func TestWeatherHandler_Get(t *testing.T) {
 		{
 			name:      "Invalid input",
 			inputBody: `{"city":"АБВГ"}`,
-			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest) {
+			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
 			expectedStatusCode:   apperrors.InvalidRequestError.Status(),
@@ -67,10 +67,10 @@ func TestWeatherHandler_Get(t *testing.T) {
 		{
 			name:      "City not found",
 			inputBody: `{"city":"ABCD"}`,
-			inputCity: getWeatherRequest{
+			inputCity: GetWeatherRequest{
 				City: "ABCD",
 			},
-			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city getWeatherRequest) {
+			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, apperrors.CityNotFoundError)
 			},
 			expectedStatusCode:   apperrors.CityNotFoundError.Status(),

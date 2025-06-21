@@ -14,21 +14,27 @@ import (
 const LOCATION_NOT_FOUND = 1006
 
 type (
-	getWeatherResponse struct {
-		Current struct {
-			TempC     float64 `json:"temp_c"`
-			Condition struct {
-				Text string `json:"text"`
-			} `json:"condition"`
-			Humidity int `json:"humidity"`
-		} `json:"current"`
+	GetWeatherConditionResponse struct {
+		Text string `json:"text"`
 	}
 
-	getWeatherErrorResponse struct {
-		Error struct {
-			Code    int    `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
+	GetWeatherCurrentResponse struct {
+		TempC     float64                     `json:"temp_c"`
+		Condition GetWeatherConditionResponse `json:"condition"`
+		Humidity  int                         `json:"humidity"`
+	}
+
+	GetWeatherSuccessResponse struct {
+		Current GetWeatherCurrentResponse `json:"current"`
+	}
+
+	GetWeatherErrorDetails struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+
+	GetWeatherErrorResponse struct {
+		Error GetWeatherErrorDetails `json:"error"`
 	}
 
 	WeatherProvider struct {
@@ -75,7 +81,7 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResponse getWeatherErrorResponse
+		var errResponse GetWeatherErrorResponse
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
 			p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
@@ -92,7 +98,7 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 
 	}
 
-	var weather getWeatherResponse
+	var weather GetWeatherSuccessResponse
 
 	if err := json.Unmarshal(body, &weather); err != nil {
 		p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())

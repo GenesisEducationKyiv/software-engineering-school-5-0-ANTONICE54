@@ -3,33 +3,36 @@ package providers
 import (
 	"context"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/services"
 )
 
 type (
+	WeatherProvider interface {
+		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
+	}
+
 	ChainSection interface {
-		services.WeatherProvider
+		WeatherProvider
 		SetNext(section ChainSection)
 	}
 
-	WeatherProviderChain struct {
-		provider    services.WeatherProvider
+	WeatherChain struct {
+		provider    WeatherProvider
 		nextSection ChainSection
 	}
 )
 
-func NewWeatherProviderChain(provider services.WeatherProvider) *WeatherProviderChain {
-	return &WeatherProviderChain{
+func NewWeatherChain(provider WeatherProvider) *WeatherChain {
+	return &WeatherChain{
 		provider:    provider,
 		nextSection: nil,
 	}
 }
 
-func (c *WeatherProviderChain) SetNext(section ChainSection) {
+func (c *WeatherChain) SetNext(section ChainSection) {
 	c.nextSection = section
 }
 
-func (c *WeatherProviderChain) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+func (c *WeatherChain) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
 	weather, err := c.provider.GetWeatherByCity(ctx, city)
 

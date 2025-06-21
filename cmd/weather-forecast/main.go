@@ -39,10 +39,34 @@ func main() {
 	client := http.Client{
 		Timeout: time.Second * 5,
 	}
-	weatherApiURL := viper.GetString("WEATHER_API_URL")
-	weatherApiKey := viper.GetString("WEATHER_API_KEY")
-	weatherProvider := providers.NewWeatherAPIProvider(weatherApiURL, weatherApiKey, &client, logrusLog)
-	weatherService := services.NewWeatherService(weatherProvider, logrusLog)
+
+	fileLog, err := logger.NewFile("./logs/weather.log")
+	if err != nil {
+		logrusLog.Fatalf("Failed to create file logger: %s", err.Error())
+	}
+	defer func() {
+		if err := fileLog.Close(); err != nil {
+			logrusLog.Fatalf("Failed to close log file:%s", err.Error())
+		}
+	}()
+
+	weatherAPIName := viper.GetString("WEATHER_API_NAME")
+	weatherAPIURL := viper.GetString("WEATHER_API_URL")
+	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
+	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIName, weatherAPIURL, weatherAPIKey, &client, logrusLog)
+	loggingWeatherAPIProvider := providers.NewLogging(weatherAPIProvider, fileLog)
+
+	openWeatherName := viper.GetString("OPEN_WEATHER_NAME")
+	openWeatherURL := viper.GetString("OPEN_WEATHER_URL")
+	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
+	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherName, openWeatherURL, openWeatherKey, &client, logrusLog)
+	loggingOpenWeatherProvider := providers.NewLogging(openWeatherProvider, fileLog)
+
+	weatherAPIChainSection := providers.NewWeatherChain(loggingWeatherAPIProvider)
+	openWeatherChainSection := providers.NewWeatherChain(loggingOpenWeatherProvider)
+	weatherAPIChainSection.SetNext(openWeatherChainSection)
+
+	weatherService := services.NewWeatherService(weatherAPIChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)

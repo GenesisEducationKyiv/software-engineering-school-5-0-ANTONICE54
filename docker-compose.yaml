@@ -23,6 +23,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8080:8080
+    volumes:
+      - ./logs:/app/logs
+
     depends_on:
       postgres:
         condition: service_healthy 

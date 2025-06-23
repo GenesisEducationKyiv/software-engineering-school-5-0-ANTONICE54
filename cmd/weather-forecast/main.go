@@ -62,8 +62,8 @@ func main() {
 	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
 	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURL, openWeatherKey, &client, logrusLog)
 
-	weatherAPIChainSection := providers.NewChainLink(weatherAPIProvider)
-	openWeatherChainSection := providers.NewChainLink(openWeatherProvider)
+	weatherAPIChainSection := providers.NewWeatherLink(weatherAPIProvider)
+	openWeatherChainSection := providers.NewWeatherLink(openWeatherProvider)
 	weatherAPIChainSection.SetNext(openWeatherChainSection)
 
 	weatherService := services.NewWeatherService(weatherAPIChainSection, logrusLog)

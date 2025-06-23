@@ -3,18 +3,18 @@ package providers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/apperrors"
 	"weather-forecast/internal/infrastructure/logger"
 )
 
-const LOCATION_NOT_FOUND = 1006
+const NotFoundWeatherAPI = 1006
 
 type (
-	getWeatherResponse struct {
+	getWeatherAPIResponse struct {
 		Current struct {
 			TempC     float64 `json:"temp_c"`
 			Condition struct {
@@ -24,14 +24,14 @@ type (
 		} `json:"current"`
 	}
 
-	getWeatherErrorResponse struct {
+	getWeatherAPIErrorResponse struct {
 		Error struct {
 			Code    int    `json:"code"`
 			Message string `json:"message"`
 		} `json:"error"`
 	}
 
-	WeatherProvider struct {
+	WeatherAPIProvider struct {
 		apiURL string
 		apiKey string
 		client *http.Client
@@ -39,8 +39,8 @@ type (
 	}
 )
 
-func NewWeatherProvider(apiURL, apiKey string, httpClient *http.Client, logger logger.Logger) *WeatherProvider {
-	return &WeatherProvider{
+func NewWeatherAPIProvider(apiURL, apiKey string, httpClient *http.Client, logger logger.Logger) *WeatherAPIProvider {
+	return &WeatherAPIProvider{
 		apiURL: apiURL,
 		apiKey: apiKey,
 		client: httpClient,
@@ -48,10 +48,20 @@ func NewWeatherProvider(apiURL, apiKey string, httpClient *http.Client, logger l
 	}
 }
 
-func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
-	url := p.apiURL + fmt.Sprintf("?key=%s&q=%s", p.apiKey, city)
+func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	url, err := url.Parse(p.apiURL)
+	if err != nil {
+		p.logger.Warnf("Form url: %s", err.Error())
+		return nil, apperrors.GetWeatherError
+	}
+	queryString := url.Query()
+	queryString.Set("key", p.apiKey)
+	queryString.Set("q", city)
+	url.RawQuery = queryString.Encode()
+	stringURL := url.String()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stringURL, nil)
 	if err != nil {
 		p.logger.Warnf("Failed to create get weather request: %s", err.Error())
 		return nil, apperrors.GetWeatherError
@@ -75,14 +85,14 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResponse getWeatherErrorResponse
+		var errResponse getWeatherAPIErrorResponse
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
 			p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
 			return nil, apperrors.GetWeatherError
 		}
 
-		if errResponse.Error.Code == LOCATION_NOT_FOUND {
+		if errResponse.Error.Code == NotFoundWeatherAPI {
 			p.logger.Warnf("City not found: %s", city)
 			return nil, apperrors.CityNotFoundError
 		} else {
@@ -92,7 +102,7 @@ func (p *WeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*m
 
 	}
 
-	var weather getWeatherResponse
+	var weather getWeatherAPIResponse
 
 	if err := json.Unmarshal(body, &weather); err != nil {
 		p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())

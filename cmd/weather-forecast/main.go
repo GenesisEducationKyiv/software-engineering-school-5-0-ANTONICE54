@@ -9,6 +9,7 @@ import (
 	"weather-forecast/internal/infrastructure/logger"
 	"weather-forecast/internal/infrastructure/mailer"
 	"weather-forecast/internal/infrastructure/providers"
+	"weather-forecast/internal/infrastructure/providers/roundtrip"
 	"weather-forecast/internal/infrastructure/repositories"
 	"weather-forecast/internal/infrastructure/scheduler"
 	"weather-forecast/internal/infrastructure/services"
@@ -37,13 +38,36 @@ func main() {
 	db := database.Connect(dbHost, dbUser, dbPassword, dbName, dbPort)
 	database.RunMigration(db)
 
-	client := http.Client{
-		Timeout: time.Second * 5,
+	fileLog, err := logger.NewFile("./logs/weather.txt")
+	if err != nil {
+		logrusLog.Fatalf("Failed to create file logger: %s", err.Error())
 	}
-	weatherApiURL := viper.GetString("WEATHER_API_URL")
-	weatherApiKey := viper.GetString("WEATHER_API_KEY")
-	weatherProvider := providers.NewWeatherProvider(weatherApiURL, weatherApiKey, &client, logrusLog)
-	weatherService := services.NewWeatherService(weatherProvider, logrusLog)
+	defer func() {
+		if err := fileLog.Close(); err != nil {
+			logrusLog.Fatalf("Failed to close log file:%s", err.Error())
+		}
+	}()
+
+	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
+
+	client := http.Client{
+		Timeout:   time.Second * 5,
+		Transport: providerRoundTrip,
+	}
+
+	weatherAPIURL := viper.GetString("WEATHER_API_URL")
+	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
+	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURL, weatherAPIKey, &client, logrusLog)
+
+	openWeatherURL := viper.GetString("OPEN_WEATHER_URL")
+	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
+	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURL, openWeatherKey, &client, logrusLog)
+
+	weatherAPIChainSection := providers.NewWeatherLink(weatherAPIProvider)
+	openWeatherChainSection := providers.NewWeatherLink(openWeatherProvider)
+	weatherAPIChainSection.SetNext(openWeatherChainSection)
+
+	weatherService := services.NewWeatherService(weatherAPIChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)

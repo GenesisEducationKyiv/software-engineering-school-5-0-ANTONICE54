@@ -85,5 +85,11 @@ func clearDB(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Logf("Failed to close response body: %s", err.Error())
+		}
+	}()
+
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }

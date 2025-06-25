@@ -21,7 +21,7 @@ import (
 func main() {
 	logrusLog := logger.NewLogrus()
 
-	viper.SetConfigFile("test.env")
+	viper.SetConfigFile("tests/e2e/testapp/test.env")
 	err := viper.ReadInConfig()
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())

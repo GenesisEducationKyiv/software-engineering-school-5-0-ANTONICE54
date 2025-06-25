@@ -67,14 +67,12 @@ jobs:
       - name: Copy test env
         run: cp tests/e2e/testapp/test.env.example tests/e2e/testapp/test.env
 
-      - name: Waiting for browser
-        run: sleep 3
-
-
       - name: Build test app
         run: go build -o testapp_binary ./tests/e2e/testapp/main.go
       - name: Run test app
         run: ./testapp_binary&
+      - name: Waiting for server
+        run: sleep 3
       - name: Run End-to-End tests
         run: go test ./tests/e2e/
 

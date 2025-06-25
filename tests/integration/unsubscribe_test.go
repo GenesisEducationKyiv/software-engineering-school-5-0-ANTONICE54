@@ -44,6 +44,7 @@ func TestUnsubscribe_Success(t *testing.T) {
 	assert.Equal(t, expectedResponseBody, w.Body.String())
 
 	res := db.Where("id = ?", unsubscribeSubscription.ID).Find(&models.Subscription{})
+	require.NoError(t, res.Error)
 	require.Equal(t, int64(0), res.RowsAffected)
 
 }

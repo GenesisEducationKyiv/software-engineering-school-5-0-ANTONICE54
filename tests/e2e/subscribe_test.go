@@ -23,11 +23,11 @@ func TestSubscribeForm_Success(t *testing.T) {
 	var result string
 	err := chromedp.Run(ctx, submit("http://localhost:8080/", "test5@gmail.com", "Kyiv", "daily", &result))
 	if err != nil {
-		t.Errorf("subscribe failed: %v", err)
+		t.Fatalf("subscribe failed: %v", err)
 	}
 
 	if !strings.Contains(result, "Subscription successful") {
-		t.Errorf("Expected success message got %v", result)
+		t.Fatalf("Expected success message got %v", result)
 	}
 
 }
@@ -47,20 +47,20 @@ func TestSubscribeForm_AlreadySubscribed(t *testing.T) {
 	var result string
 	err := chromedp.Run(ctx, submit("http://localhost:8080/", "alreadysubscribed@gmail.com", "Kyiv", "daily", &result))
 	if err != nil {
-		t.Errorf("first subscribe failed: %v", err)
+		t.Fatalf("first subscribe failed: %v", err)
 	}
 
 	if !strings.Contains(result, "Subscription successful") {
-		t.Errorf("Expected success message got %v", result)
+		t.Fatalf("Expected success message got %v", result)
 	}
 
 	err = chromedp.Run(ctx, submit("http://localhost:8080/", "alreadysubscribed@gmail.com", "Kyiv", "daily", &result))
 	if err != nil {
-		t.Errorf("second subscribe failed: %v", err)
+		t.Fatalf("second subscribe failed: %v", err)
 	}
 
 	if !strings.Contains(result, "Error") {
-		t.Errorf("Expected error message got %v", result)
+		t.Fatalf("Expected error message got %v", result)
 	}
 
 }

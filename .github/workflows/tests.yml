@@ -54,6 +54,11 @@ jobs:
         with:
           go-version: stable
       - uses: browser-actions/setup-chrome@v1
+
+      - name: Copy test env
+        run: cp tests/e2e/testapp/test.env.example tests/e2e/testapp/test.env
+
+
       - name: Build test app
         run: go build -o testapp_binary ./tests/e2e/testapp/main.go
       - name: Run test app

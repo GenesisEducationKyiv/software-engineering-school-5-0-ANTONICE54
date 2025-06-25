@@ -15,7 +15,9 @@ import (
 	"weather-forecast/internal/presentation/server"
 	"weather-forecast/internal/presentation/server/handlers"
 
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -72,5 +74,25 @@ func main() {
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)
+	go startDebugServer(db, logrusLog)
 	s.Run(serverPort)
+}
+
+func startDebugServer(db *gorm.DB, logger logger.Logger) {
+	debugRouter := gin.New()
+
+	debugRouter.POST("/clear", func(c *gin.Context) {
+		err := db.Exec("TRUNCATE TABLE subscriptions").Error
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "database cleared"})
+	})
+
+	port := viper.GetString("DEBUG_SERVER_PORT")
+	logger.Infof("Starting debug server on %s...", port)
+	if err := debugRouter.Run(":" + port); err != nil {
+		logger.Fatalf("Debug server failed: %s", err)
+	}
 }

@@ -2,23 +2,17 @@ package e2e
 
 import (
 	"context"
+	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/chromedp/chromedp"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSubscribeForm_Success(t *testing.T) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.NoSandbox,
-		chromedp.Headless,
-	)
-
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	defer cancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
+	clearDB(t)
+	ctx := setupChromeContext(t)
 
 	var result string
 	err := chromedp.Run(ctx, submit("http://localhost:8080/", "test5@gmail.com", "Kyiv", "daily", &result))
@@ -33,17 +27,8 @@ func TestSubscribeForm_Success(t *testing.T) {
 }
 
 func TestSubscribeForm_AlreadySubscribed(t *testing.T) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.NoSandbox,
-		chromedp.Headless,
-	)
-
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	defer cancel()
-
-	ctx, cancel := chromedp.NewContext(allocCtx)
-	defer cancel()
-
+	clearDB(t)
+	ctx := setupChromeContext(t)
 	var result string
 	err := chromedp.Run(ctx, submit("http://localhost:8080/", "alreadysubscribed@gmail.com", "Kyiv", "daily", &result))
 	if err != nil {
@@ -65,6 +50,21 @@ func TestSubscribeForm_AlreadySubscribed(t *testing.T) {
 
 }
 
+func setupChromeContext(t *testing.T) context.Context {
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.NoSandbox,
+		chromedp.Headless,
+	)
+
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	t.Cleanup(allocCancel)
+
+	ctx, ctxCancel := chromedp.NewContext(allocCtx)
+	t.Cleanup(ctxCancel)
+
+	return ctx
+}
+
 func submit(urlstr, email, city, frequency string, result *string) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.Navigate(urlstr),
@@ -76,4 +76,14 @@ func submit(urlstr, email, city, frequency string, result *string) chromedp.Task
 		chromedp.WaitNotPresent(`#response-message:empty`, chromedp.ByID),
 		chromedp.Text(`#response-message`, result, chromedp.ByID),
 	}
+}
+
+func clearDB(t *testing.T) {
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:8081/clear", nil)
+	require.NoError(t, err)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }

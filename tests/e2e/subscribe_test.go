@@ -21,7 +21,7 @@ func TestSubscribeForm_Success(t *testing.T) {
 	}
 
 	if !strings.Contains(result, "Subscription successful") {
-		t.Fatalf("Expected success message got %v", result)
+		t.Errorf("Expected success message got %v", result)
 	}
 
 }
@@ -45,7 +45,7 @@ func TestSubscribeForm_AlreadySubscribed(t *testing.T) {
 	}
 
 	if !strings.Contains(result, "Error") {
-		t.Fatalf("Expected error message got %v", result)
+		t.Errorf("Expected error message got %v", result)
 	}
 
 }

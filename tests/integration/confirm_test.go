@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
+	stub_services "weather-forecast/internal/infrastructure/services/stubs"
 	"weather-forecast/internal/presentation/server/handlers"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,8 @@ func setupConfirmRouter(handler *handlers.SubscriptionHandler) *gin.Engine {
 
 func TestConfirm_Success(t *testing.T) {
 	db := setupDB(t)
-	subscriptionHandler := setupSubscriptionHandler(db)
+	stubMailer := stub_services.NewStubMailer()
+	subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 	router := setupConfirmRouter(subscriptionHandler)
 	expectedResponseBody := `{"message":"Subscription confirmed."}`
 	unconfirmedSubscription := models.Subscription{
@@ -46,6 +48,9 @@ func TestConfirm_Success(t *testing.T) {
 	err = db.Where("id = ?", unconfirmedSubscription.ID).First(&confirmedSubscription).Error
 	require.NoError(t, err)
 	assert.True(t, confirmedSubscription.Confirmed)
+	assert.Len(t, stubMailer.SentConfirmeds, 1)
+	assert.Equal(t, unconfirmedSubscription.Email, stubMailer.SentConfirmeds[0].Email)
+	assert.EqualValues(t, unconfirmedSubscription.Frequency, stubMailer.SentConfirmeds[0].Frequency)
 
 }
 
@@ -73,7 +78,8 @@ func TestConfirm_ErrorScenarios(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
 			db := setupDB(t)
-			subscriptionHandler := setupSubscriptionHandler(db)
+			stubMailer := stub_services.NewStubMailer()
+			subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 			router := setupConfirmRouter(subscriptionHandler)
 
 			w := httptest.NewRecorder()

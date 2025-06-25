@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
+	stub_services "weather-forecast/internal/infrastructure/services/stubs"
 	"weather-forecast/internal/presentation/server/handlers"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,8 @@ func TestUnsubscribe_Success(t *testing.T) {
 	}
 
 	db := setupDB(t)
-	subscriptionHandler := setupSubscriptionHandler(db)
+	stubMailer := stub_services.NewStubMailer()
+	subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 	router := setupUnsubscribeRouter(subscriptionHandler)
 
 	err := db.Create(&unsubscribeSubscription).Error
@@ -73,7 +75,8 @@ func TestUnsubscribe_ErrorScenarios(t *testing.T) {
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
 			db := setupDB(t)
-			subscriptionHandler := setupSubscriptionHandler(db)
+			stubMailer := stub_services.NewStubMailer()
+			subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 			router := setupUnsubscribeRouter(subscriptionHandler)
 
 			w := httptest.NewRecorder()

@@ -35,11 +35,10 @@ func setupDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func setupSubscriptionHandler(db *gorm.DB) *handlers.SubscriptionHandler {
+func setupSubscriptionHandler(db *gorm.DB, stubMailer services.NotificationServiceI) *handlers.SubscriptionHandler {
 
 	stubLogger := stub_logger.New()
 	tokenManager := token.NewUUIDManager()
-	stubMailer := stub_services.NewStubMailer()
 
 	subscRepo := repositories.NewSubscriptionRepository(db, stubLogger)
 	subscUC := usecases.NewSubscriptionUseCase(subscRepo, stubLogger)
@@ -58,7 +57,8 @@ func setupSubscribeRouter(handler *handlers.SubscriptionHandler) *gin.Engine {
 
 func TestSubscribe_Success(t *testing.T) {
 	db := setupDB(t)
-	subscriptionHandler := setupSubscriptionHandler(db)
+	stubMailer := stub_services.NewStubMailer()
+	subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 	router := setupSubscribeRouter(subscriptionHandler)
 
 	requestBody := handlers.SubscribeRequest{
@@ -84,12 +84,16 @@ func TestSubscribe_Success(t *testing.T) {
 	assert.Equal(t, requestBody.Frequency, string(subscFromDB.Frequency))
 	assert.False(t, subscFromDB.Confirmed)
 	assert.Equal(t, requestBody.Email, subscFromDB.Email)
+	assert.Len(t, stubMailer.SentConfirmations, 1)
+	assert.Equal(t, requestBody.Email, stubMailer.SentConfirmations[0].Email)
+	assert.EqualValues(t, requestBody.Frequency, stubMailer.SentConfirmations[0].Frequency)
 
 }
 
 func TestSubscribe_AlreadySubscribed(t *testing.T) {
 	db := setupDB(t)
-	subscriptionHandler := setupSubscriptionHandler(db)
+	stubMailer := stub_services.NewStubMailer()
+	subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 	router := setupSubscribeRouter(subscriptionHandler)
 
 	requestBody := handlers.SubscribeRequest{
@@ -111,12 +115,16 @@ func TestSubscribe_AlreadySubscribed(t *testing.T) {
 	expectedResponseBody := `{"error":"email already subscribed"}`
 	assert.Equal(t, http.StatusConflict, w2.Code)
 	assert.Equal(t, expectedResponseBody, w2.Body.String())
+	assert.Len(t, stubMailer.SentConfirmations, 1)
+	assert.Equal(t, requestBody.Email, stubMailer.SentConfirmations[0].Email)
+	assert.EqualValues(t, requestBody.Frequency, stubMailer.SentConfirmations[0].Frequency)
 
 }
 
 func TestSubscribe_InvalidInput(t *testing.T) {
 	db := setupDB(t)
-	subscriptionHandler := setupSubscriptionHandler(db)
+	stubMailer := stub_services.NewStubMailer()
+	subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 	router := setupSubscribeRouter(subscriptionHandler)
 	errorMessage := `{"error":"invalid request"}`
 	testTable := []struct {

@@ -1,1 +1,2 @@
 .env
+tests/e2e/testapp/test.env

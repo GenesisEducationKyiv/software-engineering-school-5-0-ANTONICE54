@@ -1,0 +1,77 @@
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+
+
+
+jobs:
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{github.head_ref || github.ref}}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run unit tests
+        run: go test ./internal/...
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{github.head_ref || github.ref}}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run integration tests
+        run: go test ./tests/integration/
+  e2e:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        
+          
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{github.head_ref || github.ref}}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: browser-actions/setup-chrome@v1
+
+
+
+      - name: Build test app
+        run: go build -o testapp_binary ./tests/e2e/testapp/main.go
+      - name: Run test app
+        run: ./testapp_binary&
+      - name: Waiting for server
+        run: sleep 3
+      - name: Run End-to-End tests
+        run: go test ./tests/e2e/
+

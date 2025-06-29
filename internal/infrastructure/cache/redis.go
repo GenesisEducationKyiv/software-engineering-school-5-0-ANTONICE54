@@ -24,26 +24,26 @@ type (
 	}
 )
 
-func NewRedis(url string, metrics MetricsRecorder, logger logger.Logger) *Redis {
+func NewRedis(url string, metrics MetricsRecorder, logger logger.Logger) (*Redis, error) {
 	opt, err := redis.ParseURL(url)
 	if err != nil {
-		logger.Fatalf("parse Redis URL: %s", err.Error())
+		return nil, err
 	}
+
 	client := redis.NewClient(opt)
 
 	ctx, cancel := context.WithTimeout(context.Background(), RedisTimeout)
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		logger.Fatalf("connect to Redis: %s", err.Error())
-
+		return nil, err
 	}
 
 	return &Redis{
 		client:  client,
 		metrics: metrics,
 		logger:  logger,
-	}
+	}, nil
 }
 
 func (c *Redis) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {

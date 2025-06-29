@@ -46,7 +46,10 @@ func main() {
 	prometherusMetrics := metrics.NewPrometheus(logrusLog)
 
 	residSource := viper.GetString("REDIS_SOURCE")
-	redisCache := cache.NewRedis(residSource, prometherusMetrics, logrusLog)
+	redisCache, err := cache.NewRedis(residSource, prometherusMetrics, logrusLog)
+	if err != nil {
+		logrusLog.Fatalf("Connect to redis: %s", err.Error())
+	}
 
 	weatherApiURL := viper.GetString("WEATHER_API_URL")
 	weatherApiKey := viper.GetString("WEATHER_API_KEY")
@@ -84,8 +87,8 @@ func main() {
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)
 
 	metricsServerPort := viper.GetString("METRICS_SERVER_PORT")
-
 	go prometherusMetrics.StartMetricsServer(metricsServerPort)
+
 	s.Run(serverPort)
 
 }

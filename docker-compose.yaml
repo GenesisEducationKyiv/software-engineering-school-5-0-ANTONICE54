@@ -22,8 +22,10 @@ services:
     image: "redis:latest"
     ports: 
       - 6379:6379
+    environment:
+      - REDIS_PASSWORD=password
     healthcheck:
-      test: ["executable", "arg"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

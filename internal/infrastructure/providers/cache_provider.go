@@ -35,6 +35,7 @@ func NewCacheWeather(cache Cacher, provider WeatherProvider, logger logger.Logge
 }
 
 func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+
 	cachedWeather := &models.Weather{}
 	err := p.cache.Get(ctx, city, cachedWeather)
 	if err == nil {
@@ -42,7 +43,6 @@ func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string
 	}
 
 	weather, err := p.provider.GetWeatherByCity(ctx, city)
-
 	if err != nil {
 		return nil, err
 	}
@@ -50,5 +50,6 @@ func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string
 	if err := p.cache.Set(ctx, city, weather, cacheTTL); err != nil {
 		p.logger.Warnf("Cache weather %s:", err.Error())
 	}
+
 	return weather, nil
 }

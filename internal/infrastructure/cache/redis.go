@@ -12,13 +12,19 @@ import (
 const RedisTimeout = 5 * time.Second
 
 type (
+	MetricsRecorder interface {
+		RecordCacheHit()
+		RecordCacheMiss()
+		RecordCacheError()
+	}
 	Redis struct {
-		client *redis.Client
-		logger logger.Logger
+		client  *redis.Client
+		metrics MetricsRecorder
+		logger  logger.Logger
 	}
 )
 
-func NewRedis(url string, logger logger.Logger) *Redis {
+func NewRedis(url string, metrics MetricsRecorder, logger logger.Logger) *Redis {
 	opt, err := redis.ParseURL(url)
 	if err != nil {
 		logger.Fatalf("parse Redis URL: %s", err.Error())
@@ -34,8 +40,9 @@ func NewRedis(url string, logger logger.Logger) *Redis {
 	}
 
 	return &Redis{
-		client: client,
-		logger: logger,
+		client:  client,
+		metrics: metrics,
+		logger:  logger,
 	}
 }
 
@@ -43,12 +50,13 @@ func (c *Redis) Set(ctx context.Context, key string, value interface{}, expirati
 	data, err := json.Marshal(value)
 	if err != nil {
 		c.logger.Warnf("Marshal cache:%s", err.Error())
-		return nil
+		return err
 	}
 
 	if err := c.client.Set(ctx, key, data, expiration).Err(); err != nil {
+		c.metrics.RecordCacheError()
 		c.logger.Warnf("Set cache key %s:%s", key, err.Error())
-		return nil
+		return err
 	}
 
 	return nil
@@ -57,15 +65,21 @@ func (c *Redis) Get(ctx context.Context, key string, value interface{}) error {
 	res, err := c.client.Get(ctx, key).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil
+			c.logger.Infof("Cache miss for key %s", key)
+			c.metrics.RecordCacheMiss()
+			return err
 		}
-		return nil
+
+		c.metrics.RecordCacheError()
+		c.logger.Warnf("Get cache key %s:%s", key, err.Error())
+		return err
 	}
 
 	if err := json.Unmarshal([]byte(res), value); err != nil {
 		c.logger.Warnf("Unmarshal cache:%s", err.Error())
-		return nil
+		return err
 	}
+	c.metrics.RecordCacheHit()
 
 	return nil
 }

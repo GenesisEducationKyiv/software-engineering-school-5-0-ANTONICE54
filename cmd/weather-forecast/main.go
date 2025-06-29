@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"time"
 	"weather-forecast/internal/domain/usecases"
+	"weather-forecast/internal/infrastructure/cache"
 	"weather-forecast/internal/infrastructure/database"
 	"weather-forecast/internal/infrastructure/logger"
 	"weather-forecast/internal/infrastructure/mailer"
+	"weather-forecast/internal/infrastructure/metrics"
 	"weather-forecast/internal/infrastructure/providers"
 	"weather-forecast/internal/infrastructure/repositories"
 	"weather-forecast/internal/infrastructure/scheduler"
@@ -40,10 +42,17 @@ func main() {
 	client := http.Client{
 		Timeout: time.Second * 5,
 	}
+
+	prometherusMetrics := metrics.NewPrometheus(logrusLog)
+
+	residSource := viper.GetString("REDIS_SOURCE")
+	redisCache := cache.NewRedis(residSource, prometherusMetrics, logrusLog)
+
 	weatherApiURL := viper.GetString("WEATHER_API_URL")
 	weatherApiKey := viper.GetString("WEATHER_API_KEY")
 	weatherProvider := providers.NewWeatherAPIProvider(weatherApiURL, weatherApiKey, &client, logrusLog)
-	weatherService := services.NewWeatherService(weatherProvider, logrusLog)
+	weatherProviderWithCache := providers.NewCacheWeather(redisCache, weatherProvider, logrusLog)
+	weatherService := services.NewWeatherService(weatherProviderWithCache, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
@@ -73,6 +82,10 @@ func main() {
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)
+
+	metricsServerPort := viper.GetString("METRICS_SERVER_PORT")
+
+	go prometherusMetrics.StartMetricsServer(metricsServerPort)
 	s.Run(serverPort)
 
 }

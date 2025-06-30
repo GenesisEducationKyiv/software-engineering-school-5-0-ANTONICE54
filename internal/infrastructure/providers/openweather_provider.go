@@ -11,10 +11,6 @@ import (
 	"weather-forecast/internal/infrastructure/logger"
 )
 
-var metricUnits = "metric"
-
-const NotFoundOpenWeather = "404"
-
 type (
 	GetOpenWeatherErrorResponse struct {
 		Cod     string `json:"cod"`
@@ -53,6 +49,9 @@ func NewOpenWeatherProvider(apiURL, apiKey string, client *http.Client, logger l
 }
 
 func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+
+	const NotFoundOpenWeatherErrorCode = "404"
+	const metricUnits = "metric"
 
 	url, err := url.Parse(p.apiURL)
 	if err != nil {
@@ -97,7 +96,7 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 			return nil, apperrors.GetWeatherError
 		}
 
-		if errResponse.Cod == NotFoundOpenWeather {
+		if errResponse.Cod == NotFoundOpenWeatherErrorCode {
 			p.logger.Warnf("City not found: %s", city)
 			return nil, apperrors.CityNotFoundError
 		} else {
@@ -114,10 +113,18 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 		return nil, apperrors.GetWeatherError
 	}
 
+	weatherDesc := ""
+
+	if len(weatherResponse.Weather) > 0 {
+		weatherDesc = weatherResponse.Weather[0].Description
+	} else {
+		p.logger.Warnf("OpenWeather did not provide weather description for city: %s", city)
+	}
+
 	result := models.Weather{
 		Temperature: weatherResponse.Main.Temperature,
 		Humidity:    weatherResponse.Main.Humidity,
-		Description: weatherResponse.Weather[0].Description,
+		Description: weatherDesc,
 	}
 
 	return &result, nil

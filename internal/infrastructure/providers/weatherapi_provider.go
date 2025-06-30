@@ -11,8 +11,6 @@ import (
 	"weather-forecast/internal/infrastructure/logger"
 )
 
-const NotFoundWeatherAPI = 1006
-
 type (
 	getWeatherAPIResponse struct {
 		Current struct {
@@ -49,6 +47,8 @@ func NewWeatherAPIProvider(apiURL, apiKey string, httpClient *http.Client, logge
 }
 
 func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+
+	const NotFoundWeatherAPIErrorCode = 1006
 
 	url, err := url.Parse(p.apiURL)
 	if err != nil {
@@ -92,7 +92,7 @@ func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) 
 			return nil, apperrors.GetWeatherError
 		}
 
-		if errResponse.Error.Code == NotFoundWeatherAPI {
+		if errResponse.Error.Code == NotFoundWeatherAPIErrorCode {
 			p.logger.Warnf("City not found: %s", city)
 			return nil, apperrors.CityNotFoundError
 		} else {

@@ -3,23 +3,15 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
-	stub_logger "weather-forecast/internal/infrastructure/logger/stub"
 	"weather-forecast/internal/infrastructure/providers"
-	"weather-forecast/internal/infrastructure/services"
 	"weather-forecast/internal/presentation/server/handlers"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
-
-const (
-	testAPIKey = "testAPIKey"
 )
 
 var (
@@ -28,112 +20,12 @@ var (
 		Humidity:    64,
 		Description: "Partly cloudy",
 	}
-	weatherAPISuccessResponse = providers.GetWeatherSuccessResponse{
-		Current: providers.GetWeatherCurrentResponse{
-			TempC: testWeather.Temperature,
-			Condition: providers.GetWeatherConditionResponse{
-				Text: testWeather.Description,
-			},
-			Humidity: testWeather.Humidity,
-		},
-	}
-
-	openWeatherSuccessResponse = providers.GetOpenWeatherSuccessResponse{
-		Weather: []providers.GetOpenWeatherDescriptionResponse{
-			{Description: testWeather.Description},
-		},
-		Main: providers.GetOpenWeatherMainResponse{
-			Temperature: testWeather.Temperature,
-			Humidity:    testWeather.Humidity,
-		},
-	}
 )
-
-type MockServer struct {
-	*httptest.Server
-	shouldBeCalled bool
-	wasCalled      bool
-}
-
-func newMockServer(t *testing.T, responseBody any, statusCode int, expectedQuery string, shouldBeCalled bool) *MockServer {
-	t.Helper()
-
-	mock := &MockServer{
-		shouldBeCalled: shouldBeCalled,
-	}
-
-	mock.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mock.wasCalled = true
-
-		if expectedQuery != "" {
-			assert.Equal(t, "/", r.URL.Path)
-			assert.Equal(t, expectedQuery, r.URL.RawQuery)
-		}
-
-		w.WriteHeader(statusCode)
-		if responseBody != nil {
-			err := json.NewEncoder(w).Encode(responseBody)
-			require.NoError(t, err)
-		}
-	}))
-
-	t.Cleanup(func() {
-		if m.shouldBeCalled && !m.wasCalled {
-			t.Errorf("Expected mock server to be called, but it wasn't")
-		}
-		if !m.shouldBeCalled && m.wasCalled {
-			t.Errorf("Mock server was called, but shouldn't have been")
-		}
-		mock.Server.Close()
-	})
-
-	return mock
-}
-
-func setupWeatherAPIMock(t *testing.T, responseBody any, statusCode int, city string) *MockServer {
-	t.Helper()
-	expectedQuery := fmt.Sprintf("key=%s&q=%s", TEST_API_KEY, city)
-	return newMockServer(t, responseBody, statusCode, expectedQuery, true)
-}
-
-func setupOpenWeatherMock(t *testing.T, responseBody any, statusCode int, city string, shouldBeCalled bool) *MockServer {
-	t.Helper()
-	expectedQuery := ""
-	if shouldBeCalled {
-		expectedQuery = fmt.Sprintf("q=%s&appid=%s&units=metrics", city, TEST_API_KEY)
-	}
-	return newMockServer(t, responseBody, statusCode, expectedQuery, shouldBeCalled)
-}
-
-func setupWeatherHandler(weatherAPIURLMock, openWeatherURLMock string) *handlers.WeatherHandler {
-	stubLogger := stub_logger.New()
-	client := &http.Client{}
-	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURLMock, testAPIKey, client, stubLogger)
-	weatherAPILink := providers.NewWeatherLink(weatherAPIProvider)
-
-	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURLMock, testAPIKey, client, stubLogger)
-	openWeatherLink := providers.NewWeatherLink(openWeatherProvider)
-
-	weatherAPILink.SetNext(openWeatherLink)
-
-	weatherService := services.NewWeatherService(weatherAPILink, stubLogger)
-	weatherHandler := handlers.NewWeatherHandler(weatherService, stubLogger)
-	return weatherHandler
-}
-
-func setupWeatherRouter(handler *handlers.WeatherHandler) *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-
-	router.GET("/weather", handler.Get)
-	return router
-}
 
 func TestGetWeather_Success(t *testing.T) {
 
 	city := "Kyiv"
-
-	responseBody := providers.GetWeatherSuccessResponse{
+	weatherAPISuccessResponse := providers.GetWeatherSuccessResponse{
 		Current: providers.GetWeatherCurrentResponse{
 			TempC: testWeather.Temperature,
 			Condition: providers.GetWeatherConditionResponse{
@@ -143,11 +35,9 @@ func TestGetWeather_Success(t *testing.T) {
 		},
 	}
 
-	weatherAPIServerMock := setupWeatherAPIMock(t, responseBody, http.StatusOK, city)
-	defer weatherAPIServerMock.Close()
+	weatherAPIServerMock := setupWeatherAPIMock(t, weatherAPISuccessResponse, http.StatusOK, city)
 
 	openWeatherAPIServcerMock := setupOpenWeatherMock(t, nil, 0, "", false)
-	defer openWeatherAPIServcerMock.Close()
 
 	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, openWeatherAPIServcerMock.URL)
 	router := setupWeatherRouter(weatherHandler)
@@ -169,18 +59,9 @@ func TestGetWeather_Success(t *testing.T) {
 func TestGetWeather_WeatherAPI_Failed(t *testing.T) {
 	city := "Kyiv"
 
-	weatherAPIResponseBody := providers.GetWeatherErrorResponse{
-		Error: providers.GetWeatherErrorDetails{
-			Code:    9999,
-			Message: "Internal application error.",
-		},
-	}
-
-	openWeatherResponseBody := providers.GetOpenWeatherSuccessResponse{
+	openWeatherSuccessResponse := providers.GetOpenWeatherSuccessResponse{
 		Weather: []providers.GetOpenWeatherDescriptionResponse{
-			{
-				Description: testWeather.Description,
-			},
+			{Description: testWeather.Description},
 		},
 		Main: providers.GetOpenWeatherMainResponse{
 			Temperature: testWeather.Temperature,
@@ -188,11 +69,16 @@ func TestGetWeather_WeatherAPI_Failed(t *testing.T) {
 		},
 	}
 
-	weatherAPIServerMock := setupWeatherAPIMock(t, weatherAPIResponseBody, http.StatusBadRequest, city)
-	defer weatherAPIServerMock.Close()
+	weatherAPIErrorResponseBody := providers.GetWeatherErrorResponse{
+		Error: providers.GetWeatherErrorDetails{
+			Code:    9999,
+			Message: "Internal application error.",
+		},
+	}
 
-	openWeatherAPIServcerMock := setupOpenWeatherMock(t, openWeatherResponseBody, http.StatusOK, city, true)
-	defer openWeatherAPIServcerMock.Close()
+	weatherAPIServerMock := setupWeatherAPIMock(t, weatherAPIErrorResponseBody, http.StatusBadRequest, city)
+
+	openWeatherAPIServcerMock := setupOpenWeatherMock(t, openWeatherSuccessResponse, http.StatusOK, city, true)
 
 	weatherHandler := setupWeatherHandler(weatherAPIServerMock.URL, openWeatherAPIServcerMock.URL)
 	router := setupWeatherRouter(weatherHandler)
@@ -213,68 +99,92 @@ func TestGetWeather_WeatherAPI_Failed(t *testing.T) {
 
 func TestGetWeather_ErrorScenarios(t *testing.T) {
 
-	const weatherAPIErrorCode = 1006
+	const weatherAPINotFoundErrorCode = 1006
+	const openWeatherNotFoundErrorCode = "404"
 
 	testTable := []struct {
-		name              string
-		city              string
-		apiResponseBody   any
-		apiResponseCode   int
-		expectedCode      int
-		expectedErrorBody string
+		name                  string
+		city                  string
+		weatherAPIResp        interface{}
+		weatherAPICode        int
+		openWeatherResp       interface{}
+		openWeatherCode       int
+		shouldCallOpenWeather bool
+		expectedCode          int
+		expectedErrorBody     string
 	}{
 		{
-			name:              "Invalid City",
-			city:              "123",
-			apiResponseBody:   nil,
-			apiResponseCode:   0,
-			expectedCode:      http.StatusBadRequest,
-			expectedErrorBody: `{"error":"invalid request"}`,
+			name:                  "Invalid City",
+			city:                  "123",
+			weatherAPIResp:        nil,
+			weatherAPICode:        0,
+			openWeatherResp:       nil,
+			openWeatherCode:       0,
+			shouldCallOpenWeather: false,
+			expectedCode:          http.StatusBadRequest,
+			expectedErrorBody:     `{"error":"invalid request"}`,
 		},
 		{
 			name: "City Not Found",
 			city: "Odeca",
-			apiResponseBody: providers.GetWeatherErrorResponse{
+			weatherAPIResp: providers.GetWeatherErrorResponse{
 				Error: providers.GetWeatherErrorDetails{
-					Code:    weatherAPIErrorCode,
+					Code:    weatherAPINotFoundErrorCode,
 					Message: "No matching location found.",
 				},
 			},
-			apiResponseCode:   http.StatusBadRequest,
-			expectedCode:      http.StatusNotFound,
-			expectedErrorBody: `{"error":"there is no city with such name"}`,
+			weatherAPICode: http.StatusBadRequest,
+			openWeatherResp: providers.GetOpenWeatherErrorResponse{
+				Cod:     openWeatherNotFoundErrorCode,
+				Message: "city not found",
+			},
+			openWeatherCode:       http.StatusNotFound,
+			shouldCallOpenWeather: true,
+			expectedCode:          http.StatusNotFound,
+			expectedErrorBody:     `{"error":"there is no city with such name"}`,
 		},
 		{
-			name: "Weather API Error",
-			city: "Odeca",
-			apiResponseBody: providers.GetWeatherErrorResponse{
+			name: "Both Providers Fail",
+			city: "TestCity",
+			weatherAPIResp: providers.GetWeatherErrorResponse{
 				Error: providers.GetWeatherErrorDetails{
 					Code:    9999,
 					Message: "Internal application error.",
 				},
 			},
-			apiResponseCode:   http.StatusBadRequest,
+			weatherAPICode: http.StatusBadRequest,
+			openWeatherResp: providers.GetOpenWeatherErrorResponse{
+				Cod:     "500",
+				Message: "internal server error",
+			},
+
+			openWeatherCode:       http.StatusInternalServerError,
+			shouldCallOpenWeather: true,
+
 			expectedCode:      http.StatusInternalServerError,
 			expectedErrorBody: `{"error":"failed to get weather"}`,
 		},
 		{
-			name:              "Timout Exceeded",
-			city:              "Odeca",
-			apiResponseBody:   nil,
-			apiResponseCode:   0,
-			expectedCode:      http.StatusInternalServerError,
-			expectedErrorBody: `{"error":"failed to get weather"}`,
+			name:                  "Timout Exceeded",
+			city:                  "Odeca",
+			weatherAPIResp:        nil,
+			weatherAPICode:        0,
+			openWeatherResp:       nil,
+			openWeatherCode:       0,
+			shouldCallOpenWeather: false,
+			expectedCode:          http.StatusInternalServerError,
+			expectedErrorBody:     `{"error":"failed to get weather"}`,
 		},
 	}
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
 			var weatherHandler *handlers.WeatherHandler
-			if testCase.apiResponseBody != nil {
-				weatherAPIServerMock := setupWeatherAPIMock(t, testCase.apiResponseBody, testCase.apiResponseCode, testCase.city)
+			if testCase.weatherAPIResp != nil {
+				weatherAPIServerMock := setupWeatherAPIMock(t, testCase.weatherAPIResp, testCase.weatherAPICode, testCase.city)
 				defer weatherAPIServerMock.Close()
 
-				openWeatherAPIServcerMock := setupOpenWeatherMock(t, nil, 0, "", false)
+				openWeatherAPIServcerMock := setupOpenWeatherMock(t, testCase.openWeatherResp, testCase.openWeatherCode, testCase.city, testCase.shouldCallOpenWeather)
 				defer openWeatherAPIServcerMock.Close()
 
 				weatherHandler = setupWeatherHandler(weatherAPIServerMock.URL, openWeatherAPIServcerMock.URL)
@@ -301,18 +211,4 @@ func TestGetWeather_ErrorScenarios(t *testing.T) {
 		})
 	}
 
-}
-
-func assertWeatherResponse(t *testing.T, w *httptest.ResponseRecorder, expectedWeather models.Weather) {
-	t.Helper()
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var response handlers.GetWeatherResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	assert.Equal(t, expectedWeather.Temperature, response.Temperature)
-	assert.Equal(t, expectedWeather.Humidity, response.Humidity)
-	assert.Equal(t, expectedWeather.Description, response.Description)
 }

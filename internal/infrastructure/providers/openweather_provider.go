@@ -97,6 +97,7 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 		}
 
 		if errResponse.Cod == notFoundOpenWeatherErrorCode {
+
 			p.logger.Warnf("City not found: %s", city)
 			return nil, apperrors.CityNotFoundError
 		} else {

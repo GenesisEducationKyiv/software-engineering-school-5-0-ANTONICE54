@@ -91,6 +91,7 @@ func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) 
 	}
 
 	if resp.StatusCode != http.StatusOK {
+
 		var errResponse GetWeatherErrorResponse
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {

@@ -14,4 +14,5 @@ COPY --from=builder /app/subscription.html .
 
 
 
+
 EXPOSE 8080

@@ -12,21 +12,27 @@ import (
 )
 
 type (
-	getWeatherAPIResponse struct {
-		Current struct {
-			TempC     float64 `json:"temp_c"`
-			Condition struct {
-				Text string `json:"text"`
-			} `json:"condition"`
-			Humidity int `json:"humidity"`
-		} `json:"current"`
+	GetWeatherConditionResponse struct {
+		Text string `json:"text"`
 	}
 
-	getWeatherAPIErrorResponse struct {
-		Error struct {
-			Code    int    `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
+	GetWeatherCurrentResponse struct {
+		TempC     float64                     `json:"temp_c"`
+		Condition GetWeatherConditionResponse `json:"condition"`
+		Humidity  int                         `json:"humidity"`
+	}
+
+	GetWeatherSuccessResponse struct {
+		Current GetWeatherCurrentResponse `json:"current"`
+	}
+
+	GetWeatherErrorDetails struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+
+	GetWeatherErrorResponse struct {
+		Error GetWeatherErrorDetails `json:"error"`
 	}
 
 	WeatherAPIProvider struct {
@@ -48,7 +54,7 @@ func NewWeatherAPIProvider(apiURL, apiKey string, httpClient *http.Client, logge
 
 func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
-	const NotFoundWeatherAPIErrorCode = 1006
+	const notFoundWeatherAPIErrorCode = 1006
 
 	url, err := url.Parse(p.apiURL)
 	if err != nil {
@@ -85,14 +91,14 @@ func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) 
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResponse getWeatherAPIErrorResponse
+		var errResponse GetWeatherErrorResponse
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
 			p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
 			return nil, apperrors.GetWeatherError
 		}
 
-		if errResponse.Error.Code == NotFoundWeatherAPIErrorCode {
+		if errResponse.Error.Code == notFoundWeatherAPIErrorCode {
 			p.logger.Warnf("City not found: %s", city)
 			return nil, apperrors.CityNotFoundError
 		} else {
@@ -102,7 +108,7 @@ func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) 
 
 	}
 
-	var weather getWeatherAPIResponse
+	var weather GetWeatherSuccessResponse
 
 	if err := json.Unmarshal(body, &weather); err != nil {
 		p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())

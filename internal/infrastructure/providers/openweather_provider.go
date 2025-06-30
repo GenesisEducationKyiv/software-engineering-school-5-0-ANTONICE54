@@ -50,7 +50,7 @@ func NewOpenWeatherProvider(apiURL, apiKey string, client *http.Client, logger l
 
 func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
-	const NotFoundOpenWeatherErrorCode = "404"
+	const notFoundOpenWeatherErrorCode = "404"
 	const metricUnits = "metric"
 
 	url, err := url.Parse(p.apiURL)
@@ -96,7 +96,7 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 			return nil, apperrors.GetWeatherError
 		}
 
-		if errResponse.Cod == NotFoundOpenWeatherErrorCode {
+		if errResponse.Cod == notFoundOpenWeatherErrorCode {
 			p.logger.Warnf("City not found: %s", city)
 			return nil, apperrors.CityNotFoundError
 		} else {

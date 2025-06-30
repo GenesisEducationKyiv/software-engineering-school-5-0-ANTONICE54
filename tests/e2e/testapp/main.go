@@ -9,7 +9,6 @@ import (
 	"weather-forecast/internal/infrastructure/logger"
 	"weather-forecast/internal/infrastructure/mailer"
 	"weather-forecast/internal/infrastructure/providers"
-	"weather-forecast/internal/infrastructure/providers/roundtrip"
 	"weather-forecast/internal/infrastructure/repositories"
 	"weather-forecast/internal/infrastructure/scheduler"
 	"weather-forecast/internal/infrastructure/services"
@@ -17,13 +16,15 @@ import (
 	"weather-forecast/internal/presentation/server"
 	"weather-forecast/internal/presentation/server/handlers"
 
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 func main() {
 	logrusLog := logger.NewLogrus()
 
-	viper.SetConfigFile(".env")
+	viper.SetConfigFile("tests/e2e/testapp/test.env")
 	err := viper.ReadInConfig()
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
@@ -38,36 +39,13 @@ func main() {
 	db := database.Connect(dbHost, dbUser, dbPassword, dbName, dbPort)
 	database.RunMigration(db)
 
-	fileLog, err := logger.NewFile("./logs/weather.txt")
-	if err != nil {
-		logrusLog.Fatalf("Failed to create file logger: %s", err.Error())
-	}
-	defer func() {
-		if err := fileLog.Close(); err != nil {
-			logrusLog.Fatalf("Failed to close log file:%s", err.Error())
-		}
-	}()
-
-	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
-
 	client := http.Client{
-		Timeout:   time.Second * 5,
-		Transport: providerRoundTrip,
+		Timeout: time.Second * 5,
 	}
-
-	weatherAPIURL := viper.GetString("WEATHER_API_URL")
-	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
-	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURL, weatherAPIKey, &client, logrusLog)
-
-	openWeatherURL := viper.GetString("OPEN_WEATHER_URL")
-	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
-	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURL, openWeatherKey, &client, logrusLog)
-
-	weatherAPIChainSection := providers.NewWeatherLink(weatherAPIProvider)
-	openWeatherChainSection := providers.NewWeatherLink(openWeatherProvider)
-	weatherAPIChainSection.SetNext(openWeatherChainSection)
-
-	weatherService := services.NewWeatherService(weatherAPIChainSection, logrusLog)
+	weatherApiURL := viper.GetString("WEATHER_API_URL")
+	weatherApiKey := viper.GetString("WEATHER_API_KEY")
+	weatherProvider := providers.NewWeatherProvider(weatherApiURL, weatherApiKey, &client, logrusLog)
+	weatherService := services.NewWeatherService(weatherProvider, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
@@ -97,11 +75,30 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
+	
 	scheduler := scheduler.New(ctx, weatherBroadcastService, location, logrusLog)
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)
+	go startDebugServer(db, logrusLog)
 	s.Run(serverPort)
+}
 
+func startDebugServer(db *gorm.DB, logger logger.Logger) {
+	debugRouter := gin.New()
+
+	debugRouter.POST("/clear", func(c *gin.Context) {
+		err := db.Exec("TRUNCATE TABLE subscriptions").Error
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "database cleared"})
+	})
+
+	port := viper.GetString("DEBUG_SERVER_PORT")
+	logger.Infof("Starting debug server on %s...", port)
+	if err := debugRouter.Run(":" + port); err != nil {
+		logger.Fatalf("Debug server failed: %s", err)
+	}
 }

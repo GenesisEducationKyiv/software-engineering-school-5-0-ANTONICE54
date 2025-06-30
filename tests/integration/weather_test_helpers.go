@@ -56,7 +56,7 @@ func newMockServer(t *testing.T, responseBody interface{}, statusCode int, expec
 		if !mock.shouldBeCalled && mock.wasCalled {
 			t.Errorf("Mock server was called, but shouldn't have been")
 		}
-		mock.Server.Close()
+		mock.Close()
 	})
 
 	return mock

@@ -10,10 +10,6 @@ import (
 const cacheTTL = 10 * time.Minute
 
 type (
-	WeatherProvider interface {
-		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
-	}
-
 	Cacher interface {
 		Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
 		Get(ctx context.Context, key string, value interface{}) error

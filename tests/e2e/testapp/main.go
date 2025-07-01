@@ -5,11 +5,9 @@ import (
 	"net/http"
 	"time"
 	"weather-forecast/internal/domain/usecases"
-	"weather-forecast/internal/infrastructure/cache"
 	"weather-forecast/internal/infrastructure/database"
 	"weather-forecast/internal/infrastructure/logger"
 	"weather-forecast/internal/infrastructure/mailer"
-	"weather-forecast/internal/infrastructure/metrics"
 	"weather-forecast/internal/infrastructure/providers"
 	"weather-forecast/internal/infrastructure/providers/roundtrip"
 	"weather-forecast/internal/infrastructure/repositories"
@@ -19,14 +17,15 @@ import (
 	"weather-forecast/internal/presentation/server"
 	"weather-forecast/internal/presentation/server/handlers"
 
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 func main() {
-
 	logrusLog := logger.NewLogrus()
 
-	viper.SetConfigFile(".env")
+	viper.SetConfigFile("tests/e2e/testapp/test.env")
 	err := viper.ReadInConfig()
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
@@ -51,21 +50,12 @@ func main() {
 		}
 	}()
 
-	prometherusMetrics := metrics.NewPrometheus(logrusLog)
-
-	residSource := viper.GetString("REDIS_SOURCE")
-	redisCache, err := cache.NewRedis(residSource, prometherusMetrics, logrusLog)
-	if err != nil {
-		logrusLog.Fatalf("Connect to redis: %s", err.Error())
-	}
-
 	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
 
 	client := http.Client{
 		Timeout:   time.Second * 5,
 		Transport: providerRoundTrip,
 	}
-
 	weatherAPIURL := viper.GetString("WEATHER_API_URL")
 	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
 	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURL, weatherAPIKey, &client, logrusLog)
@@ -77,8 +67,6 @@ func main() {
 	weatherAPIChainSection := providers.NewWeatherLink(weatherAPIProvider)
 	openWeatherChainSection := providers.NewWeatherLink(openWeatherProvider)
 	weatherAPIChainSection.SetNext(openWeatherChainSection)
-
-	weatherProviderWithCache := providers.NewCacheWeather(redisCache, weatherAPIChainSection, logrusLog)
 
 	weatherService := services.NewWeatherService(weatherAPIChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
@@ -115,10 +103,25 @@ func main() {
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)
-
-	metricsServerPort := viper.GetString("METRICS_SERVER_PORT")
-	go prometherusMetrics.StartMetricsServer(metricsServerPort)
-
+	go startDebugServer(db, logrusLog)
 	s.Run(serverPort)
+}
 
+func startDebugServer(db *gorm.DB, logger logger.Logger) {
+	debugRouter := gin.New()
+
+	debugRouter.POST("/clear", func(c *gin.Context) {
+		err := db.Exec("TRUNCATE TABLE subscriptions").Error
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "database cleared"})
+	})
+
+	port := viper.GetString("DEBUG_SERVER_PORT")
+	logger.Infof("Starting debug server on %s...", port)
+	if err := debugRouter.Run(":" + port); err != nil {
+		logger.Fatalf("Debug server failed: %s", err)
+	}
 }

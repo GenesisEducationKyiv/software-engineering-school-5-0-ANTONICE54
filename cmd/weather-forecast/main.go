@@ -80,7 +80,7 @@ func main() {
 
 	weatherProviderWithCache := providers.NewCacheWeather(redisCache, weatherAPIChainSection, logrusLog)
 
-	weatherService := services.NewWeatherService(weatherAPIChainSection, logrusLog)
+	weatherService := services.NewWeatherService(weatherProviderWithCache, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)

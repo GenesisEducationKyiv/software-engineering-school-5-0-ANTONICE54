@@ -22,8 +22,6 @@ type (
 		Humidity  int                         `json:"humidity"`
 	}
 
-<<<<<<< HEAD
-=======
 	GetWeatherSuccessResponse struct {
 		Current GetWeatherCurrentResponse `json:"current"`
 	}
@@ -37,7 +35,6 @@ type (
 		Error GetWeatherErrorDetails `json:"error"`
 	}
 
->>>>>>> classroom/main
 	WeatherAPIProvider struct {
 		apiURL string
 		apiKey string
@@ -56,10 +53,6 @@ func NewWeatherAPIProvider(apiURL, apiKey string, httpClient *http.Client, logge
 }
 
 func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
-<<<<<<< HEAD
-	url := p.apiURL + fmt.Sprintf("?key=%s&q=%s", p.apiKey, city)
-=======
->>>>>>> classroom/main
 
 	const notFoundWeatherAPIErrorCode = 1006
 

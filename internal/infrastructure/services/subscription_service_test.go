@@ -172,7 +172,6 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 		City:      "Kyiv",
 		Token:     "59d29860-39fa-4c9b-845a-3e91eab42e4b",
 		Confirmed: true,
-		CreatedAt: time.Now(),
 	}
 
 	testTable := []struct {

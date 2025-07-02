@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+	infraerror "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
 
 	"github.com/redis/go-redis/v9"
@@ -12,19 +13,13 @@ import (
 const RedisTimeout = 5 * time.Second
 
 type (
-	MetricsRecorder interface {
-		RecordCacheHit()
-		RecordCacheMiss()
-		RecordCacheError()
-	}
 	Redis struct {
-		client  *redis.Client
-		metrics MetricsRecorder
-		logger  logger.Logger
+		client *redis.Client
+		logger logger.Logger
 	}
 )
 
-func NewRedis(url string, metrics MetricsRecorder, logger logger.Logger) (*Redis, error) {
+func NewRedis(url string, logger logger.Logger) (*Redis, error) {
 	opt, err := redis.ParseURL(url)
 	if err != nil {
 		return nil, err
@@ -40,9 +35,8 @@ func NewRedis(url string, metrics MetricsRecorder, logger logger.Logger) (*Redis
 	}
 
 	return &Redis{
-		client:  client,
-		metrics: metrics,
-		logger:  logger,
+		client: client,
+		logger: logger,
 	}, nil
 }
 
@@ -50,13 +44,12 @@ func (c *Redis) Set(ctx context.Context, key string, value interface{}, expirati
 	data, err := json.Marshal(value)
 	if err != nil {
 		c.logger.Warnf("Marshal cache:%s", err.Error())
-		return err
+		return infraerror.InternalError
 	}
 
 	if err := c.client.Set(ctx, key, data, expiration).Err(); err != nil {
-		c.metrics.RecordCacheError()
 		c.logger.Warnf("Set cache key %s:%s", key, err.Error())
-		return err
+		return infraerror.CacheError
 	}
 
 	return nil
@@ -66,20 +59,17 @@ func (c *Redis) Get(ctx context.Context, key string, value interface{}) error {
 	if err != nil {
 		if err == redis.Nil {
 			c.logger.Infof("Cache miss for key %s", key)
-			c.metrics.RecordCacheMiss()
-			return err
+			return infraerror.CacheMissError
 		}
 
-		c.metrics.RecordCacheError()
 		c.logger.Warnf("Get cache key %s:%s", key, err.Error())
-		return err
+		return infraerror.CacheError
 	}
 
 	if err := json.Unmarshal([]byte(res), value); err != nil {
 		c.logger.Warnf("Unmarshal cache:%s", err.Error())
-		return err
+		return infraerror.InternalError
 	}
-	c.metrics.RecordCacheHit()
 
 	return nil
 }

@@ -4,8 +4,11 @@ import (
 	"context"
 	"net/http"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
+	apierrors "weather-forecast/internal/presentation/errors"
+	httperrors "weather-forecast/internal/presentation/http_errors"
+	"weather-forecast/pkg/apperrors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,7 +43,8 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 	var req SubscribeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSON())
+		httpErr := httperrors.New(apierrors.InvalidRequestError)
+		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
 
@@ -48,10 +52,12 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSON())
+			httpErr := httperrors.New(appErr)
+			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
+		httpErr := httperrors.New(infraerrors.InternalError)
+		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
 
@@ -66,10 +72,12 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSON())
+			httpErr := httperrors.New(appErr)
+			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
+		httpErr := httperrors.New(infraerrors.InternalError)
+		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
 
@@ -84,10 +92,12 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSON())
+			httpErr := httperrors.New(appErr)
+			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
+		httpErr := httperrors.New(infraerrors.InternalError)
+		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
 

@@ -2,8 +2,8 @@ package usecases
 
 import (
 	"context"
+	domainerrors "weather-forecast/internal/domain/errors"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
 	"weather-forecast/internal/infrastructure/logger"
 )
 
@@ -34,7 +34,7 @@ func (u *SubscriptionUseCase) Subscribe(ctx context.Context, subscription models
 
 	if receivedSubsc != nil {
 		u.logger.Warnf("Email %s already subscribed", subscription.Email)
-		return nil, apperrors.AlreadySubscribedError
+		return nil, domainerrors.AlreadySubscribedError
 	}
 
 	createdSubscription, err := u.subscriptionRepository.Create(ctx, subscription)
@@ -52,7 +52,7 @@ func (u *SubscriptionUseCase) Confirm(ctx context.Context, token string) (*model
 	}
 
 	if receivedSubsc == nil {
-		return nil, apperrors.TokenNotFoundError
+		return nil, domainerrors.TokenNotFoundError
 	}
 
 	receivedSubsc.Confirmed = true
@@ -73,7 +73,7 @@ func (u *SubscriptionUseCase) Unsubscribe(ctx context.Context, token string) err
 	}
 
 	if receivedSubsc == nil {
-		return apperrors.TokenNotFoundError
+		return domainerrors.TokenNotFoundError
 	}
 
 	err = u.subscriptionRepository.DeleteByToken(ctx, token)

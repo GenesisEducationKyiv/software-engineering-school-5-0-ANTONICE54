@@ -4,29 +4,35 @@ import (
 	"context"
 	"time"
 	"weather-forecast/internal/domain/models"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
+	"weather-forecast/pkg/apperrors"
 )
 
-const cacheTTL = 10 * time.Minute
-
 type (
+	MetricsRecorder interface {
+		RecordCacheHit()
+		RecordCacheMiss()
+		RecordCacheError()
+	}
+
 	Cacher interface {
 		Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
 		Get(ctx context.Context, key string, value interface{}) error
 	}
 
 	CacheWeatherProvider struct {
-		cache    Cacher
-		provider WeatherProvider
-		logger   logger.Logger
+		cache   Cacher
+		metrics MetricsRecorder
+		logger  logger.Logger
 	}
 )
 
-func NewCacheWeather(cache Cacher, provider WeatherProvider, logger logger.Logger) *CacheWeatherProvider {
+func NewCacheWeather(cache Cacher, metrics MetricsRecorder, logger logger.Logger) *CacheWeatherProvider {
 	return &CacheWeatherProvider{
-		cache:    cache,
-		provider: provider,
-		logger:   logger,
+		cache:   cache,
+		metrics: metrics,
+		logger:  logger,
 	}
 }
 
@@ -34,18 +40,17 @@ func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string
 
 	cachedWeather := &models.Weather{}
 	err := p.cache.Get(ctx, city, cachedWeather)
-	if err == nil {
-		return cachedWeather, nil
-	}
-
-	weather, err := p.provider.GetWeatherByCity(ctx, city)
 	if err != nil {
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			switch appErr.Code.String() {
+			case infraerrors.CacheMissError.Code.String():
+				p.metrics.RecordCacheMiss()
+			case infraerrors.CacheError.Code.String():
+				p.metrics.RecordCacheError()
+			}
+		}
 		return nil, err
 	}
-
-	if err := p.cache.Set(ctx, city, weather, cacheTTL); err != nil {
-		p.logger.Warnf("Cache weather %s:", err.Error())
-	}
-
-	return weather, nil
+	p.metrics.RecordCacheHit()
+	return cachedWeather, nil
 }

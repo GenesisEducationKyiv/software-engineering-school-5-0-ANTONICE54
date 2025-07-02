@@ -54,7 +54,7 @@ func main() {
 	prometherusMetrics := metrics.NewPrometheus(logrusLog)
 
 	residSource := viper.GetString("REDIS_SOURCE")
-	redisCache, err := cache.NewRedis(residSource, prometherusMetrics, logrusLog)
+	redisCache, err := cache.NewRedis(residSource, logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Connect to redis: %s", err.Error())
 	}
@@ -69,18 +69,23 @@ func main() {
 	weatherAPIURL := viper.GetString("WEATHER_API_URL")
 	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
 	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURL, weatherAPIKey, &client, logrusLog)
+	cacheableWeatherAPIProvider := providers.NewCacheDecorator(weatherAPIProvider, redisCache, prometherusMetrics, logrusLog)
 
 	openWeatherURL := viper.GetString("OPEN_WEATHER_URL")
 	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
 	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURL, openWeatherKey, &client, logrusLog)
+	cacheableOpenWeatherProvider := providers.NewCacheDecorator(openWeatherProvider, redisCache, prometherusMetrics, logrusLog)
 
-	weatherAPIChainSection := providers.NewWeatherLink(weatherAPIProvider)
-	openWeatherChainSection := providers.NewWeatherLink(openWeatherProvider)
+	cacheWeatherProvider := providers.NewCacheWeather(redisCache, prometherusMetrics, logrusLog)
+
+	weatherAPIChainSection := providers.NewWeatherLink(cacheableWeatherAPIProvider)
+	openWeatherChainSection := providers.NewWeatherLink(cacheableOpenWeatherProvider)
+
+	cacheWeatherProviderChainSection := providers.NewWeatherLink(cacheWeatherProvider)
+	cacheWeatherProviderChainSection.SetNext(weatherAPIChainSection)
 	weatherAPIChainSection.SetNext(openWeatherChainSection)
 
-	weatherProviderWithCache := providers.NewCacheWeather(redisCache, weatherAPIChainSection, logrusLog)
-
-	weatherService := services.NewWeatherService(weatherProviderWithCache, logrusLog)
+	weatherService := services.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)

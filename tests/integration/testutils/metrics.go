@@ -3,17 +3,17 @@ package testutils
 import "sync"
 
 type InMemoryMetrics struct {
-	CacheHit   int
-	CacheMiss  int
-	CacheError int
+	cacheHit   int
+	cacheMiss  int
+	cacheError int
 	mu         *sync.Mutex
 }
 
 func NewInMemoryMetrics() *InMemoryMetrics {
 	return &InMemoryMetrics{
-		CacheHit:   0,
-		CacheMiss:  0,
-		CacheError: 0,
+		cacheHit:   0,
+		cacheMiss:  0,
+		cacheError: 0,
 		mu:         &sync.Mutex{},
 	}
 }
@@ -21,30 +21,32 @@ func NewInMemoryMetrics() *InMemoryMetrics {
 func (m *InMemoryMetrics) RecordCacheHit() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.CacheHit++
+	m.cacheHit++
 
 }
 
 func (m *InMemoryMetrics) RecordCacheMiss() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.CacheMiss++
+	m.cacheMiss++
 }
 
 func (m *InMemoryMetrics) RecordCacheError() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.CacheError++
+	m.cacheError++
 }
 
 func (m *InMemoryMetrics) Clear() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.CacheHit = 0
-	m.CacheMiss = 0
-	m.CacheError = 0
+	m.cacheHit = 0
+	m.cacheMiss = 0
+	m.cacheError = 0
 }
 
 func (m *InMemoryMetrics) Stats() (int, int, int) {
-	return m.CacheHit, m.CacheMiss, m.CacheError
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.cacheHit, m.cacheMiss, m.cacheError
 }

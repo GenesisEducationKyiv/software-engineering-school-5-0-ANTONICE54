@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 	"time"
+	domainerrors "weather-forecast/internal/domain/errors"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+
+	infraerrors "weather-forecast/internal/infrastructure/errors"
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
 	mock_services "weather-forecast/internal/infrastructure/services/mocks"
 
@@ -104,11 +106,11 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 					Token:     token,
 				}
 
-				uc.EXPECT().Subscribe(gomock.Any(), passedSubscription).Return(nil, apperrors.AlreadySubscribedError)
+				uc.EXPECT().Subscribe(gomock.Any(), passedSubscription).Return(nil, domainerrors.AlreadySubscribedError)
 
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.AlreadySubscribedError,
+			expectedError:  domainerrors.AlreadySubscribedError,
 		},
 		{
 			name:      "Database error",
@@ -132,11 +134,11 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 					Token:     token,
 				}
 
-				uc.EXPECT().Subscribe(gomock.Any(), passedSubscription).Return(nil, apperrors.DatabaseError)
+				uc.EXPECT().Subscribe(gomock.Any(), passedSubscription).Return(nil, infraerrors.DatabaseError)
 
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.DatabaseError,
+			expectedError:  infraerrors.DatabaseError,
 		},
 	}
 
@@ -207,7 +209,7 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(false)
 			},
-			expectedError: apperrors.InvalidTokenError,
+			expectedError: infraerrors.InvalidTokenError,
 		},
 		{
 			name:  "Token not found",
@@ -219,10 +221,10 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Confirm(gomock.Any(), token).Return(nil, apperrors.TokenNotFoundError)
+				uc.EXPECT().Confirm(gomock.Any(), token).Return(nil, domainerrors.TokenNotFoundError)
 
 			},
-			expectedError: apperrors.TokenNotFoundError,
+			expectedError: domainerrors.TokenNotFoundError,
 		},
 		{
 			name:  "Database error",
@@ -234,10 +236,10 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Confirm(gomock.Any(), token).Return(nil, apperrors.DatabaseError)
+				uc.EXPECT().Confirm(gomock.Any(), token).Return(nil, infraerrors.DatabaseError)
 
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.DatabaseError,
 		},
 	}
 
@@ -296,7 +298,7 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(false)
 			},
-			expectedError: apperrors.InvalidTokenError,
+			expectedError: infraerrors.InvalidTokenError,
 		},
 		{
 			name:  "Database error",
@@ -308,9 +310,9 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Unsubscribe(gomock.Any(), token).Return(apperrors.DatabaseError)
+				uc.EXPECT().Unsubscribe(gomock.Any(), token).Return(infraerrors.DatabaseError)
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.DatabaseError,
 		},
 	}
 

@@ -3,7 +3,8 @@ package services
 import (
 	"context"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerror "weather-forecast/internal/infrastructure/errors"
+
 	"weather-forecast/internal/infrastructure/logger"
 )
 
@@ -64,7 +65,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 
 	if !tokenIsValid {
-		return apperrors.InvalidTokenError
+		return infraerror.InvalidTokenError
 	}
 
 	subsc, err := s.subscriptionUC.Confirm(ctx, token)
@@ -81,7 +82,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 
 	if !tokenIsValid {
-		return apperrors.InvalidTokenError
+		return infraerror.InvalidTokenError
 	}
 
 	err := s.subscriptionUC.Unsubscribe(ctx, token)

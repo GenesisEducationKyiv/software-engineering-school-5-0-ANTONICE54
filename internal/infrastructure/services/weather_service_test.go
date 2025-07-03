@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
+
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
 	mock_services "weather-forecast/internal/infrastructure/services/mocks"
 
@@ -45,19 +46,19 @@ func TestWeatherService_GetWeatherByCity(t *testing.T) {
 			name: "City not found",
 			city: "Jitomyr",
 			mockBehavior: func(p *mock_services.MockWeatherProvider, city string) {
-				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, apperrors.CityNotFoundError)
+				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, infraerrors.CityNotFoundError)
 			},
 			expectedWeather: nil,
-			expectedError:   apperrors.CityNotFoundError,
+			expectedError:   infraerrors.CityNotFoundError,
 		},
 		{
 			name: "Invalid city",
 			city: "",
 			mockBehavior: func(p *mock_services.MockWeatherProvider, city string) {
-				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, apperrors.GetWeatherError)
+				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, infraerrors.GetWeatherError)
 			},
 			expectedWeather: nil,
-			expectedError:   apperrors.GetWeatherError,
+			expectedError:   infraerrors.GetWeatherError,
 		},
 	}
 

@@ -1,14 +1,13 @@
 package integration
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/providers"
 	"weather-forecast/internal/presentation/server/handlers"
+	"weather-forecast/tests/integration/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,11 +47,9 @@ func TestGetWeather_Success(t *testing.T) {
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
 
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
-	router.ServeHTTP(w, req)
+	resp := requestWeather(router, body)
 
-	assertWeatherResponse(t, w, testWeather)
+	assertWeatherResponse(t, resp, testWeather)
 
 }
 
@@ -88,12 +85,54 @@ func TestGetWeather_WeatherAPI_Failed(t *testing.T) {
 	}
 	body, err := json.Marshal(requestBody)
 	require.NoError(t, err)
+	resp := requestWeather(router, body)
 
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
-	router.ServeHTTP(w, req)
+	assertWeatherResponse(t, resp, testWeather)
 
-	assertWeatherResponse(t, w, testWeather)
+}
+
+func TestGetWeather_CacheFlow(t *testing.T) {
+	city := "Kyiv"
+
+	cache := testutils.NewInMemoryCache()
+	metrics := testutils.NewInMemoryMetrics()
+
+	weatherAPISuccessResponse := providers.GetWeatherSuccessResponse{
+		Current: providers.GetWeatherCurrentResponse{
+			TempC: testWeather.Temperature,
+			Condition: providers.GetWeatherConditionResponse{
+				Text: testWeather.Description,
+			},
+			Humidity: testWeather.Humidity,
+		},
+	}
+
+	weatherAPIServerMock := setupWeatherAPIMock(t, weatherAPISuccessResponse, http.StatusOK, city)
+	openWeatherAPIServerMock := setupOpenWeatherMock(t, nil, 0, "", false)
+	weatherHandler := setupWeatherHandlerWithCache(cache, metrics, weatherAPIServerMock.URL, openWeatherAPIServerMock.URL)
+	router := setupWeatherRouter(weatherHandler)
+
+	requestBody := handlers.GetWeatherRequest{City: city}
+	body, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+
+	resp := requestWeather(router, body)
+	assertWeatherResponse(t, resp, testWeather)
+
+	hits, misses, errors := metrics.Stats()
+	assert.Equal(t, 0, hits)
+	assert.Equal(t, 1, misses)
+	assert.Equal(t, 0, errors)
+	assert.Equal(t, 1, cache.Size())
+
+	resp = requestWeather(router, body)
+	assertWeatherResponse(t, resp, testWeather)
+
+	hits, misses, errors = metrics.Stats()
+	assert.Equal(t, 1, hits)
+	assert.Equal(t, 1, misses)
+	assert.Equal(t, 0, errors)
+	assert.Equal(t, 1, cache.Size())
 
 }
 
@@ -201,12 +240,10 @@ func TestGetWeather_ErrorScenarios(t *testing.T) {
 			body, err := json.Marshal(requestBody)
 			require.NoError(t, err)
 
-			w := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
-			router.ServeHTTP(w, req)
+			resp := requestWeather(router, body)
 
-			assert.Equal(t, testCase.expectedCode, w.Code)
-			assert.Equal(t, testCase.expectedErrorBody, w.Body.String())
+			assert.Equal(t, testCase.expectedCode, resp.Code)
+			assert.Equal(t, testCase.expectedErrorBody, resp.Body.String())
 
 		})
 	}

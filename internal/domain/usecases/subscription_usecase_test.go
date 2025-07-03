@@ -4,9 +4,11 @@ import (
 	"context"
 	"testing"
 	"time"
+	domainerrors "weather-forecast/internal/domain/errors"
 	"weather-forecast/internal/domain/models"
 	mock_usecases "weather-forecast/internal/domain/usecases/mocks"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
+
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
 
 	"github.com/golang/mock/gomock"
@@ -85,7 +87,7 @@ func TestSubscriptionUsecase_Subscribe(t *testing.T) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.AlreadySubscribedError,
+			expectedError:  domainerrors.AlreadySubscribedError,
 		},
 		{
 			name: "Database error",
@@ -98,10 +100,10 @@ func TestSubscriptionUsecase_Subscribe(t *testing.T) {
 			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, subscription models.Subscription) {
 
 				repo.EXPECT().GetByEmail(gomock.Any(), subscription.Email).Return(nil, nil)
-				repo.EXPECT().Create(gomock.Any(), subscription).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().Create(gomock.Any(), subscription).Return(nil, infraerrors.DatabaseError)
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.DatabaseError,
+			expectedError:  infraerrors.DatabaseError,
 		},
 	}
 
@@ -167,17 +169,17 @@ func TestSubscriptionUsecase_Confirm(t *testing.T) {
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, nil)
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.TokenNotFoundError,
+			expectedError:  domainerrors.TokenNotFoundError,
 		},
 		{
 			name:        "Database error getting token",
 			passedToken: "52a579r9b-b980-465f-a72a-606565254fa2",
 			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string) {
 
-				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, infraerrors.DatabaseError)
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.DatabaseError,
+			expectedError:  infraerrors.DatabaseError,
 		},
 		{
 			name:        "Database error updating subsc",
@@ -187,10 +189,10 @@ func TestSubscriptionUsecase_Confirm(t *testing.T) {
 				receivedSubscription.Confirmed = false
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
 				receivedSubscription.Confirmed = true
-				repo.EXPECT().Update(gomock.Any(), receivedSubscription).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().Update(gomock.Any(), receivedSubscription).Return(nil, infraerrors.DatabaseError)
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.DatabaseError,
+			expectedError:  infraerrors.DatabaseError,
 		},
 	}
 
@@ -251,16 +253,16 @@ func TestSubscriptionUsecase_Unsubscribe(t *testing.T) {
 
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, nil)
 			},
-			expectedError: apperrors.TokenNotFoundError,
+			expectedError: domainerrors.TokenNotFoundError,
 		},
 		{
 			name:        "Database error getting token",
 			passedToken: "52a579r9b-b980-465f-a72a-606565254fa2",
 			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string) {
 
-				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, infraerrors.DatabaseError)
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.DatabaseError,
 		},
 		{
 			name:        "Database error deleting token",
@@ -268,9 +270,9 @@ func TestSubscriptionUsecase_Unsubscribe(t *testing.T) {
 			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, token string) {
 				receivedSubscription := subscriptionTemplate
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
-				repo.EXPECT().DeleteByToken(gomock.Any(), receivedSubscription.Token).Return(apperrors.DatabaseError)
+				repo.EXPECT().DeleteByToken(gomock.Any(), receivedSubscription.Token).Return(infraerrors.DatabaseError)
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.DatabaseError,
 		},
 	}
 
@@ -342,10 +344,10 @@ func TestSubscriptionUsecase_ListByFrequency(t *testing.T) {
 			lastID:    0,
 			pageSize:  100,
 			mockBehavior: func(repo *mock_usecases.MockSubscriptionRepository, logger *mock_logger.MockLogger, frequency string, lastID, pageSize int) {
-				repo.EXPECT().ListConfirmedByFrequency(gomock.Any(), models.Frequency(frequency), lastID, pageSize).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().ListConfirmedByFrequency(gomock.Any(), models.Frequency(frequency), lastID, pageSize).Return(nil, infraerrors.DatabaseError)
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.DatabaseError,
+			expectedError:  infraerrors.DatabaseError,
 		},
 	}
 

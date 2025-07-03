@@ -7,8 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
+	apierrors "weather-forecast/internal/presentation/errors"
+	httperrors "weather-forecast/internal/presentation/http_errors"
 	mock_handlers "weather-forecast/internal/presentation/server/handlers/mock"
 
 	"github.com/gin-gonic/gin"
@@ -29,6 +31,9 @@ func errToString(errMsg map[string]any) string {
 type mockWeatherServiceBehavior func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest)
 
 func TestWeatherHandler_Get(t *testing.T) {
+
+	httpInvalidRequestError := httperrors.New(apierrors.InvalidRequestError)
+	httpCityNotFoundError := httperrors.New(infraerrors.CityNotFoundError)
 
 	testTable := []struct {
 		name                 string
@@ -61,8 +66,8 @@ func TestWeatherHandler_Get(t *testing.T) {
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
-			expectedStatusCode:   apperrors.InvalidRequestError.Status(),
-			expectedResponseBody: errToString(apperrors.InvalidRequestError.JSON()),
+			expectedStatusCode:   httpInvalidRequestError.Status(),
+			expectedResponseBody: errToString(httpInvalidRequestError.JSON()),
 		},
 		{
 			name:      "City not found",
@@ -71,10 +76,10 @@ func TestWeatherHandler_Get(t *testing.T) {
 				City: "ABCD",
 			},
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
-				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, apperrors.CityNotFoundError)
+				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, infraerrors.CityNotFoundError)
 			},
-			expectedStatusCode:   apperrors.CityNotFoundError.Status(),
-			expectedResponseBody: errToString(apperrors.CityNotFoundError.JSON()),
+			expectedStatusCode:   httpCityNotFoundError.Status(),
+			expectedResponseBody: errToString(httpCityNotFoundError.JSON()),
 		},
 	}
 

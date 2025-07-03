@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,11 +22,18 @@ const (
 	testAPIKey = "testAPIKey"
 )
 
-type MockServer struct {
-	*httptest.Server
-	shouldBeCalled bool
-	wasCalled      bool
-}
+type (
+	Cacher interface {
+		providers.CacheReader
+		providers.CacheWriter
+	}
+
+	MockServer struct {
+		*httptest.Server
+		shouldBeCalled bool
+		wasCalled      bool
+	}
+)
 
 func newMockServer(t *testing.T, responseBody interface{}, statusCode int, expectedQuery string, shouldBeCalled bool) *MockServer {
 	t.Helper()
@@ -94,6 +102,29 @@ func setupWeatherHandler(weatherAPIURLMock, openWeatherURLMock string) *handlers
 	return weatherHandler
 }
 
+func setupWeatherHandlerWithCache(cacher Cacher, metrics providers.MetricsRecorder, weatherAPIURLMock, openWeatherURLMock string) *handlers.WeatherHandler {
+	stubLogger := stub_logger.New()
+	client := &http.Client{}
+
+	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURLMock, testAPIKey, client, stubLogger)
+	cacheableWeatherAPIProvider := providers.NewCacheDecorator(weatherAPIProvider, cacher, metrics, stubLogger)
+	weatherAPILink := providers.NewWeatherLink(cacheableWeatherAPIProvider)
+
+	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURLMock, testAPIKey, client, stubLogger)
+	cacheableOpenWeatherProvider := providers.NewCacheDecorator(openWeatherProvider, cacher, metrics, stubLogger)
+	openWeatherLink := providers.NewWeatherLink(cacheableOpenWeatherProvider)
+
+	cacheProvider := providers.NewCacheWeather(cacher, metrics, stubLogger)
+	cacheProviderLink := providers.NewWeatherLink(cacheProvider)
+
+	cacheProviderLink.SetNext(weatherAPILink)
+	weatherAPILink.SetNext(openWeatherLink)
+
+	weatherService := services.NewWeatherService(cacheProviderLink, stubLogger)
+	weatherHandler := handlers.NewWeatherHandler(weatherService, stubLogger)
+	return weatherHandler
+}
+
 func setupWeatherRouter(handler *handlers.WeatherHandler) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -114,4 +145,12 @@ func assertWeatherResponse(t *testing.T, w *httptest.ResponseRecorder, expectedW
 	assert.Equal(t, expectedWeather.Temperature, response.Temperature)
 	assert.Equal(t, expectedWeather.Humidity, response.Humidity)
 	assert.Equal(t, expectedWeather.Description, response.Description)
+}
+
+func requestWeather(router *gin.Engine, body []byte) *httptest.ResponseRecorder {
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/weather", bytes.NewBuffer(body))
+	router.ServeHTTP(w, req)
+
+	return w
 }

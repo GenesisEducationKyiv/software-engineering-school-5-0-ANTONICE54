@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"time"
 	"weather-forecast/internal/domain/models"
 	infraerrors "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
@@ -16,19 +15,18 @@ type (
 		RecordCacheError()
 	}
 
-	Cacher interface {
-		Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
+	CacheReader interface {
 		Get(ctx context.Context, key string, value interface{}) error
 	}
 
 	CacheWeatherProvider struct {
-		cache   Cacher
+		cache   CacheReader
 		metrics MetricsRecorder
 		logger  logger.Logger
 	}
 )
 
-func NewCacheWeather(cache Cacher, metrics MetricsRecorder, logger logger.Logger) *CacheWeatherProvider {
+func NewCacheWeather(cache CacheReader, metrics MetricsRecorder, logger logger.Logger) *CacheWeatherProvider {
 	return &CacheWeatherProvider{
 		cache:   cache,
 		metrics: metrics,

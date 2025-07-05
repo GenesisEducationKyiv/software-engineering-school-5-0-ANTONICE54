@@ -34,6 +34,19 @@ jobs:
           go-version: stable
       - name: Run integration tests
         run: go test ./tests/integration/
+  architecture:
+    name: Architecture Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{github.head_ref || github.ref}}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run architecture tests
+        run: go test ./tests/architecture/
   e2e:
     name: End-to-End Tests
     runs-on: ubuntu-latest

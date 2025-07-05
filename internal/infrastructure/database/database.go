@@ -3,7 +3,6 @@ package database
 import (
 	"fmt"
 	"log"
-	"weather-forecast/internal/domain/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -30,7 +29,7 @@ func Connect(DBHost, DBUser, DBPassword, DBName, DBPort string) *gorm.DB {
 }
 
 func RunMigration(db *gorm.DB) {
-	err := db.AutoMigrate(&models.Subscription{})
+	err := db.AutoMigrate(&Subscription{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %s", err.Error())
 	}

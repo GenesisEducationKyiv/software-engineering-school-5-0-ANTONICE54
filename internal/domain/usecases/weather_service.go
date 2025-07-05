@@ -7,21 +7,21 @@ import (
 )
 
 type (
-	WeatherUseCase struct {
+	WeatherService struct {
 		weatherProvider WeatherProvider
 		logger          logger.Logger
 	}
 )
 
-func NewWeatherService(weatherProvider WeatherProvider, logger logger.Logger) *WeatherUseCase {
-	return &WeatherUseCase{
+func NewWeatherService(weatherProvider WeatherProvider, logger logger.Logger) *WeatherService {
+	return &WeatherService{
 		weatherProvider: weatherProvider,
 		logger:          logger,
 	}
 }
 
-func (uc *WeatherUseCase) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
-	weather, err := uc.weatherProvider.GetWeatherByCity(ctx, city)
+func (s *WeatherService) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+	weather, err := s.weatherProvider.GetWeatherByCity(ctx, city)
 	if err != nil {
 		return nil, err
 	}

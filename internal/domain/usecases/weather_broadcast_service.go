@@ -22,7 +22,7 @@ type (
 		SendError(ctx context.Context, email, city string)
 	}
 
-	WeatherBroadcastUseCase struct {
+	WeatherBroadcastService struct {
 		subscriptionProvider SubscriptionProvider
 		weatherService       WeatherProvider
 		weatherMailer        WeatherMailer
@@ -30,8 +30,8 @@ type (
 	}
 )
 
-func NewWeatherBroadcastUseCase(subscriptionProvider SubscriptionProvider, weatherService WeatherProvider, weatherMailer WeatherMailer, logger logger.Logger) *WeatherBroadcastUseCase {
-	return &WeatherBroadcastUseCase{
+func NewWeatherBroadcastService(subscriptionProvider SubscriptionProvider, weatherService WeatherProvider, weatherMailer WeatherMailer, logger logger.Logger) *WeatherBroadcastService {
+	return &WeatherBroadcastService{
 		subscriptionProvider: subscriptionProvider,
 		weatherService:       weatherService,
 		weatherMailer:        weatherMailer,
@@ -39,7 +39,7 @@ func NewWeatherBroadcastUseCase(subscriptionProvider SubscriptionProvider, weath
 	}
 }
 
-func (uc *WeatherBroadcastUseCase) Broadcast(ctx context.Context, frequency models.Frequency) {
+func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency models.Frequency) {
 	cityWeatherMap := make(map[string]*models.Weather)
 
 	sem := make(chan struct{}, WORKER_AMOUNT)
@@ -47,9 +47,9 @@ func (uc *WeatherBroadcastUseCase) Broadcast(ctx context.Context, frequency mode
 
 	lastID := 0
 	for {
-		subscriptions, err := uc.subscriptionProvider.ListConfirmedByFrequency(ctx, frequency, lastID, PAGE_SIZE)
+		subscriptions, err := s.subscriptionProvider.ListConfirmedByFrequency(ctx, frequency, lastID, PAGE_SIZE)
 		if err != nil {
-			uc.logger.Warnf("Failed to fetch subscriptions: %v", err)
+			s.logger.Warnf("Failed to fetch subscriptions: %v", err)
 			break
 		}
 		if len(subscriptions) == 0 {
@@ -60,7 +60,7 @@ func (uc *WeatherBroadcastUseCase) Broadcast(ctx context.Context, frequency mode
 			lastID = subscription.ID
 
 			if _, ok := cityWeatherMap[subscription.City]; !ok {
-				weather, err := uc.weatherService.GetWeatherByCity(ctx, subscription.City)
+				weather, err := s.weatherService.GetWeatherByCity(ctx, subscription.City)
 				if err != nil {
 					cityWeatherMap[subscription.City] = nil
 				}
@@ -74,9 +74,9 @@ func (uc *WeatherBroadcastUseCase) Broadcast(ctx context.Context, frequency mode
 				defer func() { <-sem }()
 				defer wg.Done()
 				if weather != nil {
-					uc.weatherMailer.SendWeather(ctx, sub.Email, sub.City, weather)
+					s.weatherMailer.SendWeather(ctx, sub.Email, sub.City, weather)
 				} else {
-					uc.weatherMailer.SendError(ctx, sub.Email, sub.City)
+					s.weatherMailer.SendError(ctx, sub.Email, sub.City)
 				}
 			}(subscription, cityWeatherMap[subscription.City])
 		}

@@ -1,12 +1,12 @@
-package services
+package usecases
 
 import (
 	"context"
 	"testing"
 	"weather-forecast/internal/domain/models"
+	mock_services "weather-forecast/internal/domain/usecases/mocks"
 	"weather-forecast/internal/infrastructure/apperrors"
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
-	mock_services "weather-forecast/internal/infrastructure/services/mocks"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

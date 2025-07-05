@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
-	stub_services "weather-forecast/internal/infrastructure/services/stubs"
+	stub_services "weather-forecast/internal/domain/usecases/stubs"
 	"weather-forecast/internal/presentation/server/handlers"
 
 	"github.com/gin-gonic/gin"

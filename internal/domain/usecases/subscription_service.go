@@ -21,21 +21,21 @@ type (
 		Validate(ctx context.Context, token string) bool
 	}
 
-	NotificationService interface {
+	NotificationSender interface {
 		SendConfirmation(ctx context.Context, email, token string, frequency models.Frequency)
 		SendConfirmed(ctx context.Context, email, token string, frequency models.Frequency)
 	}
 
-	SubscriptionUseCase struct {
+	SubscriptionService struct {
 		subscriptionRepository SubscriptionRepository
 		tokenManager           TokenManager
-		mailer                 NotificationService
+		mailer                 NotificationSender
 		logger                 logger.Logger
 	}
 )
 
-func NewSubscriptionUseCase(subscriptionRepo SubscriptionRepository, tokenManager TokenManager, mailer NotificationService, logger logger.Logger) *SubscriptionUseCase {
-	return &SubscriptionUseCase{
+func NewSubscriptionService(subscriptionRepo SubscriptionRepository, tokenManager TokenManager, mailer NotificationSender, logger logger.Logger) *SubscriptionService {
+	return &SubscriptionService{
 		subscriptionRepository: subscriptionRepo,
 		tokenManager:           tokenManager,
 		mailer:                 mailer,
@@ -43,16 +43,15 @@ func NewSubscriptionUseCase(subscriptionRepo SubscriptionRepository, tokenManage
 	}
 }
 
-func (uc *SubscriptionUseCase) Subscribe(ctx context.Context, email, frequency, city string) (*models.Subscription, error) {
+func (s *SubscriptionService) Subscribe(ctx context.Context, email, frequency, city string) (*models.Subscription, error) {
 
-	receivedSubsc, _ := uc.subscriptionRepository.GetByEmail(ctx, email)
+	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, email)
 
 	if receivedSubsc != nil {
-		uc.logger.Warnf("Email %s already subscribed", email)
 		return nil, apperrors.AlreadySubscribedError
 	}
 
-	token := uc.tokenManager.Generate(ctx)
+	token := s.tokenManager.Generate(ctx)
 	subscription := models.Subscription{
 		Email:     email,
 		Frequency: models.Frequency(frequency),
@@ -61,23 +60,23 @@ func (uc *SubscriptionUseCase) Subscribe(ctx context.Context, email, frequency, 
 		Token:     token,
 	}
 
-	createdSubscription, err := uc.subscriptionRepository.Create(ctx, subscription)
+	createdSubscription, err := s.subscriptionRepository.Create(ctx, subscription)
 	if err != nil {
 		return nil, err
 	}
 
-	uc.mailer.SendConfirmation(ctx, createdSubscription.Email, createdSubscription.Token, createdSubscription.Frequency)
+	s.mailer.SendConfirmation(ctx, createdSubscription.Email, createdSubscription.Token, createdSubscription.Frequency)
 
 	return createdSubscription, nil
 }
 
-func (uc *SubscriptionUseCase) Confirm(ctx context.Context, token string) error {
-	tokenIsValid := uc.tokenManager.Validate(ctx, token)
+func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
+	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
 		return apperrors.InvalidTokenError
 	}
 
-	receivedSubsc, err := uc.subscriptionRepository.GetByToken(ctx, token)
+	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -87,25 +86,25 @@ func (uc *SubscriptionUseCase) Confirm(ctx context.Context, token string) error 
 
 	if !receivedSubsc.Confirmed {
 		receivedSubsc.Confirmed = true
-		updatedSubsc, err := uc.subscriptionRepository.Update(ctx, *receivedSubsc)
+		updatedSubsc, err := s.subscriptionRepository.Update(ctx, *receivedSubsc)
 
 		if err != nil {
 			return err
 		}
 
-		uc.mailer.SendConfirmed(ctx, updatedSubsc.Email, updatedSubsc.Token, updatedSubsc.Frequency)
+		s.mailer.SendConfirmed(ctx, updatedSubsc.Email, updatedSubsc.Token, updatedSubsc.Frequency)
 	}
 
 	return nil
 }
 
-func (uc *SubscriptionUseCase) Unsubscribe(ctx context.Context, token string) error {
-	tokenIsValid := uc.tokenManager.Validate(ctx, token)
+func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) error {
+	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
 		return apperrors.InvalidTokenError
 	}
 
-	receivedSubsc, err := uc.subscriptionRepository.GetByToken(ctx, token)
+	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -113,7 +112,7 @@ func (uc *SubscriptionUseCase) Unsubscribe(ctx context.Context, token string) er
 		return apperrors.TokenNotFoundError
 	}
 
-	err = uc.subscriptionRepository.DeleteByToken(ctx, token)
+	err = s.subscriptionRepository.DeleteByToken(ctx, token)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package services
+package usecases
 
 import (
 	"context"
@@ -7,9 +7,6 @@ import (
 )
 
 type (
-	WeatherProvider interface {
-		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
-	}
 	WeatherService struct {
 		weatherProvider WeatherProvider
 		logger          logger.Logger

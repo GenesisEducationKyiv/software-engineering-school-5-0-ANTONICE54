@@ -1,20 +1,15 @@
 package models
 
-import (
-	"time"
-)
-
 type (
 	Frequency string
 
 	Subscription struct {
-		ID        int    `gorm:"primaryKey"`
-		Email     string `gorm:"unique"`
+		ID        int
+		Email     string
 		City      string
-		Token     string `gorm:"unique"`
+		Token     string
 		Frequency Frequency
-		Confirmed bool      `gorm:"default:false"`
-		CreatedAt time.Time `gorm:"autoCreateTime"`
+		Confirmed bool
 	}
 )
 

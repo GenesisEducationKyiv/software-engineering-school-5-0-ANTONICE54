@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
+	"weather-forecast/internal/domain/usecases"
 	stub_logger "weather-forecast/internal/infrastructure/logger/stub"
 	"weather-forecast/internal/infrastructure/providers"
-	"weather-forecast/internal/infrastructure/services"
 	"weather-forecast/internal/presentation/server/handlers"
 
 	"github.com/gin-gonic/gin"
@@ -89,7 +89,7 @@ func setupWeatherHandler(weatherAPIURLMock, openWeatherURLMock string) *handlers
 
 	weatherAPILink.SetNext(openWeatherLink)
 
-	weatherService := services.NewWeatherService(weatherAPILink, stubLogger)
+	weatherService := usecases.NewWeatherService(weatherAPILink, stubLogger)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, stubLogger)
 	return weatherHandler
 }

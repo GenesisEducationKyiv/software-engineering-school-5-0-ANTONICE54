@@ -78,7 +78,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	
+
 	scheduler := scheduler.New(ctx, weatherBroadcastService, location, logrusLog)
 	scheduler.SetUp()
 	scheduler.Run()

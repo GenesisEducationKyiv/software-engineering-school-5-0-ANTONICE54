@@ -9,8 +9,8 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-const DAILY = "30 21 * * * " //every day at 12 am
-const HOURLY = "27 * * * * " //every hour at 0 minute
+const DAILY = "0 12 * * * " //every day at 12 am
+const HOURLY = "0 * * * * " //every hour at 0 minute
 
 type (
 	WeatherBroadcastService interface {

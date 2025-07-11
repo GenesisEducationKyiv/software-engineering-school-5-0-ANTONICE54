@@ -1,0 +1,10 @@
+go 1.23.9
+
+use (
+	./pkg
+	./services/email
+	./services/gateway
+	./services/subscription
+	./services/weather
+	./services/weather-broadcast
+)

@@ -1,0 +1,140 @@
+
+services:
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    ports:
+      - 8080:8080
+
+      
+    restart: always
+    command: ["/app/main"]
+
+
+  redis:
+    image: "redis:8-alpine"
+    ports: 
+      - 6379:6379
+    env_file:
+      - .env
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  weather-service:
+    build:
+      context: .
+      dockerfile: services/weather/Dockerfile
+    ports:
+      - 8081:8081
+      - 8090:8090
+    volumes:
+      - ./logs:/app/logs
+
+    depends_on:
+      
+      redis:
+        condition: service_healthy
+      
+    restart: always
+    command: ["/app/main"]
+
+
+
+  postgres:
+    image: "postgres:12-alpine"
+    ports: 
+      - 5432:5432
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${DB_USER} -d ${DB_NAME}'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    ports:
+      - "5672:5672"      
+      - "15672:15672"    
+    env_file:
+    - .env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_MQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_MQ_PASS}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+
+  subscription-service:
+    build:
+      context: .
+      dockerfile: services/subscription/Dockerfile
+    ports:
+      - 8082:8082
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy 
+      
+    restart: always
+    command: ["/app/main"]
+
+
+
+  email-service:
+    build:
+      context: .
+      dockerfile: services/email/Dockerfile
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy 
+      
+    restart: always
+    command: ["/app/main"]
+
+
+  weather-broadcast-service:
+    build:
+      context: .
+      dockerfile: services/weather-broadcast/Dockerfile
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy 
+      
+    restart: always
+    command: ["/app/main"]
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports: 
+      - 9090:9090
+
+    
+    

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 	"testing"
@@ -54,12 +55,13 @@ func setupChromeContext(t *testing.T) context.Context {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.NoSandbox,
 		chromedp.Headless,
+		chromedp.DisableGPU,
 	)
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	t.Cleanup(allocCancel)
 
-	ctx, ctxCancel := chromedp.NewContext(allocCtx)
+	ctx, ctxCancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
 	t.Cleanup(ctxCancel)
 
 	return ctx

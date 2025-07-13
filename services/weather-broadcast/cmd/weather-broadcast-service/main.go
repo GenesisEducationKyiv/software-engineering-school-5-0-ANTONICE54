@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 	"weather-broadcast-service/internal/clients"
+	"weather-broadcast-service/internal/config"
 	"weather-broadcast-service/internal/publisher"
 	"weather-broadcast-service/internal/scheduler"
 	"weather-broadcast-service/internal/sender"
@@ -14,7 +18,6 @@ import (
 	"weather-forecast/pkg/proto/weather"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -23,13 +26,12 @@ func main() {
 
 	logrusLog := logger.NewLogrus()
 
-	viper.SetConfigFile(".env")
-	err := viper.ReadInConfig()
+	cfg, err := config.Load(logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	weatherConn, err := grpc.NewClient("weather-service:8081",
+	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -40,7 +42,7 @@ func main() {
 	weatherGRPCClient := weather.NewWeatherServiceClient(weatherConn)
 	weatherClient := clients.NewWeatherGRPCClient(weatherGRPCClient, logrusLog)
 
-	subscConn, err := grpc.NewClient("subscription-service:8082",
+	subscConn, err := grpc.NewClient(cfg.SubscriptionServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -51,8 +53,7 @@ func main() {
 	subscriptionGRPCClient := subscription.NewSubscriptionServiceClient(subscConn)
 	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
 
-	rabitMQSource := viper.GetString("RABBIT_MQ_SOURCE")
-	conn, err := amqp.Dial(rabitMQSource)
+	conn, err := amqp.Dial(cfg.RabbitMQSource)
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
@@ -64,12 +65,10 @@ func main() {
 	}
 	defer ch.Close()
 
-	exchange := viper.GetString("EXCHANGE")
-	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, exchange, logrusLog)
+	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.Exchange, logrusLog)
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 
-	timezone := viper.GetString("TIMEZONE")
-	location, err := time.LoadLocation(timezone)
+	location, err := time.LoadLocation(cfg.Timezone)
 	if err != nil {
 		logrusLog.Fatalf("Failed to load timezone: %s", err.Error())
 	}
@@ -83,5 +82,11 @@ func main() {
 	scheduler.SetUp()
 	scheduler.Run()
 
-	select {}
+	logrusLog.Info("Weather broadcast service started successfully")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logrusLog.Info("Shutting down weather broadcast service...")
 }

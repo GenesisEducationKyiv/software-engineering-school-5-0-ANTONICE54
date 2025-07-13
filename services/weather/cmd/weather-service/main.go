@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 	"weather-forecast/pkg/logger"
+	"weather-service/internal/config"
 	"weather-service/internal/domain/usecases"
 	"weather-service/internal/infrastructure/cache"
 	filelogger "weather-service/internal/infrastructure/logger"
@@ -13,21 +14,18 @@ import (
 	"weather-service/internal/infrastructure/providers/roundtrip"
 	"weather-service/internal/presentation/server"
 	"weather-service/internal/presentation/server/handlers"
-
-	"github.com/spf13/viper"
 )
 
 func main() {
 
 	logrusLog := logger.NewLogrus()
 
-	viper.SetConfigFile(".env")
-	err := viper.ReadInConfig()
+	cfg, err := config.Load(logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	fileLog, err := filelogger.NewFile("./logs/weather.txt")
+	fileLog, err := filelogger.NewFile(cfg.LogFilePath)
 	if err != nil {
 		logrusLog.Fatalf("Failed to create file logger: %s", err.Error())
 	}
@@ -39,8 +37,7 @@ func main() {
 
 	prometherusMetrics := metrics.NewPrometheus(logrusLog)
 
-	residSource := viper.GetString("REDIS_SOURCE")
-	redisCache, err := cache.NewRedis(residSource, logrusLog)
+	redisCache, err := cache.NewRedis(cfg.RedisSource, logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Connect to redis: %s", err.Error())
 	}
@@ -52,14 +49,10 @@ func main() {
 		Transport: providerRoundTrip,
 	}
 
-	weatherAPIURL := viper.GetString("WEATHER_API_URL")
-	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
-	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURL, weatherAPIKey, &client, logrusLog)
+	weatherAPIProvider := providers.NewWeatherAPIProvider(cfg, &client, logrusLog)
 	cacheableWeatherAPIProvider := providers.NewCacheDecorator(weatherAPIProvider, redisCache, prometherusMetrics, logrusLog)
 
-	openWeatherURL := viper.GetString("OPEN_WEATHER_URL")
-	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
-	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURL, openWeatherKey, &client, logrusLog)
+	openWeatherProvider := providers.NewOpenWeatherProvider(cfg, &client, logrusLog)
 	cacheableOpenWeatherProvider := providers.NewCacheDecorator(openWeatherProvider, redisCache, prometherusMetrics, logrusLog)
 
 	cacheWeatherProvider := providers.NewCacheWeather(redisCache, prometherusMetrics, logrusLog)
@@ -76,11 +69,8 @@ func main() {
 
 	app := server.New(weatherHandler, logrusLog)
 
-	metricsServerPort := viper.GetString("METRICS_SERVER_PORT")
-	go prometherusMetrics.StartMetricsServer(metricsServerPort)
+	go prometherusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	gRPCPort := viper.GetString("GRPC_PORT")
-
-	app.Start(gRPCPort)
+	app.Start(cfg.GRPCPort)
 
 }

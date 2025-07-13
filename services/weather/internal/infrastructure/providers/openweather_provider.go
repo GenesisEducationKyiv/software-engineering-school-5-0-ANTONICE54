@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"weather-service/internal/config"
 	"weather-service/internal/domain/models"
 	"weather-service/internal/infrastructure/errors"
 
@@ -40,10 +41,10 @@ type (
 	}
 )
 
-func NewOpenWeatherProvider(apiURL, apiKey string, client *http.Client, logger logger.Logger) *OpenWeatherProvider {
+func NewOpenWeatherProvider(cfg *config.Config, client *http.Client, logger logger.Logger) *OpenWeatherProvider {
 	return &OpenWeatherProvider{
-		apiURL: apiURL,
-		apiKey: apiKey,
+		apiURL: cfg.OpenWeatherURL,
+		apiKey: cfg.OpenWeatherKey,
 		client: client,
 		logger: logger,
 	}

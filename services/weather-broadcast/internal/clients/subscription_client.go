@@ -25,12 +25,12 @@ func NewSubscriptionGRPCClient(subscriptionGRPC subscription.SubscriptionService
 	}
 }
 
-func (c *SubscriptionGRPCClient) ListByFrequency(ctx context.Context, frequency dto.Frequency, pageToken, pageSize int) (*dto.SubscriptionList, error) {
+func (c *SubscriptionGRPCClient) ListByFrequency(ctx context.Context, query dto.ListSubscriptionsQuery) (*dto.SubscriptionList, error) {
 
 	req := &subscription.GetSubscriptionsByFrequencyRequest{
-		Frequency: mappers.MapDTOFrequencyToProto(frequency),
-		PageSize:  int32(pageSize),
-		PageToken: int32(pageToken),
+		Frequency: mappers.MapFrequencyToProto(query.Frequency),
+		PageSize:  int32(query.PageSize),
+		PageToken: int32(query.LastID),
 	}
 
 	res, err := c.subscriptionGRPC.GetSubscriptionsByFrequency(ctx, req)

@@ -6,7 +6,6 @@ import (
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
 	"weather-service/internal/domain/models"
-	"weather-service/internal/presentation/mappers"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,7 +32,7 @@ func NewWeatherHandler(weatherService WeatherService, logger logger.Logger) *Wea
 
 func (h *WeatherHandler) GetWeather(ctx context.Context, req *weather.GetWeatherRequest) (*weather.GetWeatherResponse, error) {
 
-	weather, err := h.weatherService.GetWeatherByCity(ctx, req.City)
+	weatherRes, err := h.weatherService.GetWeatherByCity(ctx, req.City)
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			return nil, appErr.ToGRPCStatus()
@@ -41,5 +40,11 @@ func (h *WeatherHandler) GetWeather(ctx context.Context, req *weather.GetWeather
 		return nil, status.Errorf(codes.Internal, "failed to get weather: %v", err)
 	}
 
-	return mappers.MapWeatherToProto(weather), nil
+	protoWeather := &weather.GetWeatherResponse{
+		Temperature: weatherRes.Temperature,
+		Humidity:    int32(weatherRes.Humidity),
+		Description: weatherRes.Description,
+	}
+
+	return protoWeather, nil
 }

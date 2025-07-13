@@ -2,6 +2,7 @@ package mailer
 
 import (
 	"context"
+	"email-service/internal/config"
 	"fmt"
 	"net/smtp"
 	"weather-forecast/pkg/logger"
@@ -17,13 +18,13 @@ type SMTPMailer struct {
 	logger   logger.Logger
 }
 
-func NewSMTPMailer(from, host, port, username, password string, logger logger.Logger) *SMTPMailer {
+func NewSMTPMailer(cfg *config.Config, logger logger.Logger) *SMTPMailer {
 	mailer := SMTPMailer{
-		from:     from,
-		host:     host,
-		port:     port,
-		username: username,
-		password: password,
+		from:     cfg.MailerFrom,
+		host:     cfg.MailerHost,
+		port:     cfg.MailerPort,
+		username: cfg.MailerUsername,
+		password: cfg.MailerPassword,
 		logger:   logger,
 	}
 	mailer.auth = smtp.PlainAuth("", mailer.username, mailer.password, mailer.host)

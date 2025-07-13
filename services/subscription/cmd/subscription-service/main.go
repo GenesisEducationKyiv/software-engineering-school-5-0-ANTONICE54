@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"subscription-service/internal/config"
 	"subscription-service/internal/domain/usecases"
 	"subscription-service/internal/infrastructure/database"
 	"subscription-service/internal/infrastructure/publisher"
@@ -13,22 +14,18 @@ import (
 	"weather-forecast/pkg/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/spf13/viper"
 )
 
 func main() {
 
 	logrusLog := logger.NewLogrus()
 
-	viper.SetConfigFile(".env")
-	err := viper.ReadInConfig()
+	cfg, err := config.Load(logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	//TODO: add rabbit source to env
-	rabitMQSource := viper.GetString("RABBIT_MQ_SOURCE")
-	conn, err := amqp.Dial(rabitMQSource)
+	conn, err := amqp.Dial(cfg.RabbitMQSource)
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
@@ -40,20 +37,13 @@ func main() {
 	}
 	defer ch.Close()
 
-	dbHost := viper.GetString("DB_HOST")
-	dbUser := viper.GetString("DB_USER")
-	dbPassword := viper.GetString("DB_PASSWORD")
-	dbName := viper.GetString("DB_NAME")
-	dbPort := viper.GetString("DB_PORT")
-
-	db := database.Connect(dbHost, dbUser, dbPassword, dbName, dbPort)
+	db := database.Connect(cfg)
 	database.RunMigration(db)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
 	tokenManager := token.NewUUIDManager()
 
-	exchange := viper.GetString("EXCHANGE")
-	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, exchange, logrusLog)
+	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.Exchange, logrusLog)
 
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 
@@ -61,7 +51,6 @@ func main() {
 	subscHandler := handlers.NewSubscriptionHandler(subscUseCase, logrusLog)
 
 	app := server.New(subscHandler, logrusLog)
-	gRPCPort := viper.GetString("GRPC_PORT")
 
-	app.Start(gRPCPort)
+	app.Start(cfg.GRPCPort)
 }

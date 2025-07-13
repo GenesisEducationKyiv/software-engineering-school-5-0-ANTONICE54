@@ -2,16 +2,17 @@ package mappers
 
 import (
 	"weather-broadcast-service/internal/dto"
+	"weather-broadcast-service/internal/models"
 	"weather-forecast/pkg/events"
 	"weather-forecast/pkg/proto/subscription"
 	"weather-forecast/pkg/proto/weather"
 )
 
-func MapDTOFrequencyToProto(freq dto.Frequency) subscription.Frequency {
+func MapFrequencyToProto(freq models.Frequency) subscription.Frequency {
 	switch freq {
-	case dto.Daily:
+	case models.Daily:
 		return subscription.Frequency_DAILY
-	case dto.Hourly:
+	case models.Hourly:
 		return subscription.Frequency_HOURLY
 	default:
 		return subscription.Frequency_DAILY

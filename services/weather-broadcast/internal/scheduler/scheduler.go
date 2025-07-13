@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 	"time"
-	"weather-broadcast-service/internal/dto"
+	"weather-broadcast-service/internal/models"
 	"weather-forecast/pkg/logger"
 
 	"github.com/robfig/cron/v3"
@@ -14,7 +14,7 @@ const HOURLY = "0 * * * * " //every hour at 0 minute
 
 type (
 	WeatherBroadcastService interface {
-		Broadcast(ctx context.Context, frequency dto.Frequency)
+		Broadcast(ctx context.Context, frequency models.Frequency)
 	}
 
 	Scheduler struct {
@@ -37,14 +37,14 @@ func New(ctx context.Context, notificationService WeatherBroadcastService, locat
 
 func (s *Scheduler) SetUp() {
 
-	_, err := s.cron.AddFunc(DAILY, func() { s.broadcastService.Broadcast(s.ctx, dto.Daily) })
+	_, err := s.cron.AddFunc(DAILY, func() { s.broadcastService.Broadcast(s.ctx, models.Daily) })
 	if err != nil {
 		s.logger.Fatalf("Failed to setup daily sender: %s", err.Error())
 		return
 	}
 	_, err = s.cron.AddFunc(HOURLY, func() {
 
-		s.broadcastService.Broadcast(s.ctx, dto.Hourly)
+		s.broadcastService.Broadcast(s.ctx, models.Hourly)
 	})
 	if err != nil {
 		s.logger.Fatalf("Failed to setup hourly sender: %s", err.Error())

@@ -3,25 +3,22 @@ package providers
 import (
 	"context"
 	"weather-service/internal/domain/models"
+	"weather-service/internal/domain/usecases"
 )
 
 type (
-	WeatherProvider interface {
-		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
-	}
-
 	WeatherChainLink interface {
-		WeatherProvider
+		usecases.WeatherProvider
 		SetNext(section WeatherChainLink)
 	}
 
 	WeatherLink struct {
-		provider    WeatherProvider
+		provider    usecases.WeatherProvider
 		nextSection WeatherChainLink
 	}
 )
 
-func NewWeatherLink(provider WeatherProvider) *WeatherLink {
+func NewWeatherLink(provider usecases.WeatherProvider) *WeatherLink {
 	return &WeatherLink{
 		provider:    provider,
 		nextSection: nil,

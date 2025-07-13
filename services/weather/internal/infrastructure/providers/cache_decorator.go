@@ -5,6 +5,7 @@ import (
 	"time"
 	"weather-forecast/pkg/logger"
 	"weather-service/internal/domain/models"
+	"weather-service/internal/domain/usecases"
 )
 
 const cacheTTL = 10 * time.Minute
@@ -19,14 +20,14 @@ type (
 	}
 
 	CacheDecorator struct {
-		provider WeatherProvider
+		provider usecases.WeatherProvider
 		cache    CacheWriter
 		metrics  CacheErrorRecorder
 		logger   logger.Logger
 	}
 )
 
-func NewCacheDecorator(provider WeatherProvider, cache CacheWriter, metrics CacheErrorRecorder, logger logger.Logger) *CacheDecorator {
+func NewCacheDecorator(provider usecases.WeatherProvider, cache CacheWriter, metrics CacheErrorRecorder, logger logger.Logger) *CacheDecorator {
 	return &CacheDecorator{
 		provider: provider,
 		cache:    cache,

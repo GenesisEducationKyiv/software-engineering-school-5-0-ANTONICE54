@@ -1,8 +1,8 @@
 package dto
 
-type (
-	Frequency string
+import "weather-broadcast-service/internal/models"
 
+type (
 	Subscription struct {
 		Email string
 		City  string
@@ -11,9 +11,10 @@ type (
 		Subscriptions []Subscription
 		LastIndex     int
 	}
-)
 
-const (
-	Daily  Frequency = "daily"
-	Hourly Frequency = "hourly"
+	ListSubscriptionsQuery struct {
+		Frequency models.Frequency
+		LastID    int
+		PageSize  int
+	}
 )

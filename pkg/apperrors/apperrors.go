@@ -12,12 +12,18 @@ type (
 		String() string
 	}
 
+	GenericErrorCode string
+
 	AppError struct {
 		Type    ErrorType
 		Code    ErrorCode
 		Message string
 	}
 )
+
+func (g GenericErrorCode) String() string {
+	return string(g)
+}
 
 const (
 	InternalError ErrorType = iota
@@ -71,12 +77,6 @@ func (err *AppError) ToGRPCStatus() error {
 	}
 
 	return status.Error(code, err.Message)
-}
-
-type GenericErrorCode string
-
-func (g GenericErrorCode) String() string {
-	return string(g)
 }
 
 func NewInternal(code ErrorCode, msg string) *AppError {

@@ -2,53 +2,50 @@ package main
 
 import (
 	"context"
+	"email-service/internal/config"
 	"email-service/internal/consumer"
-	"email-service/internal/handlers"
 	"email-service/internal/mailer"
+	"email-service/internal/processors"
 	"email-service/internal/services"
+	"os"
+	"os/signal"
+	"syscall"
 	"weather-forecast/pkg/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/spf13/viper"
 )
 
 func main() {
 	logrusLog := logger.NewLogrus()
 
-	viper.SetConfigFile(".env")
-	err := viper.ReadInConfig()
+	cfg, err := config.Load(logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	//TODO: add rabbit source to env
-	rabitMQSource := viper.GetString("RABBIT_MQ_SOURCE")
-	conn, err := amqp.Dial(rabitMQSource)
+	conn, err := amqp.Dial(cfg.RabbitMQURL)
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
 	defer conn.Close()
 
-	serverHost := viper.GetString("SERVER_HOST")
-	mailerFrom := viper.GetString("MAILER_FROM")
-	mailerHost := viper.GetString("MAILER_HOST")
-	mailerPort := viper.GetString("MAILER_PORT")
-	mailerUsername := viper.GetString("MAILER_USERNAME")
-	mailerPassword := viper.GetString("MAILER_PASSWORD")
-	mailer := mailer.NewSMTPMailer(mailerFrom, mailerHost, mailerPort, mailerUsername, mailerPassword, logrusLog)
-	notificationService := services.NewNotificationService(mailer, serverHost, logrusLog)
+	mailer := mailer.NewSMTPMailer(cfg, logrusLog)
+	notificationService := services.NewNotificationService(mailer, cfg.ServerHost, logrusLog)
 
-	eventHandler := handlers.NewEventHandler(notificationService, logrusLog)
+	eventProcessor := processors.NewEventProcessor(notificationService, logrusLog)
 
-	//TODO: add exchange to env file
-	exchange := viper.GetString("EXCHANGE")
-	rabbitMQConsumer := consumer.NewConsumer(conn, exchange, eventHandler, logrusLog)
+	rabbitMQConsumer := consumer.NewConsumer(conn, cfg.Exchange, eventProcessor, logrusLog)
 
 	if err := rabbitMQConsumer.Start(context.Background()); err != nil {
-		logrusLog.Fatalf("Failed to start consumer: %s", err.Error())
+		logrusLog.Fatalf("Failed to start consumer: %v", err)
 	}
 
-	//TODO: replace with proper shutdown handling
-	select {}
+	logrusLog.Info("Email service started successfully")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logrusLog.Info("Shutting down email service...")
 
 }

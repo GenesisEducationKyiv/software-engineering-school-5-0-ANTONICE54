@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"weather-broadcast-service/internal/dto"
+	"weather-broadcast-service/internal/models"
 	"weather-forecast/pkg/logger"
 )
 
@@ -18,7 +19,7 @@ type (
 	}
 
 	SubscriptionClient interface {
-		ListByFrequency(ctx context.Context, frequency dto.Frequency, pageSize, pageToken int) (*dto.SubscriptionList, error)
+		ListByFrequency(ctx context.Context, query dto.ListSubscriptionsQuery) (*dto.SubscriptionList, error)
 	}
 
 	WeatherMailer interface {
@@ -43,14 +44,21 @@ func NewWeatherBroadcastService(subscriptionClient SubscriptionClient, weatherCl
 	}
 }
 
-func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency dto.Frequency) {
+func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency models.Frequency) {
 	cityWeatherMap := make(map[string]*dto.Weather)
 	sem := make(chan struct{}, WORKER_AMOUNT)
 	wg := &sync.WaitGroup{}
 
 	lastID := 0
 	for {
-		res, err := s.subscriptionClient.ListByFrequency(ctx, frequency, lastID, PAGE_SIZE)
+
+		query := dto.ListSubscriptionsQuery{
+			Frequency: frequency,
+			LastID:    lastID,
+			PageSize:  PAGE_SIZE,
+		}
+
+		res, err := s.subscriptionClient.ListByFrequency(ctx, query)
 		if err != nil {
 			s.logger.Warnf("Failed to fetch subscriptions: %v", err)
 			break
@@ -71,8 +79,10 @@ func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency dto.F
 
 				if err != nil {
 					cityWeatherMap[subscription.City] = nil
+				} else {
+					cityWeatherMap[subscription.City] = weather
 				}
-				cityWeatherMap[subscription.City] = weather
+
 			}
 
 			sem <- struct{}{}

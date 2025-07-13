@@ -5,6 +5,22 @@ import (
 	"weather-forecast/pkg/events"
 )
 
+func SubscribeEventToDTO(event events.SubscriptionEvent) *dto.SubscriptionEmailInfo {
+	return &dto.SubscriptionEmailInfo{
+		Email:     event.Email,
+		Frequency: event.Frequency,
+		Token:     event.Token,
+	}
+}
+
+func ConfirmEventToDTO(event events.ConfirmedEvent) *dto.ConfirmedEmailInfo {
+	return &dto.ConfirmedEmailInfo{
+		Email:     event.Email,
+		Frequency: event.Frequency,
+		Token:     event.Token,
+	}
+}
+
 func WeatherToDTO(weather events.Weather) *dto.Weather {
 	return &dto.Weather{
 		Temperature: weather.Temperature,

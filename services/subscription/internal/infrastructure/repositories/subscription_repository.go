@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"subscription-service/internal/domain/models"
+	"subscription-service/internal/infrastructure/database"
 	infraerror "subscription-service/internal/infrastructure/errors"
+	"subscription-service/internal/infrastructure/mappers"
 	"time"
 	"weather-forecast/pkg/logger"
 
@@ -29,14 +31,17 @@ func (r *SubscriptionRepository) Create(ctx context.Context, subscription models
 
 	res, err := r.runWithDeadline(ctx, func(ctx context.Context) (any, error) {
 
-		res := r.db.WithContext(ctx).Create(&subscription)
+		dbSubscription := mappers.DomainToDatabase(subscription)
+
+		res := r.db.WithContext(ctx).Create(&dbSubscription)
 
 		if res.Error != nil {
 			r.logger.Warnf("Failed to save subscription to database: %s", res.Error.Error())
 			return nil, infraerror.DatabaseError
 		}
+		domainSubscription := mappers.DatabaseToDomain(dbSubscription)
 
-		return &subscription, nil
+		return &domainSubscription, nil
 	})
 
 	if err != nil {
@@ -50,8 +55,8 @@ func (r *SubscriptionRepository) GetByEmail(ctx context.Context, email string) (
 
 	res, err := r.runWithDeadline(ctx, func(ctx context.Context) (any, error) {
 
-		subscription := models.Subscription{}
-		res := r.db.WithContext(ctx).Where("email = ?", email).First(&subscription)
+		dbSubscription := database.Subscription{}
+		res := r.db.WithContext(ctx).Where("email = ?", email).First(&dbSubscription)
 
 		if res.Error != nil {
 			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
@@ -62,8 +67,9 @@ func (r *SubscriptionRepository) GetByEmail(ctx context.Context, email string) (
 				return nil, infraerror.DatabaseError
 			}
 		}
+		domainSubscription := mappers.DatabaseToDomain(dbSubscription)
 
-		return &subscription, nil
+		return &domainSubscription, nil
 	})
 
 	if err != nil {
@@ -81,8 +87,8 @@ func (r *SubscriptionRepository) GetByToken(ctx context.Context, token string) (
 
 	res, err := r.runWithDeadline(ctx, func(ctx context.Context) (any, error) {
 
-		subscription := models.Subscription{}
-		res := r.db.WithContext(ctx).Where("token = ?", token).First(&subscription)
+		dbSubscription := database.Subscription{}
+		res := r.db.WithContext(ctx).Where("token = ?", token).First(&dbSubscription)
 
 		if res.Error != nil {
 			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
@@ -94,7 +100,9 @@ func (r *SubscriptionRepository) GetByToken(ctx context.Context, token string) (
 			}
 		}
 
-		return &subscription, nil
+		domainSubscription := mappers.DatabaseToDomain(dbSubscription)
+
+		return &domainSubscription, nil
 	})
 
 	if err != nil {
@@ -112,13 +120,18 @@ func (r *SubscriptionRepository) Update(ctx context.Context, subscription models
 
 	res, err := r.runWithDeadline(ctx, func(ctx context.Context) (any, error) {
 
-		res := r.db.WithContext(ctx).Save(&subscription)
+		dbSubscription := mappers.DomainToDatabase(subscription)
+
+		res := r.db.WithContext(ctx).Save(&dbSubscription)
 
 		if res.Error != nil {
 			r.logger.Warnf("Failed to update subscription: %s", res.Error.Error())
 			return nil, infraerror.DatabaseError
 		}
-		return &subscription, nil
+
+		domainSubscription := mappers.DatabaseToDomain(dbSubscription)
+
+		return &domainSubscription, nil
 	})
 
 	if err != nil {
@@ -148,15 +161,15 @@ func (r *SubscriptionRepository) ListConfirmedByFrequency(ctx context.Context, f
 
 	res, err := r.runWithDeadline(ctx, func(ctx context.Context) (any, error) {
 
-		var subscriptions []models.Subscription
-		res := r.db.WithContext(ctx).Where("confirmed = ? AND frequency = ? AND id > ?", true, frequency, lastID).Order("id").Limit(pageSize).Find(&subscriptions)
+		var dbSubscriptions []database.Subscription
+		res := r.db.WithContext(ctx).Where("confirmed = ? AND frequency = ? AND id > ?", true, frequency, lastID).Order("id").Limit(pageSize).Find(&dbSubscriptions)
 
 		if res.Error != nil {
 			r.logger.Warnf("Failed to list subscriptions: %s", res.Error.Error())
 			return nil, infraerror.DatabaseError
 		}
-
-		return subscriptions, nil
+		domainSubscriptions := mappers.DatabaseSliceToDomain(dbSubscriptions)
+		return domainSubscriptions, nil
 	})
 
 	if err != nil {

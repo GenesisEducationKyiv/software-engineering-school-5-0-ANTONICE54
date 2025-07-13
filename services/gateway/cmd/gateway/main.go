@@ -16,12 +16,12 @@ import (
 func main() {
 	logrusLog := logger.NewLogrus()
 
-	config, err := config.Load(logrusLog)
+	cfg, err := config.Load(logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	weatherConn, err := grpc.NewClient(config.WeatherServiceAddress,
+	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -33,7 +33,7 @@ func main() {
 	weatherClient := clients.NewWeatherGRPCClient(weatherGRPCClient, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherClient, logrusLog)
 
-	subscConn, err := grpc.NewClient(config.SubscriptionServiceAddress,
+	subscConn, err := grpc.NewClient(cfg.SubscriptionServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -46,5 +46,5 @@ func main() {
 	subsbscriptionHandler := handlers.NewSubscriptionHandler(sunbscriptionClient, logrusLog)
 
 	app := server.New(weatherHandler, subsbscriptionHandler, logrusLog)
-	app.Run(config.ServerPort)
+	app.Run(cfg.ServerPort)
 }

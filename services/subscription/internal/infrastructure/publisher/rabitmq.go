@@ -33,7 +33,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 		return infraerror.InternalError
 	}
 
-	return p.ch.PublishWithContext(
+	err = p.ch.PublishWithContext(
 		ctx,
 		p.exchange,
 		string(event.EventType()),
@@ -43,4 +43,10 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 			ContentType: "application/json",
 			Body:        body,
 		})
+
+	if err != nil {
+		return infraerror.InternalError
+	}
+
+	return nil
 }

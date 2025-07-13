@@ -24,11 +24,9 @@ func NewWeatherGRPCClient(weatherGRPCClinet weather.WeatherServiceClient, logger
 	}
 }
 
-func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (*dto.WeatherDTO, error) {
+func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
 	req := &weather.GetWeatherRequest{City: city}
-
 	resp, err := c.weatherGRPC.GetWeather(ctx, req)
-
 	if err != nil {
 		return nil, apperrors.FromGRPCError(err, errors.WeatherServiceErrorCode)
 	}

@@ -1,6 +1,6 @@
 package dto
 
-type WeatherDTO struct {
+type Weather struct {
 	Temperature float64
 	Humidity    int
 	Description string

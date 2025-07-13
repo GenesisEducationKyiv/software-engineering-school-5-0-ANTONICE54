@@ -39,7 +39,7 @@ func New(weatherHandeler WeatherHandler, subscrtiptionHandler SubscriptionHandle
 
 func (s *Server) setUpRoutes() {
 	s.router.GET("/", func(ctx *gin.Context) {
-		ctx.File("./subscription.html")
+		ctx.File("./static/subscription.html")
 	})
 	s.router.GET("/weather", s.weatherHandler.Get)
 	s.router.POST("/subscribe", s.subscrtiptionHandler.Subscribe)

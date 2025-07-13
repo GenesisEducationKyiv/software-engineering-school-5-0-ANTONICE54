@@ -13,7 +13,7 @@ import (
 
 type (
 	SubsctiptionClient interface {
-		Subscribe(ctx context.Context, email, frequency, city string) error
+		Subscribe(ctx context.Context, info SubscribeRequest) error
 		Confirm(ctx context.Context, token string) error
 		Unsubscribe(ctx context.Context, token string) error
 	}
@@ -25,7 +25,7 @@ type (
 
 	SubscribeRequest struct {
 		Email     string `json:"email" binding:"required,email"`
-		City      string `json:"city" binding:"required,alpha"`
+		City      string `json:"city" binding:"required"`
 		Frequency string `json:"frequency" binding:"required,oneof=hourly daily"`
 	}
 )
@@ -46,7 +46,7 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 		return
 	}
 
-	err := h.subscriptionClient.Subscribe(ctx, req.Email, req.Frequency, req.City)
+	err := h.subscriptionClient.Subscribe(ctx, req)
 
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {

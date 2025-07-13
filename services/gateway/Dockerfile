@@ -21,6 +21,7 @@ FROM alpine:3.19
 RUN apk add --no-cache tzdata
 WORKDIR /app
 COPY --from=builder /app/services/gateway/main .
+COPY /services/gateway/static ./static
 COPY services/gateway/.env .
 
 

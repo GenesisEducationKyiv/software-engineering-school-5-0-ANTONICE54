@@ -14,7 +14,7 @@ import (
 
 type (
 	WeatherClient interface {
-		GetWeatherByCity(ctx context.Context, city string) (*dto.WeatherDTO, error)
+		GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error)
 	}
 
 	WeatherHandler struct {
@@ -23,7 +23,7 @@ type (
 	}
 
 	GetWeatherRequest struct {
-		City string `json:"city" binding:"required,alpha"`
+		City string `json:"city" binding:"required"`
 	}
 	GetWeatherResponse struct {
 		Temperature float64 `json:"temperature"`
@@ -49,11 +49,9 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 	}
 
 	weather, err := h.weatherClient.GetWeatherByCity(ctx, req.City)
-
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			httpErr := httperrors.New(appErr)
-
 			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}

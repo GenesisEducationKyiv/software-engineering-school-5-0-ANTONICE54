@@ -1,11 +1,11 @@
 package mappers
 
 import (
-	"subscription-service/internal/domain/dto"
+	"subscription-service/internal/domain/contracts"
 	"weather-forecast/pkg/events"
 )
 
-func ConfirmationInfoToEvent(info *dto.ConfirmationInfo) *events.SubscriptionEvent {
+func ConfirmationInfoToEvent(info *contracts.ConfirmationInfo) *events.SubscriptionEvent {
 	return &events.SubscriptionEvent{
 		Email:     info.Email,
 		Token:     info.Token,
@@ -13,7 +13,7 @@ func ConfirmationInfoToEvent(info *dto.ConfirmationInfo) *events.SubscriptionEve
 	}
 }
 
-func ConfirmedInfoToEvent(info *dto.ConfirmedInfo) *events.ConfirmedEvent {
+func ConfirmedInfoToEvent(info *contracts.ConfirmedInfo) *events.ConfirmedEvent {
 	return &events.ConfirmedEvent{
 		Email:     info.Email,
 		Token:     info.Token,

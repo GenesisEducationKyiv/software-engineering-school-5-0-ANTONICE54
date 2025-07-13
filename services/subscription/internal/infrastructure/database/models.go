@@ -17,5 +17,6 @@ type (
 )
 
 const (
-	Daily Frequency = "daily"
+	Daily  Frequency = "daily"
+	Hourly Frequency = "hourly"
 )

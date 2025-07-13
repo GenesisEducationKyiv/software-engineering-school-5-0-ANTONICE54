@@ -55,3 +55,20 @@ func SubscriptionListToProto(subscriptions []models.Subscription) *subscription.
 	}
 
 }
+
+func SubscribeRequestToSubscribe(req *subscription.SubscribeRequest) *models.Subscription {
+	return &models.Subscription{
+		Email:     req.Email,
+		City:      req.City,
+		Frequency: ProtoToFreaquency(req.Frequency),
+		Confirmed: false,
+	}
+}
+
+func ProtoToListQuery(req *subscription.GetSubscriptionsByFrequencyRequest) *models.ListSubscriptionsQuery {
+	return &models.ListSubscriptionsQuery{
+		Frequency: ProtoToFreaquency(req.Frequency),
+		LastID:    int(req.PageToken),
+		PageSize:  int(req.PageSize),
+	}
+}

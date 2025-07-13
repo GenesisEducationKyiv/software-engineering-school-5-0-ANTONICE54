@@ -15,10 +15,10 @@ import (
 
 type (
 	SubscriptionUsecase interface {
-		Subscribe(ctx context.Context, email string, frequency models.Frequency, city string) (*models.Subscription, error)
+		Subscribe(ctx context.Context, subscription *models.Subscription) (*models.Subscription, error)
 		Confirm(ctx context.Context, token string) error
 		Unsubscribe(ctx context.Context, token string) error
-		ListByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error)
+		ListByFrequency(ctx context.Context, query *models.ListSubscriptionsQuery) ([]models.Subscription, error)
 	}
 
 	SubscriptionHandler struct {
@@ -37,9 +37,9 @@ func NewSubscriptionHandler(subscriptionUsecase SubscriptionUsecase, logger logg
 
 func (h *SubscriptionHandler) Subscribe(ctx context.Context, req *subscription.SubscribeRequest) (*emptypb.Empty, error) {
 
-	freq := mappers.ProtoToFreaquency(req.Frequency)
+	subscription := mappers.SubscribeRequestToSubscribe(req)
 
-	_, err := h.subscriptionUsecase.Subscribe(ctx, req.Email, freq, req.City)
+	_, err := h.subscriptionUsecase.Subscribe(ctx, subscription)
 
 	if err != nil {
 
@@ -85,9 +85,9 @@ func (h *SubscriptionHandler) Unsubscribe(ctx context.Context, req *subscription
 
 func (h *SubscriptionHandler) GetSubscriptionsByFrequency(ctx context.Context, req *subscription.GetSubscriptionsByFrequencyRequest) (*subscription.GetSubscriptionsByFrequencyResponse, error) {
 
-	freq := mappers.ProtoToFreaquency(req.Frequency)
+	query := mappers.ProtoToListQuery(req)
 
-	subscriptions, err := h.subscriptionUsecase.ListByFrequency(ctx, freq, int(req.PageToken), int(req.PageSize))
+	subscriptions, err := h.subscriptionUsecase.ListByFrequency(ctx, query)
 
 	if err != nil {
 

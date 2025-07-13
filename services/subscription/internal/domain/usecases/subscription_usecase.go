@@ -2,7 +2,7 @@ package usecases
 
 import (
 	"context"
-	"subscription-service/internal/domain/dto"
+	"subscription-service/internal/domain/contracts"
 	domainerrors "subscription-service/internal/domain/errors"
 	"subscription-service/internal/domain/models"
 	"weather-forecast/pkg/logger"
@@ -24,8 +24,8 @@ type (
 	}
 
 	NotificationSender interface {
-		SendConfirmation(ctx context.Context, info *dto.ConfirmationInfo)
-		SendConfirmed(ctx context.Context, info *dto.ConfirmedInfo)
+		SendConfirmation(ctx context.Context, info *contracts.ConfirmationInfo)
+		SendConfirmed(ctx context.Context, info *contracts.ConfirmedInfo)
 	}
 
 	SubscriptionService struct {
@@ -45,29 +45,23 @@ func NewSubscriptionService(subscriptionRepo SubscriptionRepository, tokenManage
 	}
 }
 
-func (s *SubscriptionService) Subscribe(ctx context.Context, email string, frequency models.Frequency, city string) (*models.Subscription, error) {
+func (s *SubscriptionService) Subscribe(ctx context.Context, subscription *models.Subscription) (*models.Subscription, error) {
 
-	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, email)
+	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
 
 	if receivedSubsc != nil {
 		return nil, domainerrors.AlreadySubscribedError
 	}
 
 	token := s.tokenManager.Generate(ctx)
-	subscription := models.Subscription{
-		Email:     email,
-		Frequency: frequency,
-		City:      city,
-		Confirmed: false,
-		Token:     token,
-	}
+	subscription.Token = token
 
-	createdSubscription, err := s.subscriptionRepository.Create(ctx, subscription)
+	createdSubscription, err := s.subscriptionRepository.Create(ctx, *subscription)
 	if err != nil {
 		return nil, err
 	}
 
-	confirmationInfo := dto.ConfirmationInfo{
+	confirmationInfo := contracts.ConfirmationInfo{
 		Email:     createdSubscription.Email,
 		Token:     createdSubscription.Token,
 		Frequency: createdSubscription.Frequency,
@@ -99,7 +93,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 			return err
 		}
 
-		confirmedInfo := dto.ConfirmedInfo{
+		confirmedInfo := contracts.ConfirmedInfo{
 			Email:     updatedSubsc.Email,
 			Token:     updatedSubsc.Token,
 			Frequency: updatedSubsc.Frequency,
@@ -133,8 +127,8 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	return nil
 }
 
-func (s *SubscriptionService) ListByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error) {
-	receivedSubscriptions, err := s.subscriptionRepository.ListConfirmedByFrequency(ctx, frequency, lastID, pageSize)
+func (s *SubscriptionService) ListByFrequency(ctx context.Context, query *models.ListSubscriptionsQuery) ([]models.Subscription, error) {
+	receivedSubscriptions, err := s.subscriptionRepository.ListConfirmedByFrequency(ctx, query.Frequency, query.LastID, query.PageSize)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package dto
+package contracts
 
 import "subscription-service/internal/domain/models"
 

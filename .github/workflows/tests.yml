@@ -64,14 +64,16 @@ jobs:
           go-version: stable
       - uses: browser-actions/setup-chrome@v1
 
-
+      
 
       - name: Build test app
         run: go build -o testapp_binary ./tests/e2e/testapp/main.go
       - name: Run test app
         run: ./testapp_binary&
       - name: Waiting for server
-        run: sleep 3
+        run: sleep 5
+      - name: Chrome version
+        run: google-chrome --version
       - name: Run End-to-End tests
         run: go test ./tests/e2e/
 

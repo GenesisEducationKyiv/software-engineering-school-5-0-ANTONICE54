@@ -27,7 +27,11 @@ func main() {
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			logrusLog.Errorf("Failed to close RabbitMQ connection: %v", err)
+		}
+	}()
 
 	mailer := mailer.NewSMTPMailer(cfg, logrusLog)
 	notificationService := services.NewNotificationService(mailer, cfg.ServerHost, logrusLog)

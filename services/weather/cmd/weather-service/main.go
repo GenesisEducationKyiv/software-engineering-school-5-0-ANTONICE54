@@ -71,6 +71,7 @@ func main() {
 
 	go prometherusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	app.Start(cfg.GRPCPort)
-
+	if err := app.Start(cfg.GRPCPort); err != nil {
+		logrusLog.Fatalf("Failed to start server: %v", err)
+	}
 }

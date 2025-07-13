@@ -29,13 +29,21 @@ func main() {
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			logrusLog.Errorf("Failed to close RabbitMQ connection: %v", err)
+		}
+	}()
 
 	ch, err := conn.Channel()
 	if err != nil {
 		log.Fatal("Failed to open channel:", err)
 	}
-	defer ch.Close()
+	defer func() {
+		if err := ch.Close(); err != nil {
+			logrusLog.Errorf("Failed to close RabbitMQ channel: %v", err)
+		}
+	}()
 
 	db := database.Connect(cfg)
 	database.RunMigration(db)
@@ -52,5 +60,7 @@ func main() {
 
 	app := server.New(subscHandler, logrusLog)
 
-	app.Start(cfg.GRPCPort)
+	if err := app.Start(cfg.GRPCPort); err != nil {
+		logrusLog.Fatalf("Failed to start server: %v", err)
+	}
 }

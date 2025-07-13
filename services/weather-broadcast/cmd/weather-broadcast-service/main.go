@@ -37,8 +37,11 @@ func main() {
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to Subscription Service: %v", err)
 	}
-	defer weatherConn.Close()
-
+	defer func() {
+		if err := weatherConn.Close(); err != nil {
+			logrusLog.Errorf("Failed to close gRPC connection with weather service: %v", err)
+		}
+	}()
 	weatherGRPCClient := weather.NewWeatherServiceClient(weatherConn)
 	weatherClient := clients.NewWeatherGRPCClient(weatherGRPCClient, logrusLog)
 
@@ -48,7 +51,11 @@ func main() {
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to Subscription Service: %v", err)
 	}
-	defer subscConn.Close()
+	defer func() {
+		if err := subscConn.Close(); err != nil {
+			logrusLog.Errorf("Failed to close gRPC connection with subscription service: %v", err)
+		}
+	}()
 
 	subscriptionGRPCClient := subscription.NewSubscriptionServiceClient(subscConn)
 	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
@@ -57,14 +64,21 @@ func main() {
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			logrusLog.Errorf("Failed to close RabbitMQ connection: %v", err)
+		}
+	}()
 
 	ch, err := conn.Channel()
 	if err != nil {
 		log.Fatal("Failed to open channel:", err)
 	}
-	defer ch.Close()
-
+	defer func() {
+		if err := ch.Close(); err != nil {
+			logrusLog.Errorf("Failed to close RabbitMQ channel: %v", err)
+		}
+	}()
 	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.Exchange, logrusLog)
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 

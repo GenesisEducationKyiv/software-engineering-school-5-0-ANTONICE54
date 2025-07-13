@@ -27,7 +27,11 @@ func main() {
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to Weather Service: %v", err)
 	}
-	defer weatherConn.Close()
+	defer func() {
+		if err := weatherConn.Close(); err != nil {
+			logrusLog.Errorf("Failed to close gRPC connection with weather service: %v", err)
+		}
+	}()
 
 	weatherGRPCClient := weather.NewWeatherServiceClient(weatherConn)
 	weatherClient := clients.NewWeatherGRPCClient(weatherGRPCClient, logrusLog)
@@ -39,7 +43,11 @@ func main() {
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to Subscription Service: %v", err)
 	}
-	defer subscConn.Close()
+	defer func() {
+		if err := subscConn.Close(); err != nil {
+			logrusLog.Errorf("Failed to close gRPC connection with subscription service: %v", err)
+		}
+	}()
 
 	subscriptionGRPCClient := subscription.NewSubscriptionServiceClient(subscConn)
 	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)

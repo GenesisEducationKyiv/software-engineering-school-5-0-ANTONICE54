@@ -1,14 +1,14 @@
-package services
+package usecases
 
 import (
 	"context"
 	"weather-forecast/pkg/logger"
-	"weather-service/internal/dto"
+	"weather-service/internal/domain/models"
 )
 
 type (
 	WeatherProvider interface {
-		GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error)
+		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
 	}
 
 	WeatherService struct {
@@ -24,7 +24,7 @@ func NewWeatherService(weatherProvider WeatherProvider, logger logger.Logger) *W
 	}
 }
 
-func (s *WeatherService) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
+func (s *WeatherService) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
 	weather, err := s.weatherProvider.GetWeatherByCity(ctx, city)
 	if err != nil {

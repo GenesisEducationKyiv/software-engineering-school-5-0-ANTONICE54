@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 	"weather-forecast/pkg/logger"
-	"weather-service/internal/errors"
+	"weather-service/internal/infrastructure/errors"
 
 	"github.com/redis/go-redis/v9"
 )

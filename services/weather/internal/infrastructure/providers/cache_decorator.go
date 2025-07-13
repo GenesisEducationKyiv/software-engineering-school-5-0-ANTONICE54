@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 	"weather-forecast/pkg/logger"
-	"weather-service/internal/dto"
+	"weather-service/internal/domain/models"
 )
 
 const cacheTTL = 10 * time.Minute
@@ -35,7 +35,7 @@ func NewCacheDecorator(provider WeatherProvider, cache CacheWriter, metrics Cach
 	}
 }
 
-func (d *CacheDecorator) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
+func (d *CacheDecorator) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
 	weather, err := d.provider.GetWeatherByCity(ctx, city)
 

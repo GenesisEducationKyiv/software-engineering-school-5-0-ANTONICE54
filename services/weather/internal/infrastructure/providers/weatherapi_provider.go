@@ -6,33 +6,37 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"weather-service/internal/dto"
-	"weather-service/internal/errors"
+	"weather-service/internal/domain/models"
+	"weather-service/internal/infrastructure/errors"
 
 	"weather-forecast/pkg/logger"
 )
 
 type (
-	GetOpenWeatherErrorResponse struct {
-		Cod     string `json:"cod"`
+	GetWeatherConditionResponse struct {
+		Text string `json:"text"`
+	}
+
+	GetWeatherCurrentResponse struct {
+		TempC     float64                     `json:"temp_c"`
+		Condition GetWeatherConditionResponse `json:"condition"`
+		Humidity  int                         `json:"humidity"`
+	}
+
+	GetWeatherSuccessResponse struct {
+		Current GetWeatherCurrentResponse `json:"current"`
+	}
+
+	GetWeatherErrorDetails struct {
+		Code    int    `json:"code"`
 		Message string `json:"message"`
 	}
 
-	GetOpenWeatherMainResponse struct {
-		Temperature float64 `json:"temp"`
-		Humidity    int     `json:"humidity"`
+	GetWeatherErrorResponse struct {
+		Error GetWeatherErrorDetails `json:"error"`
 	}
 
-	GetOpenWeatherDescriptionResponse struct {
-		Description string `json:"description"`
-	}
-
-	GetOpenWeatherSuccessResponse struct {
-		Weather []GetOpenWeatherDescriptionResponse `json:"weather"`
-		Main    GetOpenWeatherMainResponse          `json:"main"`
-	}
-
-	OpenWeatherProvider struct {
+	WeatherAPIProvider struct {
 		apiURL string
 		apiKey string
 		client *http.Client
@@ -40,19 +44,18 @@ type (
 	}
 )
 
-func NewOpenWeatherProvider(apiURL, apiKey string, client *http.Client, logger logger.Logger) *OpenWeatherProvider {
-	return &OpenWeatherProvider{
+func NewWeatherAPIProvider(apiURL, apiKey string, httpClient *http.Client, logger logger.Logger) *WeatherAPIProvider {
+	return &WeatherAPIProvider{
 		apiURL: apiURL,
 		apiKey: apiKey,
-		client: client,
+		client: httpClient,
 		logger: logger,
 	}
 }
 
-func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
+func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
-	const notFoundOpenWeatherErrorCode = "404"
-	const metricUnits = "metric"
+	const notFoundWeatherAPIErrorCode = 1006
 
 	url, err := url.Parse(p.apiURL)
 	if err != nil {
@@ -60,9 +63,8 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 		return nil, errors.GetWeatherError
 	}
 	queryString := url.Query()
+	queryString.Set("key", p.apiKey)
 	queryString.Set("q", city)
-	queryString.Set("appid", p.apiKey)
-	queryString.Set("units", metricUnits)
 	url.RawQuery = queryString.Encode()
 	stringURL := url.String()
 
@@ -90,45 +92,36 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errResponse GetOpenWeatherErrorResponse
+
+		var errResponse GetWeatherErrorResponse
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
 			p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
 			return nil, errors.GetWeatherError
 		}
 
-		if errResponse.Cod == notFoundOpenWeatherErrorCode {
-
+		if errResponse.Error.Code == notFoundWeatherAPIErrorCode {
 			p.logger.Warnf("City not found: %s", city)
 			return nil, errors.CityNotFoundError
 		} else {
-			p.logger.Warnf("Error from open weather: %s", errResponse.Message)
+			p.logger.Warnf("Error from weather api: %s", errResponse.Error.Message)
 			return nil, errors.GetWeatherError
 		}
 
 	}
 
-	var weatherResponse GetOpenWeatherSuccessResponse
+	var weather GetWeatherSuccessResponse
 
-	if err := json.Unmarshal(body, &weatherResponse); err != nil {
+	if err := json.Unmarshal(body, &weather); err != nil {
 		p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
 		return nil, errors.GetWeatherError
 	}
 
-	weatherDesc := ""
-
-	if len(weatherResponse.Weather) > 0 {
-		weatherDesc = weatherResponse.Weather[0].Description
-	} else {
-		p.logger.Warnf("OpenWeather did not provide weather description for city: %s", city)
-	}
-
-	result := dto.Weather{
-		Temperature: weatherResponse.Main.Temperature,
-		Humidity:    weatherResponse.Main.Humidity,
-		Description: weatherDesc,
+	result := models.Weather{
+		Temperature: weather.Current.TempC,
+		Humidity:    weather.Current.Humidity,
+		Description: weather.Current.Condition.Text,
 	}
 
 	return &result, nil
-
 }

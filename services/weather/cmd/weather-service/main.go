@@ -4,14 +4,15 @@ import (
 	"net/http"
 	"time"
 	"weather-forecast/pkg/logger"
-	"weather-service/internal/cache"
-	filelogger "weather-service/internal/logger"
-	"weather-service/internal/metrics"
-	"weather-service/internal/providers"
-	"weather-service/internal/providers/roundtrip"
-	"weather-service/internal/server"
-	"weather-service/internal/server/handlers"
-	"weather-service/internal/services"
+	"weather-service/internal/domain/usecases"
+	"weather-service/internal/infrastructure/cache"
+	filelogger "weather-service/internal/infrastructure/logger"
+	"weather-service/internal/infrastructure/metrics"
+
+	"weather-service/internal/infrastructure/providers"
+	"weather-service/internal/infrastructure/providers/roundtrip"
+	"weather-service/internal/presentation/server"
+	"weather-service/internal/presentation/server/handlers"
 
 	"github.com/spf13/viper"
 )
@@ -70,7 +71,7 @@ func main() {
 	cacheWeatherProviderChainSection.SetNext(weatherAPIChainSection)
 	weatherAPIChainSection.SetNext(openWeatherChainSection)
 
-	weatherService := services.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
+	weatherService := usecases.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	app := server.New(weatherHandler, logrusLog)

@@ -5,8 +5,8 @@ import (
 	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
-	"weather-service/internal/dto"
-	"weather-service/internal/mappers"
+	"weather-service/internal/domain/models"
+	"weather-service/internal/presentation/mappers"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,7 +14,7 @@ import (
 
 type (
 	WeatherService interface {
-		GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error)
+		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
 	}
 
 	WeatherHandler struct {

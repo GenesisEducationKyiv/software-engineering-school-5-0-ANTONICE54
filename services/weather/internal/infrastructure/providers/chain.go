@@ -2,12 +2,12 @@ package providers
 
 import (
 	"context"
-	"weather-service/internal/dto"
+	"weather-service/internal/domain/models"
 )
 
 type (
 	WeatherProvider interface {
-		GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error)
+		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
 	}
 
 	WeatherChainLink interface {
@@ -32,7 +32,7 @@ func (c *WeatherLink) SetNext(section WeatherChainLink) {
 	c.nextSection = section
 }
 
-func (c *WeatherLink) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
+func (c *WeatherLink) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
 	weather, err := c.provider.GetWeatherByCity(ctx, city)
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
-	"weather-service/internal/dto"
-	"weather-service/internal/errors"
+	"weather-service/internal/domain/models"
+	"weather-service/internal/infrastructure/errors"
 )
 
 type (
@@ -34,9 +34,9 @@ func NewCacheWeather(cache CacheReader, metrics MetricsRecorder, logger logger.L
 	}
 }
 
-func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
+func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
-	cachedWeather := &dto.Weather{}
+	cachedWeather := &models.Weather{}
 	err := p.cache.Get(ctx, city, cachedWeather)
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {

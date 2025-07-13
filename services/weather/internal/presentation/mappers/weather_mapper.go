@@ -2,10 +2,10 @@ package mappers
 
 import (
 	"weather-forecast/pkg/proto/weather"
-	"weather-service/internal/dto"
+	"weather-service/internal/domain/models"
 )
 
-func MapWeatherToProto(weatherDTO *dto.Weather) *weather.GetWeatherResponse {
+func MapWeatherToProto(weatherDTO *models.Weather) *weather.GetWeatherResponse {
 
 	return &weather.GetWeatherResponse{
 		Temperature: weatherDTO.Temperature,

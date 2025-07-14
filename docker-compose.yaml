@@ -72,7 +72,7 @@ services:
       - "5672:5672"      
       - "15672:15672"    
     env_file:
-    - .env
+      - .env
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBIT_MQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBIT_MQ_PASS}

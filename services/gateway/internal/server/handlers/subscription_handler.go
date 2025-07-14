@@ -12,14 +12,14 @@ import (
 )
 
 type (
-	SubsctiptionClient interface {
+	SubscriptionClient interface {
 		Subscribe(ctx context.Context, info SubscribeRequest) error
 		Confirm(ctx context.Context, token string) error
 		Unsubscribe(ctx context.Context, token string) error
 	}
 
 	SubscriptionHandler struct {
-		subscriptionClient SubsctiptionClient
+		subscriptionClient SubscriptionClient
 		logger             logger.Logger
 	}
 
@@ -30,7 +30,7 @@ type (
 	}
 )
 
-func NewSubscriptionHandler(subscriptionClient SubsctiptionClient, logger logger.Logger) *SubscriptionHandler {
+func NewSubscriptionHandler(subscriptionClient SubscriptionClient, logger logger.Logger) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		subscriptionClient: subscriptionClient,
 		logger:             logger,

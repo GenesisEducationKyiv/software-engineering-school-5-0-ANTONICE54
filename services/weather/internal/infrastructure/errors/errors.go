@@ -13,7 +13,7 @@ const (
 	CacheMissErrorCode    WeatherServiceErrorCode = "CACHE_MISS_ERROR"
 	CityNotFoundErrorCode WeatherServiceErrorCode = "CITY_NOT_FOUND_ERROR"
 	CacheErrorCode        WeatherServiceErrorCode = "CACHE_ERROR"
-	InternalErrorCode     WeatherServiceErrorCode = "INVALID_REQUEST_ERROR"
+	InternalErrorCode     WeatherServiceErrorCode = "INTERNAL_SERVER_ERROR"
 )
 
 var (

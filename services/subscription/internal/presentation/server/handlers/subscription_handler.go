@@ -62,7 +62,7 @@ func (h *SubscriptionHandler) Confirm(ctx context.Context, req *subscription.Con
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			return &emptypb.Empty{}, appErr.ToGRPCStatus()
 		}
-		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to create subscription: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to confirm subscription: %v", err)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -77,7 +77,7 @@ func (h *SubscriptionHandler) Unsubscribe(ctx context.Context, req *subscription
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			return &emptypb.Empty{}, appErr.ToGRPCStatus()
 		}
-		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to create subscription: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to unsibscribe subscription: %v", err)
 	}
 
 	return &emptypb.Empty{}, nil

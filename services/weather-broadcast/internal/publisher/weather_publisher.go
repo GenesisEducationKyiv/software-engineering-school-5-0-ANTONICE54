@@ -29,7 +29,7 @@ func NewRabbitMQPublisher(ch *amqp.Channel, exchange string, logger logger.Logge
 func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) error {
 	body, err := json.Marshal(event)
 	if err != nil {
-		p.logger.Warnf("failed to marshal event: %w", err)
+		p.logger.Warnf("failed to marshal event: %v", err)
 		return errors.InternalError
 	}
 

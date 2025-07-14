@@ -12,7 +12,7 @@ const (
 	WeatherServiceErrorCode      GatewayErrorCode = "WEATHER_SERVICE_ERROR"
 	SubscriptionServiceErrorCode GatewayErrorCode = "SUBSCRIPTION_SERVICE_ERROR"
 	InvalidRequestErrorCode      GatewayErrorCode = "INVALID_REQUEST_ERROR"
-	InternalErrorCode            GatewayErrorCode = "INVALID_REQUEST_ERROR"
+	InternalErrorCode            GatewayErrorCode = "INTERNAL_SERVER_ERROR"
 )
 
 var (

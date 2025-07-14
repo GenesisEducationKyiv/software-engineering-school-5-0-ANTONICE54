@@ -7,6 +7,8 @@ import (
 	"weather-service/internal/config"
 	"weather-service/internal/domain/usecases"
 	"weather-service/internal/infrastructure/cache"
+	"weather-service/internal/infrastructure/clients/openweather"
+	"weather-service/internal/infrastructure/clients/weatherapi"
 	filelogger "weather-service/internal/infrastructure/logger"
 	"weather-service/internal/infrastructure/metrics"
 
@@ -49,10 +51,12 @@ func main() {
 		Transport: providerRoundTrip,
 	}
 
-	weatherAPIProvider := providers.NewWeatherAPIProvider(cfg, &client, logrusLog)
+	weatherAPIClient := weatherapi.NewClient(cfg, &client, logrusLog)
+	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIClient, logrusLog)
 	cacheableWeatherAPIProvider := providers.NewCacheDecorator(weatherAPIProvider, redisCache, prometherusMetrics, logrusLog)
 
-	openWeatherProvider := providers.NewOpenWeatherProvider(cfg, &client, logrusLog)
+	openWeatherClient := openweather.NewClient(cfg, &client, logrusLog)
+	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherClient, logrusLog)
 	cacheableOpenWeatherProvider := providers.NewCacheDecorator(openWeatherProvider, redisCache, prometherusMetrics, logrusLog)
 
 	cacheWeatherProvider := providers.NewCacheWeather(redisCache, prometherusMetrics, logrusLog)

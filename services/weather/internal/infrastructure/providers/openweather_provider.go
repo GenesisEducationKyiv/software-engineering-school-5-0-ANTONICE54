@@ -2,49 +2,21 @@ package providers
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
-	"net/url"
-	"weather-service/internal/config"
 	"weather-service/internal/domain/models"
-	"weather-service/internal/infrastructure/errors"
+	"weather-service/internal/infrastructure/clients/openweather"
 
 	"weather-forecast/pkg/logger"
 )
 
 type (
-	GetOpenWeatherErrorResponse struct {
-		Cod     string `json:"cod"`
-		Message string `json:"message"`
-	}
-
-	GetOpenWeatherMainResponse struct {
-		Temperature float64 `json:"temp"`
-		Humidity    int     `json:"humidity"`
-	}
-
-	GetOpenWeatherDescriptionResponse struct {
-		Description string `json:"description"`
-	}
-
-	GetOpenWeatherSuccessResponse struct {
-		Weather []GetOpenWeatherDescriptionResponse `json:"weather"`
-		Main    GetOpenWeatherMainResponse          `json:"main"`
-	}
-
 	OpenWeatherProvider struct {
-		apiURL string
-		apiKey string
-		client *http.Client
+		client *openweather.OpenWeatherClient
 		logger logger.Logger
 	}
 )
 
-func NewOpenWeatherProvider(cfg *config.Config, client *http.Client, logger logger.Logger) *OpenWeatherProvider {
+func NewOpenWeatherProvider(client *openweather.OpenWeatherClient, logger logger.Logger) *OpenWeatherProvider {
 	return &OpenWeatherProvider{
-		apiURL: cfg.OpenWeatherURL,
-		apiKey: cfg.OpenWeatherKey,
 		client: client,
 		logger: logger,
 	}
@@ -52,68 +24,9 @@ func NewOpenWeatherProvider(cfg *config.Config, client *http.Client, logger logg
 
 func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
-	const notFoundOpenWeatherErrorCode = "404"
-	const metricUnits = "metric"
-
-	url, err := url.Parse(p.apiURL)
+	weatherResponse, err := p.client.GetWeather(ctx, city)
 	if err != nil {
-		p.logger.Warnf("Form url: %s", err.Error())
-		return nil, errors.GetWeatherError
-	}
-	queryString := url.Query()
-	queryString.Set("q", city)
-	queryString.Set("appid", p.apiKey)
-	queryString.Set("units", metricUnits)
-	url.RawQuery = queryString.Encode()
-	stringURL := url.String()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stringURL, nil)
-	if err != nil {
-		p.logger.Warnf("Failed to create get weather request: %s", err.Error())
-		return nil, errors.GetWeatherError
-	}
-
-	resp, err := p.client.Do(req)
-	if err != nil {
-		p.logger.Warnf("Failed make get weather request: %s", err.Error())
-		return nil, errors.GetWeatherError
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			p.logger.Warnf("Failed to close response body: %s", err.Error())
-		}
-	}()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		p.logger.Warnf("Failed to read response body: %s", err.Error())
-		return nil, errors.GetWeatherError
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var errResponse GetOpenWeatherErrorResponse
-
-		if err := json.Unmarshal(body, &errResponse); err != nil {
-			p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
-			return nil, errors.GetWeatherError
-		}
-
-		if errResponse.Cod == notFoundOpenWeatherErrorCode {
-
-			p.logger.Warnf("City not found: %s", city)
-			return nil, errors.CityNotFoundError
-		} else {
-			p.logger.Warnf("Error from open weather: %s", errResponse.Message)
-			return nil, errors.GetWeatherError
-		}
-
-	}
-
-	var weatherResponse GetOpenWeatherSuccessResponse
-
-	if err := json.Unmarshal(body, &weatherResponse); err != nil {
-		p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
-		return nil, errors.GetWeatherError
+		return nil, err
 	}
 
 	weatherDesc := ""

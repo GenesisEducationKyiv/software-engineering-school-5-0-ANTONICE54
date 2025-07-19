@@ -17,7 +17,6 @@ type PublishedEvent struct {
 type MockEventPublisher struct {
 	publishedEvents []PublishedEvent
 	mu              sync.RWMutex
-	shouldFail      bool
 }
 
 func NewMockEventPublisher() *MockEventPublisher {

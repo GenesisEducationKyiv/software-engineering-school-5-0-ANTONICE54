@@ -141,7 +141,7 @@ func Test_WeatherSuccessEvent(t *testing.T) {
 
 	expected := mailer.SentEmail{
 		Subject: "Weather Update",
-		Body:    "Here's the latest weather update for your city: Kyiv\nTemperature: 54.0°C\nHumidity: 54\nDescription: Sunny",
+		Body:    "Here's the latest weather update for your city: Kyiv\nTemperature: 54.0°C\nHumidity: 54%\nDescription: Sunny",
 		SentTo:  "test@example.com",
 	}
 

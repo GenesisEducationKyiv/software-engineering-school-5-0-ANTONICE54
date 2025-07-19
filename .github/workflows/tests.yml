@@ -4,27 +4,17 @@ on:
     branches: [main]
   pull_request:
 
-
 jobs:
   integration:
-    name: Integration Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [email, weather, subscription]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{github.head_ref || github.ref}}
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      - name: Run integration tests for email service
-        working-directory: ./services/email
-        run: go test ./tests/integration/
-
-      - name: Run integration tests for weather service
-        working-directory: ./services/weather
-        run: go test ./tests/integration/
-
-      - name: Run integration tests for subscription service
-        working-directory: ./services/subscription
+      - name: Run tests for ${{ matrix.service }}
+        working-directory: ./services/${{ matrix.service }}
         run: go test ./tests/integration/

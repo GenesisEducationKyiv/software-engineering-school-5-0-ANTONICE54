@@ -1,0 +1,27 @@
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+
+jobs:
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{github.head_ref || github.ref}}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run integration tests for email service
+        run: go test ./services/email/tests/integration/
+
+      - name: Run integration tests for weather service
+        run: go test ./services/weather/tests/integration/
+
+      - name: Run integration tests for subscription service
+        run: go test ./services/subscription/tests/integration/

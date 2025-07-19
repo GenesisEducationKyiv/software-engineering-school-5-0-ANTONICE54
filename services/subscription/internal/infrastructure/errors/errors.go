@@ -10,10 +10,8 @@ func (c InfrastructureErrorCode) String() string {
 
 const (
 	DatabaseErrorCode InfrastructureErrorCode = "DATABASE_ERROR"
-	InternalErrorCode InfrastructureErrorCode = "INTERNAL_ERROR"
 )
 
 var (
 	DatabaseError = apperrors.NewInternal(DatabaseErrorCode, "database raised an error")
-	InternalError = apperrors.NewInternal(InternalErrorCode, "internal server error")
 )

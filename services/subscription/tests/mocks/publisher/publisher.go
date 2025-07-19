@@ -3,9 +3,9 @@ package publisher
 import (
 	"context"
 	"encoding/json"
-	infraerror "subscription-service/internal/infrastructure/errors"
 
 	"sync"
+	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/events"
 )
 
@@ -32,7 +32,7 @@ func (m *MockEventPublisher) Publish(ctx context.Context, event events.Event) er
 
 	body, err := json.Marshal(event)
 	if err != nil {
-		return infraerror.InternalError
+		return apperrors.InternalServerError
 	}
 
 	m.publishedEvents = append(m.publishedEvents, PublishedEvent{

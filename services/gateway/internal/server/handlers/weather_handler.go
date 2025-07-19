@@ -55,7 +55,7 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
-		httpErr := httperrors.New(errors.InternalServerError)
+		httpErr := httperrors.New(apperrors.InternalServerError)
 		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}

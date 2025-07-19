@@ -3,7 +3,8 @@ package publisher
 import (
 	"context"
 	"encoding/json"
-	infraerror "subscription-service/internal/infrastructure/errors"
+	"weather-forecast/pkg/apperrors"
+
 	"weather-forecast/pkg/events"
 	"weather-forecast/pkg/logger"
 
@@ -30,7 +31,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 	body, err := json.Marshal(event)
 	if err != nil {
 		p.logger.Warnf("failed to marshal event: %w", err)
-		return infraerror.InternalError
+		return apperrors.InternalServerError
 	}
 
 	err = p.ch.PublishWithContext(
@@ -45,7 +46,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 		})
 
 	if err != nil {
-		return infraerror.InternalError
+		return apperrors.InternalServerError
 	}
 
 	return nil

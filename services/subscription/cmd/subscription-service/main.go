@@ -5,13 +5,13 @@ import (
 	"subscription-service/internal/config"
 	"subscription-service/internal/domain/usecases"
 	"subscription-service/internal/infrastructure/database"
-	"subscription-service/internal/infrastructure/publisher"
 	"subscription-service/internal/infrastructure/repositories"
 	"subscription-service/internal/infrastructure/sender"
 	"subscription-service/internal/infrastructure/token"
 	"subscription-service/internal/presentation/server"
 	"subscription-service/internal/presentation/server/handlers"
 	"weather-forecast/pkg/logger"
+	"weather-forecast/pkg/publisher"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

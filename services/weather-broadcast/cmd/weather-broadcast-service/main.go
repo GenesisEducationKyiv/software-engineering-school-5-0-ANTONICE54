@@ -9,12 +9,13 @@ import (
 	"time"
 	"weather-broadcast-service/internal/clients"
 	"weather-broadcast-service/internal/config"
-	"weather-broadcast-service/internal/publisher"
 	"weather-broadcast-service/internal/scheduler"
 	"weather-broadcast-service/internal/sender"
 	"weather-broadcast-service/internal/services"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/subscription"
+	"weather-forecast/pkg/publisher"
+
 	"weather-forecast/pkg/proto/weather"
 
 	amqp "github.com/rabbitmq/amqp091-go"

@@ -55,7 +55,7 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
-		httpErr := httperrors.New(errors.InternalServerError)
+		httpErr := httperrors.New(apperrors.InternalServerError)
 		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
@@ -76,7 +76,7 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
-		httpErr := httperrors.New(errors.InternalServerError)
+		httpErr := httperrors.New(apperrors.InternalServerError)
 		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
@@ -97,7 +97,7 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
-		httpErr := httperrors.New(errors.InternalServerError)
+		httpErr := httperrors.New(apperrors.InternalServerError)
 		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}

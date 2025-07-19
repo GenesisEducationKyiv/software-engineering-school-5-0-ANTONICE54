@@ -7,12 +7,17 @@ require (
 	weather-forecast/pkg v0.0.0-00010101000000-000000000000
 )
 
-require github.com/rabbitmq/amqp091-go v1.10.0
+require (
+	github.com/rabbitmq/amqp091-go v1.10.0
+	github.com/stretchr/testify v1.10.0
+)
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect

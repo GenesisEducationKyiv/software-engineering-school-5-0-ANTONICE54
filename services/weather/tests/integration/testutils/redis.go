@@ -70,8 +70,14 @@ func SetupTestRedis(t *testing.T) *TestRedis {
 	}
 
 	t.Cleanup(func() {
-		client.Close()
-		redisContainer.Terminate(context.Background())
+		err := client.Close()
+		if err != nil {
+			t.Errorf("Failed to close connection with redis: %s", err.Error())
+		}
+		err = redisContainer.Terminate(context.Background())
+		if err != nil {
+			t.Errorf("Failed to terminate redis container: %s", err.Error())
+		}
 	})
 
 	return testRedis

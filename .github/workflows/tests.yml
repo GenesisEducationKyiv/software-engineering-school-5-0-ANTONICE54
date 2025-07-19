@@ -18,10 +18,13 @@ jobs:
         with:
           go-version: stable
       - name: Run integration tests for email service
-        run: go test ./services/email/tests/integration/
+        working-directory: ./services/email
+        run: go test ./tests/integration/
 
       - name: Run integration tests for weather service
-        run: go test ./services/weather/tests/integration/
+        working-directory: ./services/weather
+        run: go test ./tests/integration/
 
       - name: Run integration tests for subscription service
-        run: go test ./services/subscription/tests/integration/
+        working-directory: ./services/subscription
+        run: go test ./tests/integration/

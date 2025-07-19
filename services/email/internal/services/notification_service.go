@@ -10,6 +10,7 @@ type (
 	EmailBuildService interface {
 		CreateConfirmationEmail(info *dto.SubscriptionEmailInfo) Email
 		CreateConfirmedEmail(info *dto.ConfirmedEmailInfo) Email
+		CreateUnsubscribeEmail(info *dto.UnsubscribedEmailInfo) Email
 		CreateWeatherEmail(info *dto.WeatherSuccess) Email
 		CreateWeatherErrorEmail(info *dto.WeatherError) Email
 	}
@@ -40,6 +41,11 @@ func (s *NotificationService) SendConfirmation(ctx context.Context, info *dto.Su
 
 func (s *NotificationService) SendConfirmed(ctx context.Context, info *dto.ConfirmedEmailInfo) {
 	email := s.emailBuilder.CreateConfirmedEmail(info)
+	s.mailer.Send(ctx, email.Subject, email.Body, info.Email)
+}
+
+func (s *NotificationService) SendUnsubscribed(ctx context.Context, info *dto.UnsubscribedEmailInfo) {
+	email := s.emailBuilder.CreateUnsubscribeEmail(info)
 	s.mailer.Send(ctx, email.Subject, email.Body, info.Email)
 }
 

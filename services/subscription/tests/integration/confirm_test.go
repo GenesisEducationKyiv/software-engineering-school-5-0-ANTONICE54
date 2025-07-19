@@ -21,7 +21,7 @@ func assertConfirmedEventPublished(t *testing.T, publisher *publisher.MockEventP
 	t.Helper()
 
 	eventList := publisher.GetPublishedEvents()
-	require.Len(t, eventList, 1, "Should publish exactly one event")
+	require.Len(t, eventList, 1)
 
 	lastEvent := eventList[0]
 	assert.Equal(t, events.ConfirmedEmail, lastEvent.EventType)

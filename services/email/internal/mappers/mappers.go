@@ -21,6 +21,14 @@ func ConfirmEventToDTO(event events.ConfirmedEvent) *dto.ConfirmedEmailInfo {
 	}
 }
 
+func UnsubscribeEventToDTO(event events.UnsubscribedEvent) *dto.UnsubscribedEmailInfo {
+	return &dto.UnsubscribedEmailInfo{
+		Email:     event.Email,
+		City:      event.City,
+		Frequency: event.Frequency,
+	}
+}
+
 func WeatherToDTO(weather events.Weather) *dto.Weather {
 	return &dto.Weather{
 		Temperature: weather.Temperature,

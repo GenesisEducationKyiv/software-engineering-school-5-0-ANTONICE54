@@ -96,6 +96,34 @@ func Test_ConfirmedEvent(t *testing.T) {
 	assertEmailMatches(t, emails[0], expected)
 }
 
+func Test_UnsubscribedEvent(t *testing.T) {
+	eventProcessor, mockMailer := setupEventProcessor()
+
+	event := events.UnsubscribedEvent{
+		Email:     "test@example.com",
+		Frequency: "daily",
+		City:      "Kyiv",
+	}
+
+	expected := mailer.SentEmail{
+		Subject: "Subscription canceled",
+		Body:    "You have successfully canceled your daily subscription for city Kyiv.",
+		SentTo:  "test@example.com",
+	}
+
+	eventBody, err := json.Marshal(event)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	eventProcessor.Handle(ctx, string(events.UnsubscribedEmail), eventBody)
+
+	emails := mockMailer.GetSentEmails()
+	require.Len(t, emails, 1)
+
+	assertEmailMatches(t, emails[0], expected)
+}
+
 func Test_WeatherSuccessEvent(t *testing.T) {
 	eventProcessor, mockMailer := setupEventProcessor()
 

@@ -13,6 +13,7 @@ type (
 	NotificationService interface {
 		SendConfirmation(ctx context.Context, info *dto.SubscriptionEmailInfo)
 		SendConfirmed(ctx context.Context, info *dto.ConfirmedEmailInfo)
+		SendUnsubscribed(ctx context.Context, info *dto.UnsubscribedEmailInfo)
 		SendWeather(ctx context.Context, info *dto.WeatherSuccess)
 		SendError(ctx context.Context, info *dto.WeatherError)
 	}
@@ -49,6 +50,14 @@ func (h *EventProcessor) Handle(ctx context.Context, routingKey string, body []b
 			return
 		}
 		h.sender.SendConfirmed(ctx, mappers.ConfirmEventToDTO(e))
+
+	case events.UnsubscribedEmail:
+		var e events.UnsubscribedEvent
+		if err := json.Unmarshal(body, &e); err != nil {
+			h.logger.Warnf("failed to unmarshal ConfirmedEvent:%s", err.Error())
+			return
+		}
+		h.sender.SendUnsubscribed(ctx, mappers.UnsubscribeEventToDTO(e))
 
 	case events.WeatherEmailSuccess:
 		var e events.WeatherSuccessEvent

@@ -2,9 +2,12 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"subscription-service/internal/domain/models"
+	"subscription-service/tests/mocks/publisher"
 	"testing"
 	"time"
+	"weather-forecast/pkg/events"
 	"weather-forecast/pkg/proto/subscription"
 
 	"github.com/stretchr/testify/assert"
@@ -14,13 +17,30 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+func assertUnsubscribedEventPublished(t *testing.T, publisher *publisher.MockEventPublisher, expectedEmail, expectedCity string, expectedFrequency models.Frequency) {
+	t.Helper()
+
+	eventList := publisher.GetPublishedEvents()
+	require.Len(t, eventList, 1)
+	lastEvent := eventList[0]
+	assert.Equal(t, events.UnsubscribedEmail, lastEvent.EventType)
+
+	var unsubscribedEvent events.UnsubscribedEvent
+	err := json.Unmarshal(lastEvent.RawData, &unsubscribedEvent)
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedEmail, unsubscribedEvent.Email)
+	assert.Equal(t, string(expectedFrequency), unsubscribedEvent.Frequency)
+	assert.Equal(t, expectedCity, unsubscribedEvent.City)
+}
+
 func TestUnsubscribe_Success(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	db := setupDB(t)
-	subscriptionHandler, _ := setupHandler(db)
+	subscriptionHandler, mockPublisher := setupHandler(db)
 	unsubscribeSubscription := models.Subscription{
 		Email:     "test@gmail.com",
 		City:      "Kyiv",
@@ -42,6 +62,8 @@ func TestUnsubscribe_Success(t *testing.T) {
 	res := db.Where("id = ?", unsubscribeSubscription.ID).Find(&models.Subscription{})
 	require.NoError(t, res.Error)
 	require.Equal(t, int64(0), res.RowsAffected)
+
+	assertUnsubscribedEventPublished(t, mockPublisher, unsubscribeSubscription.Email, unsubscribeSubscription.City, unsubscribeSubscription.Frequency)
 
 }
 

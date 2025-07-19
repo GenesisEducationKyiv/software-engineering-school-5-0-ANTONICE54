@@ -45,6 +45,16 @@ func (s *SimpleEmailBuildService) CreateConfirmedEmail(info *dto.ConfirmedEmailI
 	}
 }
 
+func (s *SimpleEmailBuildService) CreateUnsubscribeEmail(info *dto.UnsubscribedEmailInfo) Email {
+	return Email{
+		Subject: "Subscription canceled",
+		Body: fmt.Sprintf(
+			"You have successfully canceled your %s subscription for city %s.",
+			info.Frequency, info.City,
+		),
+	}
+}
+
 func (s *SimpleEmailBuildService) CreateWeatherEmail(info *dto.WeatherSuccess) Email {
 	return Email{
 		Subject: "Weather Update",

@@ -20,3 +20,11 @@ func ConfirmedInfoToEvent(info *contracts.ConfirmedInfo) *events.ConfirmedEvent 
 		Frequency: string(info.Frequency),
 	}
 }
+
+func UnsubscribedInfoToEvent(info *contracts.UnsubscribeInfo) *events.UnsubscribedEvent {
+	return &events.UnsubscribedEvent{
+		Email:     info.Email,
+		City:      info.City,
+		Frequency: string(info.Frequency),
+	}
+}

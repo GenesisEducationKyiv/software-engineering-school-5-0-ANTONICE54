@@ -18,9 +18,16 @@ type (
 		Token     string `json:"token"`
 		Frequency string `json:"frequency"`
 	}
+
 	ConfirmedEvent struct {
 		Email     string `json:"email"`
 		Token     string `json:"token"`
+		Frequency string `json:"frequency"`
+	}
+
+	UnsubscribedEvent struct {
+		Email     string `json:"email"`
+		City      string `json:"city"`
 		Frequency string `json:"frequency"`
 	}
 
@@ -38,6 +45,7 @@ type (
 const (
 	SubsctiptionEmail   EventType = "emails.subscription"
 	ConfirmedEmail      EventType = "emails.confirmed"
+	UnsubscribedEmail   EventType = "emails.unsubscribed"
 	WeatherEmailSuccess EventType = "emails.weather.succes"
 	WeatherEmailError   EventType = "emails.weather.error"
 )
@@ -48,6 +56,10 @@ func (SubscriptionEvent) EventType() EventType {
 
 func (ConfirmedEvent) EventType() EventType {
 	return ConfirmedEmail
+}
+
+func (UnsubscribedEvent) EventType() EventType {
+	return UnsubscribedEmail
 }
 
 func (WeatherSuccessEvent) EventType() EventType {

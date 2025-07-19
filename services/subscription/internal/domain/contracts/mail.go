@@ -14,4 +14,9 @@ type (
 		Token     string
 		Frequency models.Frequency
 	}
+	UnsubscribeInfo struct {
+		Email     string
+		City      string
+		Frequency models.Frequency
+	}
 )

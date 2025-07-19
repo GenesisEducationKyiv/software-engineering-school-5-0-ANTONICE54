@@ -167,17 +167,7 @@ func TestGetWeather_ErrorScenarios(t *testing.T) {
 		expectedCode          codes.Code
 		expectedErrorBody     string
 	}{
-		// {
-		// 	name:                  "Invalid City",
-		// 	city:                  "123",
-		// 	weatherAPIResp:        nil,
-		// 	weatherAPICode:        0,
-		// 	openWeatherResp:       nil,
-		// 	openWeatherCode:       0,
-		// 	shouldCallOpenWeather: false,
-		// 	expectedCode:          codes.InvalidArgument,
-		// 	expectedErrorBody:     "invalid request",
-		// },
+
 		{
 			name: "City Not Found",
 			city: "Odeca",

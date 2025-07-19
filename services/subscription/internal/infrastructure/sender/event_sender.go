@@ -40,3 +40,11 @@ func (s *EventSender) SendConfirmed(ctx context.Context, info *contracts.Confirm
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
 }
+
+func (s *EventSender) SendUnsubscribed(ctx context.Context, info *contracts.UnsubscribeInfo) {
+	e := mappers.UnsubscribedInfoToEvent(info)
+	err := s.publisher.Publish(ctx, e)
+	if err != nil {
+		s.logger.Warnf("failed to publish event: %s", err.Error())
+	}
+}

@@ -43,9 +43,3 @@ func (m *MockSMTPMailer) GetSentEmails() []SentEmail {
 	copy(result, m.sentEmails)
 	return result
 }
-
-func (m *MockSMTPMailer) Clear() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.sentEmails = m.sentEmails[:0]
-}

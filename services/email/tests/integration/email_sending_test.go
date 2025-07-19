@@ -66,7 +66,6 @@ func Test_SubscriptionEvent(t *testing.T) {
 	require.Len(t, emails, 1)
 
 	assertEmailMatches(t, emails[0], expected)
-	mockMailer.Clear()
 }
 
 func Test_ConfirmedEvent(t *testing.T) {
@@ -122,12 +121,10 @@ func Test_WeatherSuccessEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-
 	eventProcessor.Handle(ctx, string(events.WeatherEmailSuccess), eventBody)
 
 	emails := mockMailer.GetSentEmails()
 	require.Len(t, emails, 1)
-
 	assertEmailMatches(t, emails[0], expected)
 }
 
@@ -149,11 +146,9 @@ func Test_WeatherErrorEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-
 	eventProcessor.Handle(ctx, string(events.WeatherEmailError), eventBody)
 
 	emails := mockMailer.GetSentEmails()
 	require.Len(t, emails, 1)
-
 	assertEmailMatches(t, emails[0], expected)
 }

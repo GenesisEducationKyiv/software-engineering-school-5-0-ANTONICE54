@@ -14,8 +14,8 @@ import (
 	"weather-service/internal/infrastructure/clients/weatherapi"
 	"weather-service/internal/infrastructure/providers"
 
+	stub_logger "weather-forecast/pkg/stubs/logger"
 	"weather-service/internal/presentation/server/handlers"
-	stub_logger "weather-service/tests/stubs/logger"
 
 	"github.com/stretchr/testify/require"
 	"gotest.tools/assert"

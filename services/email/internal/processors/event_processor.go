@@ -54,7 +54,7 @@ func (h *EventProcessor) Handle(ctx context.Context, routingKey string, body []b
 	case events.UnsubscribedEmail:
 		var e events.UnsubscribedEvent
 		if err := json.Unmarshal(body, &e); err != nil {
-			h.logger.Warnf("failed to unmarshal ConfirmedEvent:%s", err.Error())
+			h.logger.Warnf("failed to unmarshal UnsubscribeEvent:%s", err.Error())
 			return
 		}
 		h.sender.SendUnsubscribed(ctx, mappers.UnsubscribeEventToDTO(e))

@@ -56,15 +56,12 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, frequency, c
 	}
 
 	token := s.tokenManager.Generate(ctx)
-	subscription := models.Subscription{
-		Email:     email,
-		Frequency: models.Frequency(frequency),
-		City:      city,
-		Confirmed: false,
-		Token:     token,
+	subscription, err := models.NewSubscription(email, city, token, frequency)
+	if err != nil {
+		return nil, err
 	}
 
-	createdSubscription, err := s.subscriptionRepository.Create(ctx, subscription)
+	createdSubscription, err := s.subscriptionRepository.Create(ctx, *subscription)
 	if err != nil {
 		return nil, err
 	}

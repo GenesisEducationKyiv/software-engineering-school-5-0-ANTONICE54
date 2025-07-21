@@ -45,7 +45,11 @@ func NewSubscriptionService(subscriptionRepo SubscriptionRepository, tokenManage
 
 func (s *SubscriptionService) Subscribe(ctx context.Context, email, frequency, city string) (*models.Subscription, error) {
 
-	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, email)
+	receivedSubsc, err := s.subscriptionRepository.GetByEmail(ctx, email)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if receivedSubsc != nil {
 		return nil, apperrors.AlreadySubscribedError

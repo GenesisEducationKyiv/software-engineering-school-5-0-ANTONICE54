@@ -16,7 +16,6 @@ func TestCleanArchitecture(t *testing.T) {
 	t.Run("usecase layer isolation", func(t *testing.T) {
 		archtest.Package(t, "weather-forecast/internal/domain/usecases").
 			Ignoring("weather-forecast/internal/infrastructure/logger/...").
-			Ignoring("weather-forecast/internal/infrastructure/apperrors/...").
 			ShouldNotDependOn(
 				"weather-forecast/internal/infrastructure/...",
 				"weather-forecast/internal/presentation/...",

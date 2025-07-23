@@ -120,7 +120,7 @@ func setupWeatherHandlerWithCache(cacher Cacher, metrics providers.MetricsRecord
 	cacheProviderLink.SetNext(weatherAPILink)
 	weatherAPILink.SetNext(openWeatherLink)
 
-	weatherService := services.NewWeatherService(cacheProviderLink, stubLogger)
+	weatherService := usecases.NewWeatherService(cacheProviderLink, stubLogger)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, stubLogger)
 	return weatherHandler
 }

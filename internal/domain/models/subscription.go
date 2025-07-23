@@ -1,7 +1,7 @@
 package models
 
 import (
-	"weather-forecast/internal/infrastructure/apperrors"
+	domainerr "weather-forecast/internal/domain/errors"
 )
 
 type (
@@ -30,7 +30,7 @@ func NewSubscription(email, city, token, frequency string) (*Subscription, error
 	case string(Hourly):
 		freq = Hourly
 	default:
-		return nil, apperrors.InvalidFrequencyInternalError
+		return nil, domainerr.ErrInvalidFrequency
 	}
 
 	return &Subscription{

@@ -2,8 +2,9 @@ package usecases
 
 import (
 	"context"
+	domainerr "weather-forecast/internal/domain/errors"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+
 	"weather-forecast/internal/infrastructure/logger"
 )
 
@@ -52,7 +53,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, frequency, c
 	}
 
 	if receivedSubsc != nil {
-		return nil, apperrors.AlreadySubscribedError
+		return nil, domainerr.ErrAlreadySubscribed
 	}
 
 	token := s.tokenManager.Generate(ctx)
@@ -74,7 +75,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, email, frequency, c
 func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
-		return apperrors.InvalidTokenError
+		return domainerr.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -82,7 +83,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 		return err
 	}
 	if receivedSubsc == nil {
-		return apperrors.TokenNotFoundError
+		return domainerr.ErrTokenNotFound
 	}
 
 	if !receivedSubsc.Confirmed {
@@ -102,7 +103,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
-		return apperrors.InvalidTokenError
+		return domainerr.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -110,7 +111,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 		return err
 	}
 	if receivedSubsc == nil {
-		return apperrors.TokenNotFoundError
+		return domainerr.ErrTokenNotFound
 	}
 
 	err = s.subscriptionRepository.DeleteByToken(ctx, token)

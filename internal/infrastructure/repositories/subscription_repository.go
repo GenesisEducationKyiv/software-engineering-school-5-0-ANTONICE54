@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerror "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
 
 	"gorm.io/gorm"
@@ -33,7 +33,7 @@ func (r *SubscriptionRepository) Create(ctx context.Context, subscription models
 
 		if res.Error != nil {
 			r.logger.Warnf("Failed to save subscription to database: %s", res.Error.Error())
-			return nil, apperrors.DatabaseError
+			return nil, infraerror.ErrDatabase
 		}
 
 		return &subscription, nil
@@ -59,7 +59,7 @@ func (r *SubscriptionRepository) GetByEmail(ctx context.Context, email string) (
 
 			} else {
 				r.logger.Warnf("Failed to get subscription from database: %s", res.Error.Error())
-				return nil, apperrors.DatabaseError
+				return nil, infraerror.ErrDatabase
 			}
 		}
 
@@ -90,7 +90,7 @@ func (r *SubscriptionRepository) GetByToken(ctx context.Context, token string) (
 
 			} else {
 				r.logger.Warnf("Failed to get subscription from database: %s", res.Error.Error())
-				return nil, apperrors.DatabaseError
+				return nil, infraerror.ErrDatabase
 			}
 		}
 
@@ -116,7 +116,7 @@ func (r *SubscriptionRepository) Update(ctx context.Context, subscription models
 
 		if res.Error != nil {
 			r.logger.Warnf("Failed to update subscription: %s", res.Error.Error())
-			return nil, apperrors.DatabaseError
+			return nil, infraerror.ErrDatabase
 		}
 		return &subscription, nil
 	})
@@ -136,7 +136,7 @@ func (r *SubscriptionRepository) DeleteByToken(ctx context.Context, token string
 
 		if res.Error != nil {
 			r.logger.Warnf("Failed to delete subscription: %s", res.Error.Error())
-			return nil, apperrors.DatabaseError
+			return nil, infraerror.ErrDatabase
 		}
 
 		return nil, nil
@@ -153,7 +153,7 @@ func (r *SubscriptionRepository) ListConfirmedByFrequency(ctx context.Context, f
 
 		if res.Error != nil {
 			r.logger.Warnf("Failed to list subscriptions: %s", res.Error.Error())
-			return nil, apperrors.DatabaseError
+			return nil, infraerror.ErrDatabase
 		}
 
 		return subscriptions, nil

@@ -4,8 +4,9 @@ import (
 	"context"
 	"net/http"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
 	"weather-forecast/internal/infrastructure/logger"
+	apierrors "weather-forecast/internal/presentation/errors"
+	"weather-forecast/internal/presentation/httperrors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,18 +41,16 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 	var req SubscribeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSON())
+		httpErr := httperrors.New(apierrors.ErrInvalidRequest)
+		ctx.JSON(httpErr.Status(), httpErr.Body())
 		return
 	}
 
 	_, err := h.subscriptionService.Subscribe(ctx, req.Email, req.Frequency, req.City)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSON())
-			return
-		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
+		httpErr := httperrors.New(err)
+		ctx.JSON(httpErr.Status(), httpErr.Body())
 		return
 	}
 
@@ -65,11 +64,8 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 	err := h.subscriptionService.Confirm(ctx, token)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSON())
-			return
-		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
+		httpErr := httperrors.New(err)
+		ctx.JSON(httpErr.Status(), httpErr.Body())
 		return
 	}
 
@@ -83,11 +79,8 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 	err := h.subscriptionService.Unsubscribe(ctx, token)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSON())
-			return
-		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
+		httpErr := httperrors.New(err)
+		ctx.JSON(httpErr.Status(), httpErr.Body())
 		return
 	}
 

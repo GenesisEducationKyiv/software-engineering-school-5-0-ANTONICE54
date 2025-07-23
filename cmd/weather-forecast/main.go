@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"time"
 	"weather-forecast/internal/domain/usecases"
+	"weather-forecast/internal/infrastructure/cache"
 	"weather-forecast/internal/infrastructure/database"
 	"weather-forecast/internal/infrastructure/logger"
 	"weather-forecast/internal/infrastructure/mailer"
+	"weather-forecast/internal/infrastructure/metrics"
 	"weather-forecast/internal/infrastructure/providers"
 	"weather-forecast/internal/infrastructure/providers/roundtrip"
 	"weather-forecast/internal/infrastructure/repositories"
@@ -47,6 +49,14 @@ func main() {
 		}
 	}()
 
+	prometherusMetrics := metrics.NewPrometheus(logrusLog)
+
+	residSource := viper.GetString("REDIS_SOURCE")
+	redisCache, err := cache.NewRedis(residSource, logrusLog)
+	if err != nil {
+		logrusLog.Fatalf("Connect to redis: %s", err.Error())
+	}
+
 	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
 
 	client := http.Client{
@@ -57,16 +67,23 @@ func main() {
 	weatherAPIURL := viper.GetString("WEATHER_API_URL")
 	weatherAPIKey := viper.GetString("WEATHER_API_KEY")
 	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIURL, weatherAPIKey, &client, logrusLog)
+	cacheableWeatherAPIProvider := providers.NewCacheDecorator(weatherAPIProvider, redisCache, prometherusMetrics, logrusLog)
 
 	openWeatherURL := viper.GetString("OPEN_WEATHER_URL")
 	openWeatherKey := viper.GetString("OPEN_WEATHER_KEY")
 	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherURL, openWeatherKey, &client, logrusLog)
+	cacheableOpenWeatherProvider := providers.NewCacheDecorator(openWeatherProvider, redisCache, prometherusMetrics, logrusLog)
 
-	weatherAPIChainSection := providers.NewWeatherLink(weatherAPIProvider)
-	openWeatherChainSection := providers.NewWeatherLink(openWeatherProvider)
+	cacheWeatherProvider := providers.NewCacheWeather(redisCache, prometherusMetrics, logrusLog)
+
+	weatherAPIChainSection := providers.NewWeatherLink(cacheableWeatherAPIProvider)
+	openWeatherChainSection := providers.NewWeatherLink(cacheableOpenWeatherProvider)
+
+	cacheWeatherProviderChainSection := providers.NewWeatherLink(cacheWeatherProvider)
+	cacheWeatherProviderChainSection.SetNext(weatherAPIChainSection)
 	weatherAPIChainSection.SetNext(openWeatherChainSection)
 
-	weatherService := usecases.NewWeatherService(weatherAPIChainSection, logrusLog)
+	weatherService := usecases.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
@@ -100,6 +117,10 @@ func main() {
 
 	serverPort := viper.GetString("SERVER_PORT")
 	s := server.New(subscHandler, weatherHandler, scheduler, logrusLog)
+
+	metricsServerPort := viper.GetString("METRICS_SERVER_PORT")
+	go prometherusMetrics.StartMetricsServer(metricsServerPort)
+
 	s.Run(serverPort)
 
 }

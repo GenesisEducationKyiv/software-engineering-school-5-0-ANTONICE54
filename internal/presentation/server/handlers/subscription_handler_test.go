@@ -6,9 +6,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	domainerr "weather-forecast/internal/domain/errors"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
+
+	apierrors "weather-forecast/internal/presentation/errors"
+
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
+	"weather-forecast/internal/presentation/httperrors"
 	mock_handlers "weather-forecast/internal/presentation/server/handlers/mock"
 
 	"github.com/gin-gonic/gin"
@@ -62,8 +67,8 @@ func TestSubscriptionHandler_Subscribe(t *testing.T) {
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, request SubscribeRequest) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
-			expectedStatusCode:   apperrors.InvalidRequestError.Status(),
-			expectedResponseBody: errToString(apperrors.InvalidRequestError.JSON()),
+			expectedStatusCode:   httperrors.New(apierrors.ErrInvalidRequest).Status(),
+			expectedResponseBody: errToString(httperrors.New(apierrors.ErrInvalidRequest).Body()),
 		},
 		{
 			name:      "Already subscribed",
@@ -75,10 +80,10 @@ func TestSubscriptionHandler_Subscribe(t *testing.T) {
 			},
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, request SubscribeRequest) {
 
-				s.EXPECT().Subscribe(gomock.Any(), request.Email, request.Frequency, request.City).Return(nil, apperrors.AlreadySubscribedError)
+				s.EXPECT().Subscribe(gomock.Any(), request.Email, request.Frequency, request.City).Return(nil, domainerr.ErrAlreadySubscribed)
 			},
-			expectedStatusCode:   apperrors.AlreadySubscribedError.Status(),
-			expectedResponseBody: errToString(apperrors.AlreadySubscribedError.JSON()),
+			expectedStatusCode:   httperrors.New(domainerr.ErrAlreadySubscribed).Status(),
+			expectedResponseBody: errToString(httperrors.New(domainerr.ErrAlreadySubscribed).Body()),
 		},
 		{
 			name:      "Database error",
@@ -90,10 +95,10 @@ func TestSubscriptionHandler_Subscribe(t *testing.T) {
 			},
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, request SubscribeRequest) {
 
-				s.EXPECT().Subscribe(gomock.Any(), request.Email, request.Frequency, request.City).Return(nil, apperrors.DatabaseError)
+				s.EXPECT().Subscribe(gomock.Any(), request.Email, request.Frequency, request.City).Return(nil, infraerrors.ErrDatabase)
 			},
-			expectedStatusCode:   apperrors.DatabaseError.Status(),
-			expectedResponseBody: errToString(apperrors.DatabaseError.JSON()),
+			expectedStatusCode:   httperrors.New(infraerrors.ErrDatabase).Status(),
+			expectedResponseBody: errToString(httperrors.New(infraerrors.ErrDatabase).Body()),
 		},
 	}
 
@@ -144,28 +149,28 @@ func TestSubscriptionHandler_Confirm(t *testing.T) {
 			name:  "Invalid token",
 			token: "xxxxx",
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
-				s.EXPECT().Confirm(gomock.Any(), token).Return(apperrors.InvalidTokenError)
+				s.EXPECT().Confirm(gomock.Any(), token).Return(domainerr.ErrInvalidToken)
 			},
-			expectedStatusCode:   apperrors.InvalidTokenError.Status(),
-			expectedResponseBody: errToString(apperrors.InvalidTokenError.JSON()),
+			expectedStatusCode:   httperrors.New(domainerr.ErrInvalidToken).Status(),
+			expectedResponseBody: errToString(httperrors.New(domainerr.ErrInvalidToken).Body()),
 		},
 		{
 			name:  "Token not found",
 			token: "59a29260-39fa-4c9b-845a-4a23bb342e4b",
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
-				s.EXPECT().Confirm(gomock.Any(), token).Return(apperrors.TokenNotFoundError)
+				s.EXPECT().Confirm(gomock.Any(), token).Return(domainerr.ErrTokenNotFound)
 			},
-			expectedStatusCode:   apperrors.TokenNotFoundError.Status(),
-			expectedResponseBody: errToString(apperrors.TokenNotFoundError.JSON()),
+			expectedStatusCode:   httperrors.New(domainerr.ErrTokenNotFound).Status(),
+			expectedResponseBody: errToString(httperrors.New(domainerr.ErrTokenNotFound).Body()),
 		},
 		{
 			name:  "Database error",
 			token: "59d29860-39fa-4c9b-845a-3e91eab42e4b",
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
-				s.EXPECT().Confirm(gomock.Any(), token).Return(apperrors.DatabaseError)
+				s.EXPECT().Confirm(gomock.Any(), token).Return(infraerrors.ErrDatabase)
 			},
-			expectedStatusCode:   apperrors.DatabaseError.Status(),
-			expectedResponseBody: errToString(apperrors.DatabaseError.JSON()),
+			expectedStatusCode:   httperrors.New(infraerrors.ErrDatabase).Status(),
+			expectedResponseBody: errToString(httperrors.New(infraerrors.ErrDatabase).Body()),
 		},
 	}
 
@@ -217,28 +222,28 @@ func TestSubscriptionHandler_Unsubcribe(t *testing.T) {
 			name:  "Invalid token",
 			token: "xxxxx",
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
-				s.EXPECT().Unsubscribe(gomock.Any(), token).Return(apperrors.InvalidTokenError)
+				s.EXPECT().Unsubscribe(gomock.Any(), token).Return(domainerr.ErrInvalidToken)
 			},
-			expectedStatusCode:   apperrors.InvalidTokenError.Status(),
-			expectedResponseBody: errToString(apperrors.InvalidTokenError.JSON()),
+			expectedStatusCode:   httperrors.New(domainerr.ErrInvalidToken).Status(),
+			expectedResponseBody: errToString(httperrors.New(domainerr.ErrInvalidToken).Body()),
 		},
 		{
 			name:  "Token not found",
 			token: "59a29260-39fa-4c9b-845a-4a23bb342e4b",
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
-				s.EXPECT().Unsubscribe(gomock.Any(), token).Return(apperrors.TokenNotFoundError)
+				s.EXPECT().Unsubscribe(gomock.Any(), token).Return(domainerr.ErrTokenNotFound)
 			},
-			expectedStatusCode:   apperrors.TokenNotFoundError.Status(),
-			expectedResponseBody: errToString(apperrors.TokenNotFoundError.JSON()),
+			expectedStatusCode:   httperrors.New(domainerr.ErrTokenNotFound).Status(),
+			expectedResponseBody: errToString(httperrors.New(domainerr.ErrTokenNotFound).Body()),
 		},
 		{
 			name:  "Database error",
 			token: "59d29860-39fa-4c9b-845a-3e91eab42e4b",
 			mockBehavior: func(s *mock_handlers.MockSubsctiptionService, logger *mock_logger.MockLogger, token string) {
-				s.EXPECT().Unsubscribe(gomock.Any(), token).Return(apperrors.DatabaseError)
+				s.EXPECT().Unsubscribe(gomock.Any(), token).Return(infraerrors.ErrDatabase)
 			},
-			expectedStatusCode:   apperrors.DatabaseError.Status(),
-			expectedResponseBody: errToString(apperrors.DatabaseError.JSON()),
+			expectedStatusCode:   httperrors.New(infraerrors.ErrDatabase).Status(),
+			expectedResponseBody: errToString(httperrors.New(infraerrors.ErrDatabase).Body()),
 		},
 	}
 

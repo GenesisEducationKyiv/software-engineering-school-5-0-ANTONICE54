@@ -7,7 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
+	apierrors "weather-forecast/internal/presentation/errors"
+
+	"weather-forecast/internal/presentation/httperrors"
+
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
 	mock_handlers "weather-forecast/internal/presentation/server/handlers/mock"
 
@@ -61,8 +65,8 @@ func TestWeatherHandler_Get(t *testing.T) {
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
-			expectedStatusCode:   apperrors.InvalidRequestError.Status(),
-			expectedResponseBody: errToString(apperrors.InvalidRequestError.JSON()),
+			expectedStatusCode:   httperrors.New(apierrors.ErrInvalidRequest).Status(),
+			expectedResponseBody: errToString(httperrors.New(apierrors.ErrInvalidRequest).Body()),
 		},
 		{
 			name:      "City not found",
@@ -71,10 +75,10 @@ func TestWeatherHandler_Get(t *testing.T) {
 				City: "ABCD",
 			},
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
-				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, apperrors.CityNotFoundError)
+				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, infraerrors.ErrCityNotFound)
 			},
-			expectedStatusCode:   apperrors.CityNotFoundError.Status(),
-			expectedResponseBody: errToString(apperrors.CityNotFoundError.JSON()),
+			expectedStatusCode:   httperrors.New(infraerrors.ErrCityNotFound).Status(),
+			expectedResponseBody: errToString(httperrors.New(infraerrors.ErrCityNotFound).Body()),
 		},
 	}
 

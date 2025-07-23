@@ -4,8 +4,9 @@ import (
 	"context"
 	"net/http"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
 	"weather-forecast/internal/infrastructure/logger"
+	apierrors "weather-forecast/internal/presentation/errors"
+	"weather-forecast/internal/presentation/httperrors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,18 +42,16 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 	var req GetWeatherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		ctx.JSON(apperrors.InvalidRequestError.Status(), apperrors.InvalidRequestError.JSON())
+		httpErr := httperrors.New(apierrors.ErrInvalidRequest)
+		ctx.JSON(httpErr.Status(), httpErr.Body())
 		return
 	}
 
 	weather, err := h.weatherService.GetWeatherByCity(ctx, req.City)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			ctx.JSON(appErr.Status(), appErr.JSON())
-			return
-		}
-		ctx.JSON(apperrors.InternalError.Status(), apperrors.InternalError.JSON())
+		httpErr := httperrors.New(err)
+		ctx.JSON(httpErr.Status(), httpErr.Body())
 		return
 	}
 

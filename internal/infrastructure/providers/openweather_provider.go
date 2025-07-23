@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"weather-forecast/internal/domain/models"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerror "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
 )
 
@@ -56,7 +56,7 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 	url, err := url.Parse(p.apiURL)
 	if err != nil {
 		p.logger.Warnf("Form url: %s", err.Error())
-		return nil, apperrors.GetWeatherError
+		return nil, infraerror.ErrGetWeather
 	}
 	queryString := url.Query()
 	queryString.Set("q", city)
@@ -68,13 +68,13 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stringURL, nil)
 	if err != nil {
 		p.logger.Warnf("Failed to create get weather request: %s", err.Error())
-		return nil, apperrors.GetWeatherError
+		return nil, infraerror.ErrGetWeather
 	}
 
 	resp, err := p.client.Do(req)
 	if err != nil {
 		p.logger.Warnf("Failed make get weather request: %s", err.Error())
-		return nil, apperrors.GetWeatherError
+		return nil, infraerror.ErrGetWeather
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -85,7 +85,7 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		p.logger.Warnf("Failed to read response body: %s", err.Error())
-		return nil, apperrors.GetWeatherError
+		return nil, infraerror.ErrGetWeather
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -93,16 +93,16 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
 			p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
-			return nil, apperrors.GetWeatherError
+			return nil, infraerror.ErrGetWeather
 		}
 
 		if errResponse.Cod == notFoundOpenWeatherErrorCode {
 
 			p.logger.Warnf("City not found: %s", city)
-			return nil, apperrors.CityNotFoundError
+			return nil, infraerror.ErrCityNotFound
 		} else {
 			p.logger.Warnf("Error from open weather: %s", errResponse.Message)
-			return nil, apperrors.GetWeatherError
+			return nil, infraerror.ErrGetWeather
 		}
 
 	}
@@ -111,7 +111,7 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 
 	if err := json.Unmarshal(body, &weatherResponse); err != nil {
 		p.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
-		return nil, apperrors.GetWeatherError
+		return nil, infraerror.ErrGetWeather
 	}
 
 	weatherDesc := ""

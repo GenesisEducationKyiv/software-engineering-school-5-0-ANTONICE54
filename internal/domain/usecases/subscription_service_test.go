@@ -3,9 +3,11 @@ package usecases
 import (
 	"context"
 	"testing"
+	domainerr "weather-forecast/internal/domain/errors"
 	"weather-forecast/internal/domain/models"
 	mock_services "weather-forecast/internal/domain/usecases/mocks"
-	"weather-forecast/internal/infrastructure/apperrors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
+
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
 
 	"github.com/golang/mock/gomock"
@@ -106,7 +108,7 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.AlreadySubscribedError,
+			expectedError:  domainerr.ErrAlreadySubscribed,
 		},
 		{
 			name:      "Database error",
@@ -133,11 +135,11 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 					Token:     token,
 				}
 
-				repo.EXPECT().Create(gomock.Any(), passedSubscription).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().Create(gomock.Any(), passedSubscription).Return(nil, infraerrors.ErrDatabase)
 
 			},
 			expectedResult: nil,
-			expectedError:  apperrors.DatabaseError,
+			expectedError:  infraerrors.ErrDatabase,
 		},
 	}
 
@@ -203,7 +205,7 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(false)
 			},
-			expectedError: apperrors.InvalidTokenError,
+			expectedError: domainerr.ErrInvalidToken,
 		},
 		{
 			name:  "Token not found",
@@ -218,7 +220,7 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, nil)
 
 			},
-			expectedError: apperrors.TokenNotFoundError,
+			expectedError: domainerr.ErrTokenNotFound,
 		},
 		{
 			name:  "Database error getting token",
@@ -230,10 +232,10 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, infraerrors.ErrDatabase)
 
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.ErrDatabase,
 		},
 		{
 			name:  "Database error updating subsc",
@@ -250,10 +252,10 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
 				passedToUpdate := receivedSubscription
 				passedToUpdate.Confirmed = true
-				repo.EXPECT().Update(gomock.Any(), passedToUpdate).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().Update(gomock.Any(), passedToUpdate).Return(nil, infraerrors.ErrDatabase)
 
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.ErrDatabase,
 		},
 	}
 
@@ -314,7 +316,7 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(false)
 			},
-			expectedError: apperrors.InvalidTokenError,
+			expectedError: domainerr.ErrInvalidToken,
 		},
 		{
 			name:  "Database error getting token",
@@ -326,9 +328,9 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, apperrors.DatabaseError)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, infraerrors.ErrDatabase)
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.ErrDatabase,
 		},
 		{
 			name:  "Database error deleting subsc",
@@ -343,10 +345,10 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 				receivedSubscription.Token = token
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
 				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
-				repo.EXPECT().DeleteByToken(gomock.Any(), receivedSubscription.Token).Return(apperrors.DatabaseError)
+				repo.EXPECT().DeleteByToken(gomock.Any(), receivedSubscription.Token).Return(infraerrors.ErrDatabase)
 
 			},
-			expectedError: apperrors.DatabaseError,
+			expectedError: infraerrors.ErrDatabase,
 		},
 	}
 

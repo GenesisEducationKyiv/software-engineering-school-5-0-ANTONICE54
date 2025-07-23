@@ -22,6 +22,7 @@ import (
 )
 
 func main() {
+
 	logrusLog := logger.NewLogrus()
 
 	viper.SetConfigFile(".env")

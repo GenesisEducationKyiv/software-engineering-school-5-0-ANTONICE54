@@ -8,18 +8,24 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	GRPCPort string `mapstructure:"GRPC_PORT"`
+type (
+	DB struct {
+		Host     string `mapstructure:"DB_HOST"`
+		User     string `mapstructure:"DB_USER"`
+		Password string `mapstructure:"DB_PASSWORD"`
+		Name     string `mapstructure:"DB_NAME"`
+		Port     string `mapstructure:"DB_PORT"`
+	}
 
-	DBHost     string `mapstructure:"DB_HOST"`
-	DBUser     string `mapstructure:"DB_USER"`
-	DBPassword string `mapstructure:"DB_PASSWORD"`
-	DBName     string `mapstructure:"DB_NAME"`
-	DBPort     string `mapstructure:"DB_PORT"`
+	Config struct {
+		GRPCPort string `mapstructure:"GRPC_PORT"`
 
-	RabbitMQSource string `mapstructure:"RABBIT_MQ_SOURCE"`
-	Exchange       string `mapstructure:"EXCHANGE"`
-}
+		DB DB `mapstructure:",squash"`
+
+		RabbitMQSource string `mapstructure:"RABBIT_MQ_SOURCE"`
+		Exchange       string `mapstructure:"EXCHANGE"`
+	}
+)
 
 func Load(log logger.Logger) (*Config, error) {
 	viper.SetConfigFile(".env")
@@ -43,11 +49,11 @@ func Load(log logger.Logger) (*Config, error) {
 func validate(config *Config) error {
 	required := map[string]string{
 		"GRPC_PORT":        config.GRPCPort,
-		"DB_HOST":          config.DBHost,
-		"DB_USER":          config.DBUser,
-		"DB_PASSWORD":      config.DBPassword,
-		"DB_NAME":          config.DBName,
-		"DB_PORT":          config.DBPort,
+		"DB_HOST":          config.DB.Host,
+		"DB_USER":          config.DB.User,
+		"DB_PASSWORD":      config.DB.Password,
+		"DB_NAME":          config.DB.Name,
+		"DB_PORT":          config.DB.Port,
 		"RABBIT_MQ_SOURCE": config.RabbitMQSource,
 		"EXCHANGE":         config.Exchange,
 	}

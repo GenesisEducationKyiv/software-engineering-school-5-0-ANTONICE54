@@ -45,7 +45,7 @@ func main() {
 		}
 	}()
 
-	db := database.Connect(cfg)
+	db := database.Connect(&cfg.DB)
 	database.RunMigration(db)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)

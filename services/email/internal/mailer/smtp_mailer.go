@@ -18,13 +18,13 @@ type SMTPMailer struct {
 	logger   logger.Logger
 }
 
-func NewSMTPMailer(cfg *config.Config, logger logger.Logger) *SMTPMailer {
+func NewSMTPMailer(cfg *config.Mailer, logger logger.Logger) *SMTPMailer {
 	mailer := SMTPMailer{
-		from:     cfg.MailerFrom,
-		host:     cfg.MailerHost,
-		port:     cfg.MailerPort,
-		username: cfg.MailerUsername,
-		password: cfg.MailerPassword,
+		from:     cfg.From,
+		host:     cfg.Host,
+		port:     cfg.Port,
+		username: cfg.Username,
+		password: cfg.Password,
 		logger:   logger,
 	}
 	mailer.auth = smtp.PlainAuth("", mailer.username, mailer.password, mailer.host)

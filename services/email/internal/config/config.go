@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"weather-forecast/pkg/logger"
+	"weather-forecast/pkg/rabbitmq"
 
 	"github.com/spf13/viper"
 )
@@ -18,8 +19,7 @@ type (
 	}
 
 	Config struct {
-		RabbitMQURL string `mapstructure:"RABBIT_MQ_SOURCE"`
-		Exchange    string `mapstructure:"EXCHANGE"`
+		RabbitMQ rabbitmq.Config `mapstructure:",squash"`
 
 		Mailer Mailer `mapstructure:",squash"`
 
@@ -47,15 +47,18 @@ func Load(log logger.Logger) (*Config, error) {
 }
 
 func validate(config *Config) error {
+
+	if err := config.RabbitMQ.Validate(); err != nil {
+		return err
+	}
+
 	required := map[string]string{
-		"RABBIT_MQ_SOURCE": config.RabbitMQURL,
-		"EXCHANGE":         config.Exchange,
-		"MAILER_FROM":      config.Mailer.From,
-		"MAILER_HOST":      config.Mailer.Host,
-		"MAILER_PORT":      config.Mailer.Port,
-		"MAILER_USERNAME":  config.Mailer.Username,
-		"MAILER_PASSWORD":  config.Mailer.Password,
-		"SERVER_HOST":      config.ServerHost,
+		"MAILER_FROM":     config.Mailer.From,
+		"MAILER_HOST":     config.Mailer.Host,
+		"MAILER_PORT":     config.Mailer.Port,
+		"MAILER_USERNAME": config.Mailer.Username,
+		"MAILER_PASSWORD": config.Mailer.Password,
+		"SERVER_HOST":     config.ServerHost,
 	}
 
 	var missing []string

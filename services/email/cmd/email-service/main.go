@@ -11,8 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 	"weather-forecast/pkg/logger"
-
-	amqp "github.com/rabbitmq/amqp091-go"
+	"weather-forecast/pkg/rabbitmq"
 )
 
 func main() {
@@ -23,7 +22,8 @@ func main() {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	conn, err := amqp.Dial(cfg.RabbitMQURL)
+	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
+
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
@@ -38,7 +38,7 @@ func main() {
 
 	eventProcessor := processors.NewEventProcessor(notificationService, logrusLog)
 
-	rabbitMQConsumer := consumer.NewConsumer(conn, cfg.Exchange, eventProcessor, logrusLog)
+	rabbitMQConsumer := consumer.NewConsumer(conn, cfg.RabbitMQ.Exchange, eventProcessor, logrusLog)
 
 	if err := rabbitMQConsumer.Start(context.Background()); err != nil {
 		logrusLog.Fatalf("Failed to start consumer: %v", err)

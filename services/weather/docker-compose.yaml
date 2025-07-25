@@ -1,0 +1,41 @@
+services:
+  redis:
+    image: "redis:8-alpine"
+    ports: 
+      - 6379:6379
+    env_file:
+      - .env
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  weather-service:
+    build:
+      context: ../../
+      dockerfile: services/weather/Dockerfile
+
+    ports:
+      - 8081:8081
+      - 8090:8090
+    volumes:
+      - ./logs:/app/logs
+
+
+    depends_on:
+      
+      redis:
+        condition: service_healthy
+      
+    restart: always
+    command: ["/app/main"]
+
+
+networks:
+  default:
+    name: microservices-network
+    external: true

@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	domainerr "weather-forecast/internal/domain/errors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
+
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/infrastructure/logger"
-	apierrors "weather-forecast/internal/presentation/errors"
-	"weather-forecast/internal/presentation/httperrors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,20 +43,40 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 	var req SubscribeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		httpErr := httperrors.New(apierrors.ErrInvalidRequest)
-		ctx.JSON(httpErr.Status(), httpErr.Body())
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
 	_, err := h.subscriptionService.Subscribe(ctx, req.Email, req.Frequency, req.City)
 
 	if err != nil {
-		httpErr := httperrors.New(err)
-		ctx.JSON(httpErr.Status(), httpErr.Body())
+		h.handleSubscribeError(ctx, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Subscription successful. Confirmation email sent."})
+
+}
+
+func (h *SubscriptionHandler) handleSubscribeError(ctx *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domainerr.ErrAlreadySubscribed):
+		ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+
+	case errors.Is(err, domainerr.ErrInvalidFrequency):
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	case errors.Is(err, infraerrors.ErrDatabase):
+		h.logger.Warnf("Database error during subscription: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+
+	case errors.Is(err, infraerrors.ErrInternal):
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	default:
+		h.logger.Warnf("Unexpected error during subscription: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+	}
 
 }
 
@@ -64,12 +86,33 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 	err := h.subscriptionService.Confirm(ctx, token)
 
 	if err != nil {
-		httpErr := httperrors.New(err)
-		ctx.JSON(httpErr.Status(), httpErr.Body())
+		h.handleConfirmError(ctx, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Subscription confirmed."})
+
+}
+
+func (h *SubscriptionHandler) handleConfirmError(ctx *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domainerr.ErrTokenNotFound):
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+
+	case errors.Is(err, infraerrors.ErrDatabase):
+		h.logger.Warnf("Database error during subscription: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+
+	case errors.Is(err, infraerrors.ErrInternal):
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	case errors.Is(err, domainerr.ErrInvalidToken):
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+	default:
+		h.logger.Warnf("Unexpected error during confirmation: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+	}
 
 }
 
@@ -79,11 +122,32 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 	err := h.subscriptionService.Unsubscribe(ctx, token)
 
 	if err != nil {
-		httpErr := httperrors.New(err)
-		ctx.JSON(httpErr.Status(), httpErr.Body())
+		h.handleUnsubscribeError(ctx, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Unsubscribed successfuly."})
+
+}
+
+func (h *SubscriptionHandler) handleUnsubscribeError(ctx *gin.Context, err error) {
+	switch {
+	case errors.Is(err, domainerr.ErrTokenNotFound):
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+
+	case errors.Is(err, domainerr.ErrInvalidToken):
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+	case errors.Is(err, infraerrors.ErrDatabase):
+		h.logger.Warnf("Database error during subscription: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+
+	case errors.Is(err, infraerrors.ErrInternal):
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	default:
+		h.logger.Warnf("Unexpected error during canceling subscription: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+	}
 
 }

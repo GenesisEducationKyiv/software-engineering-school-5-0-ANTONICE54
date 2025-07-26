@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"weather-forecast/internal/domain/models"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
-	apierrors "weather-forecast/internal/presentation/errors"
-	"weather-forecast/internal/presentation/httperrors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,16 +42,14 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 	var req GetWeatherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		httpErr := httperrors.New(apierrors.ErrInvalidRequest)
-		ctx.JSON(httpErr.Status(), httpErr.Body())
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
 	weather, err := h.weatherService.GetWeatherByCity(ctx, req.City)
 
 	if err != nil {
-		httpErr := httperrors.New(err)
-		ctx.JSON(httpErr.Status(), httpErr.Body())
+		h.handleGetError(ctx, err)
 		return
 	}
 
@@ -62,5 +60,23 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, response)
+
+}
+
+func (h *WeatherHandler) handleGetError(ctx *gin.Context, err error) {
+	switch {
+	case errors.Is(err, infraerrors.ErrCityNotFound):
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+
+	case errors.Is(err, infraerrors.ErrGetWeather):
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	case errors.Is(err, infraerrors.ErrInternal):
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	default:
+		h.logger.Warnf("Unexpected error during subscription: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+	}
 
 }

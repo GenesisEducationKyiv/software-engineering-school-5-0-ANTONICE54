@@ -23,7 +23,7 @@ services:
       - 8081:8081
       - 8090:8090
     volumes:
-      - ./logs:/app/logs
+      - ../../logs:/app/logs
 
 
     depends_on:

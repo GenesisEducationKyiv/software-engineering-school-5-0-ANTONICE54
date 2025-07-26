@@ -8,9 +8,6 @@ import (
 	"testing"
 	"weather-forecast/internal/domain/models"
 	infraerrors "weather-forecast/internal/infrastructure/errors"
-	apierrors "weather-forecast/internal/presentation/errors"
-
-	"weather-forecast/internal/presentation/httperrors"
 
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
 	mock_handlers "weather-forecast/internal/presentation/server/handlers/mock"
@@ -20,9 +17,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func errToString(errMsg map[string]any) string {
+func errToString(errMsg string) string {
 
-	bytes, err := json.Marshal(errMsg)
+	errMap := map[string]any{"error": errMsg}
+
+	bytes, err := json.Marshal(errMap)
 	if err != nil {
 		panic(err)
 	}
@@ -65,8 +64,8 @@ func TestWeatherHandler_Get(t *testing.T) {
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
-			expectedStatusCode:   httperrors.New(apierrors.ErrInvalidRequest).Status(),
-			expectedResponseBody: errToString(httperrors.New(apierrors.ErrInvalidRequest).Body()),
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedResponseBody: errToString("invalid request format"),
 		},
 		{
 			name:      "City not found",
@@ -77,8 +76,8 @@ func TestWeatherHandler_Get(t *testing.T) {
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, infraerrors.ErrCityNotFound)
 			},
-			expectedStatusCode:   httperrors.New(infraerrors.ErrCityNotFound).Status(),
-			expectedResponseBody: errToString(httperrors.New(infraerrors.ErrCityNotFound).Body()),
+			expectedStatusCode:   http.StatusNotFound,
+			expectedResponseBody: errToString(infraerrors.ErrCityNotFound.Error()),
 		},
 	}
 

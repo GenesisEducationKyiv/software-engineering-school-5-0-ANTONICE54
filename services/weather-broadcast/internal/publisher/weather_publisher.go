@@ -2,8 +2,7 @@ package publisher
 
 import (
 	"context"
-	"encoding/json"
-	"weather-forecast/pkg/events"
+	"weather-broadcast-service/internal/events"
 	"weather-forecast/pkg/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -26,20 +25,28 @@ func NewRabbitMQPublisher(ch *amqp.Channel, exchange string, logger logger.Logge
 }
 
 func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) error {
-	body, err := json.Marshal(event)
+
+	routeKey, err := event.RoutingKey()
+
 	if err != nil {
-		p.logger.Warnf("failed to marshal event: %v", err)
 		return err
+
 	}
 
-	return p.ch.PublishWithContext(
+	err = p.ch.PublishWithContext(
 		ctx,
 		p.exchange,
-		string(event.EventType()),
+		routeKey,
 		false,
 		false,
 		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        body,
+			ContentType: "application/x-protobuf",
+			Body:        event.Body,
 		})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

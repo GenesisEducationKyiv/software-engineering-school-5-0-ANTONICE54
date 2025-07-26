@@ -3,9 +3,8 @@ package sender
 import (
 	"context"
 	"weather-broadcast-service/internal/dto"
-	"weather-broadcast-service/internal/mappers"
 
-	"weather-forecast/pkg/events"
+	"weather-broadcast-service/internal/events"
 	"weather-forecast/pkg/logger"
 )
 
@@ -28,15 +27,25 @@ func NewEventSender(publisher EventPublisher, logger logger.Logger) *EventSender
 }
 
 func (s *EventSender) SendWeather(ctx context.Context, info *dto.WeatherMailSuccessInfo) {
-	e := mappers.MapWeatherSuccessMailToEvent(info)
-	err := s.publisher.Publish(ctx, e)
+
+	event, err := events.NewWeatherSuccess(info)
+	if err != nil {
+		s.logger.Warnf("failed to create event: %s", err.Error())
+		return
+	}
+
+	err = s.publisher.Publish(ctx, *event)
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
 }
 func (s *EventSender) SendError(ctx context.Context, info *dto.WeatherMailErrorInfo) {
-	e := mappers.MapWeatherErrorMailToEvent(info)
-	err := s.publisher.Publish(ctx, e)
+	event, err := events.NewWeatherError(info)
+	if err != nil {
+		s.logger.Warnf("failed to create event: %s", err.Error())
+		return
+	}
+	err = s.publisher.Publish(ctx, *event)
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}

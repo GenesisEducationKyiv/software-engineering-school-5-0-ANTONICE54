@@ -57,7 +57,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 	go func() {
 		for d := range msgs {
-			c.logger.Infof("Event received:", d.RoutingKey)
+			c.logger.Infof("Event received: %s", d.RoutingKey)
 			c.handler.Handle(ctx, d.RoutingKey, d.Body)
 		}
 	}()

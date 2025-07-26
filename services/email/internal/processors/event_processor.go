@@ -4,9 +4,17 @@ import (
 	"context"
 	"email-service/internal/dto"
 	"email-service/internal/mappers"
-	"encoding/json"
-	"weather-forecast/pkg/events"
 	"weather-forecast/pkg/logger"
+	"weather-forecast/pkg/proto/events"
+
+	"google.golang.org/protobuf/proto"
+)
+
+const (
+	ConfirmationRoute   = "emails.subscription"
+	ConfirmedRoute      = "emails.confirmed"
+	WeatherSuccessRoute = "emails.weather.success"
+	WeatherErrorRoute   = "emails.weather.error"
 )
 
 type (
@@ -32,35 +40,35 @@ func NewEventProcessor(sender NotificationService, logger logger.Logger) *EventP
 
 func (h *EventProcessor) Handle(ctx context.Context, routingKey string, body []byte) {
 
-	switch events.EventType(routingKey) {
+	switch routingKey {
 
-	case events.SubsctiptionEmail:
-		var e events.SubscriptionEvent
-		if err := json.Unmarshal(body, &e); err != nil {
+	case ConfirmationRoute:
+		e := &events.SubscriptionEvent{}
+		if err := proto.Unmarshal(body, e); err != nil {
 			h.logger.Warnf("failed to unmarshal SubscritpionEvent:%s", err.Error())
 			return
 		}
 		h.sender.SendConfirmation(ctx, mappers.SubscribeEventToDTO(e))
 
-	case events.ConfirmedEmail:
-		var e events.ConfirmedEvent
-		if err := json.Unmarshal(body, &e); err != nil {
+	case ConfirmedRoute:
+		e := &events.ConfirmedEvent{}
+		if err := proto.Unmarshal(body, e); err != nil {
 			h.logger.Warnf("failed to unmarshal ConfirmedEvent:%s", err.Error())
 			return
 		}
 		h.sender.SendConfirmed(ctx, mappers.ConfirmEventToDTO(e))
 
-	case events.WeatherEmailSuccess:
-		var e events.WeatherSuccessEvent
-		if err := json.Unmarshal(body, &e); err != nil {
+	case WeatherSuccessRoute:
+		e := &events.WeatherSuccessEvent{}
+		if err := proto.Unmarshal(body, e); err != nil {
 			h.logger.Warnf("failed to unmarshal WeatherSuccessEvent:%s", err.Error())
 			return
 		}
 		h.sender.SendWeather(ctx, mappers.SuccessWeatehrToDTO(e))
 
-	case events.WeatherEmailError:
-		var e events.WeatherErrorEvent
-		if err := json.Unmarshal(body, &e); err != nil {
+	case WeatherErrorRoute:
+		e := &events.WeatherErrorEvent{}
+		if err := proto.Unmarshal(body, e); err != nil {
 			h.logger.Warnf("failed to unmarshal WeatherErrorEvent:%s", err.Error())
 			return
 		}

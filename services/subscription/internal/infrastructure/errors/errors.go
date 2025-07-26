@@ -5,6 +5,7 @@ import (
 )
 
 var (
-	ErrDatabase = errors.New("database raised an error")
-	ErrInternal = errors.New("internal server error")
+	ErrDatabase          = errors.New("database raised an error")
+	ErrInternal          = errors.New("internal server error")
+	ErrUnknownEventRoute = errors.New("unknown event route")
 )

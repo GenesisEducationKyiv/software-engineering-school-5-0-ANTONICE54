@@ -124,7 +124,7 @@ func TestSubscribe_InvalidInput(t *testing.T) {
 	stubMailer := stub_services.NewStubMailer()
 	subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 	router := setupSubscribeRouter(subscriptionHandler)
-	errorMessage := `{"error":"invalid request"}`
+	errorMessage := `{"error":"invalid request format"}`
 	testTable := []struct {
 		name                string
 		request             handlers.SubscribeRequest

@@ -281,8 +281,8 @@ func (x *UnsubscribeRequest) GetToken() string {
 
 type Subscription struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	City          string                 `protobuf:"bytes,3,opt,name=city,proto3" json:"city,omitempty"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	City          string                 `protobuf:"bytes,2,opt,name=city,proto3" json:"city,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -404,8 +404,8 @@ const file_subscription_proto_rawDesc = "" +
 	"\x12UnsubscribeRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"8\n" +
 	"\fSubscription\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
-	"\x04city\x18\x03 \x01(\tR\x04city\"\x82\x01\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
+	"\x04city\x18\x02 \x01(\tR\x04city\"\x82\x01\n" +
 	"#GetSubscriptionsByFrequencyResponse\x123\n" +
 	"\rsubscriptions\x18\x01 \x03(\v2\r.SubscriptionR\rsubscriptions\x12&\n" +
 	"\x0fnext_page_index\x18\x02 \x01(\x05R\rnextPageIndex*3\n" +

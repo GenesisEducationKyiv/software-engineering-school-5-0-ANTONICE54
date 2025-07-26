@@ -46,8 +46,8 @@ message UnsubscribeRequest {
 
 
 message Subscription {
-  string email = 2;
-  string city = 3;
+  string email = 1;
+  string city = 2;
 }
 
 message GetSubscriptionsByFrequencyResponse {

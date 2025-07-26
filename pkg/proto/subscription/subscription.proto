@@ -18,8 +18,9 @@ service SubscriptionService {
 
 
 enum Frequency {
-    DAILY = 0;
-    HOURLY = 1;
+    UNSPECIFIED = 0;
+    DAILY = 1;
+    HOURLY = 2;
 } 
 
 message SubscribeRequest {

@@ -25,19 +25,22 @@ const (
 type Frequency int32
 
 const (
-	Frequency_DAILY  Frequency = 0
-	Frequency_HOURLY Frequency = 1
+	Frequency_UNSPECIFIED Frequency = 0
+	Frequency_DAILY       Frequency = 1
+	Frequency_HOURLY      Frequency = 2
 )
 
 // Enum value maps for Frequency.
 var (
 	Frequency_name = map[int32]string{
-		0: "DAILY",
-		1: "HOURLY",
+		0: "UNSPECIFIED",
+		1: "DAILY",
+		2: "HOURLY",
 	}
 	Frequency_value = map[string]int32{
-		"DAILY":  0,
-		"HOURLY": 1,
+		"UNSPECIFIED": 0,
+		"DAILY":       1,
+		"HOURLY":      2,
 	}
 )
 
@@ -125,7 +128,7 @@ func (x *SubscribeRequest) GetFrequency() Frequency {
 	if x != nil {
 		return x.Frequency
 	}
-	return Frequency_DAILY
+	return Frequency_UNSPECIFIED
 }
 
 type GetSubscriptionsByFrequencyRequest struct {
@@ -171,7 +174,7 @@ func (x *GetSubscriptionsByFrequencyRequest) GetFrequency() Frequency {
 	if x != nil {
 		return x.Frequency
 	}
-	return Frequency_DAILY
+	return Frequency_UNSPECIFIED
 }
 
 func (x *GetSubscriptionsByFrequencyRequest) GetPageSize() int32 {
@@ -405,11 +408,12 @@ const file_subscription_proto_rawDesc = "" +
 	"\x04city\x18\x03 \x01(\tR\x04city\"\x82\x01\n" +
 	"#GetSubscriptionsByFrequencyResponse\x123\n" +
 	"\rsubscriptions\x18\x01 \x03(\v2\r.SubscriptionR\rsubscriptions\x12&\n" +
-	"\x0fnext_page_index\x18\x02 \x01(\x05R\rnextPageIndex*\"\n" +
-	"\tFrequency\x12\t\n" +
-	"\x05DAILY\x10\x00\x12\n" +
+	"\x0fnext_page_index\x18\x02 \x01(\x05R\rnextPageIndex*3\n" +
+	"\tFrequency\x12\x0f\n" +
+	"\vUNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05DAILY\x10\x01\x12\n" +
 	"\n" +
-	"\x06HOURLY\x10\x012\xa7\x02\n" +
+	"\x06HOURLY\x10\x022\xa7\x02\n" +
 	"\x13SubscriptionService\x126\n" +
 	"\tSubscribe\x12\x11.SubscribeRequest\x1a\x16.google.protobuf.Empty\x122\n" +
 	"\aConfirm\x12\x0f.ConfirmRequest\x1a\x16.google.protobuf.Empty\x12:\n" +

@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"context"
-	"weather-forecast/pkg/apperrors"
+	"errors"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
 	"weather-service/internal/domain/models"
+	infraerrors "weather-service/internal/infrastructure/errors"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,10 +35,8 @@ func (h *WeatherHandler) GetWeather(ctx context.Context, req *weather.GetWeather
 
 	weatherRes, err := h.weatherService.GetWeatherByCity(ctx, req.City)
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			return nil, appErr.ToGRPCStatus()
-		}
-		return nil, status.Errorf(codes.Internal, "failed to get weather: %v", err)
+		grpcErr := h.handleGetWeatherError(err)
+		return nil, grpcErr
 	}
 
 	protoWeather := &weather.GetWeatherResponse{
@@ -47,4 +46,23 @@ func (h *WeatherHandler) GetWeather(ctx context.Context, req *weather.GetWeather
 	}
 
 	return protoWeather, nil
+}
+
+func (h *WeatherHandler) handleGetWeatherError(err error) error {
+
+	switch {
+	case errors.Is(err, infraerrors.ErrCityNotFound):
+		return status.Error(codes.NotFound, err.Error())
+
+	case errors.Is(err, infraerrors.ErrGetWeather):
+		return status.Error(codes.Internal, err.Error())
+
+	case errors.Is(err, infraerrors.ErrInternal):
+		return status.Error(codes.Internal, err.Error())
+
+	default:
+		h.logger.Warnf("Unexpected error in GetWeather: %s", err.Error())
+		return status.Error(codes.Internal, "internal server error")
+	}
+
 }

@@ -50,7 +50,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, subscription *model
 	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
 
 	if receivedSubsc != nil {
-		return nil, domainerrors.AlreadySubscribedError
+		return nil, domainerrors.ErrAlreadySubscribed
 	}
 
 	token := s.tokenManager.Generate(ctx)
@@ -74,7 +74,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, subscription *model
 func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
-		return domainerrors.InvalidTokenError
+		return domainerrors.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -82,7 +82,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 		return err
 	}
 	if receivedSubsc == nil {
-		return domainerrors.TokenNotFoundError
+		return domainerrors.ErrTokenNotFound
 	}
 
 	if !receivedSubsc.Confirmed {
@@ -108,7 +108,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
-		return domainerrors.InvalidTokenError
+		return domainerrors.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -116,7 +116,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 		return err
 	}
 	if receivedSubsc == nil {
-		return domainerrors.TokenNotFoundError
+		return domainerrors.ErrTokenNotFound
 	}
 
 	err = s.subscriptionRepository.DeleteByToken(ctx, token)

@@ -1,25 +1,13 @@
 package errors
 
-import "weather-forecast/pkg/apperrors"
-
-type WeatherServiceErrorCode string
-
-func (c WeatherServiceErrorCode) String() string {
-	return string(c)
-}
-
-const (
-	GetWeatherErrorCode   WeatherServiceErrorCode = "GET_WEATHER_ERROR"
-	CacheMissErrorCode    WeatherServiceErrorCode = "CACHE_MISS_ERROR"
-	CityNotFoundErrorCode WeatherServiceErrorCode = "CITY_NOT_FOUND_ERROR"
-	CacheErrorCode        WeatherServiceErrorCode = "CACHE_ERROR"
-	InternalErrorCode     WeatherServiceErrorCode = "INTERNAL_SERVER_ERROR"
+import (
+	"errors"
 )
 
 var (
-	GetWeatherError     = apperrors.NewInternal(GetWeatherErrorCode, "failed to get weather")
-	CacheError          = apperrors.NewInternal(CacheErrorCode, "failed to interact with cache")
-	CacheMissError      = apperrors.NewNotFound(CacheMissErrorCode, "cache miss")
-	InternalServerError = apperrors.NewInternal(InternalErrorCode, "internal server error")
-	CityNotFoundError   = apperrors.NewNotFound(CityNotFoundErrorCode, "there is no city with such name")
+	ErrGetWeather   = errors.New("failed to get weather")
+	ErrCityNotFound = errors.New("there is no city with such name")
+	ErrCache        = errors.New("failed to interact with cache")
+	ErrCacheMiss    = errors.New("cache miss")
+	ErrInternal     = errors.New("internal server error")
 )

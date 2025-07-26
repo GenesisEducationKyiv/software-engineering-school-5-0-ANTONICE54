@@ -30,7 +30,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 	body, err := json.Marshal(event)
 	if err != nil {
 		p.logger.Warnf("failed to marshal event: %w", err)
-		return infraerror.InternalError
+		return infraerror.ErrInternal
 	}
 
 	err = p.ch.PublishWithContext(
@@ -45,7 +45,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 		})
 
 	if err != nil {
-		return infraerror.InternalError
+		return infraerror.ErrInternal
 	}
 
 	return nil

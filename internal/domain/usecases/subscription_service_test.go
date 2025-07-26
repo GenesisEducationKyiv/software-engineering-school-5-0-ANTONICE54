@@ -1,15 +1,14 @@
-package services
+package usecases
 
 import (
 	"context"
 	"testing"
-	"time"
-	domainerrors "weather-forecast/internal/domain/errors"
+	domainerr "weather-forecast/internal/domain/errors"
 	"weather-forecast/internal/domain/models"
-
+	mock_services "weather-forecast/internal/domain/usecases/mocks"
 	infraerrors "weather-forecast/internal/infrastructure/errors"
+
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
-	mock_services "weather-forecast/internal/infrastructure/services/mocks"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -17,33 +16,34 @@ import (
 
 type (
 	mockSubscribeBehavior func(
-		uc *mock_services.MockSubscriptionUseCase,
+		repo *mock_services.MockSubscriptionRepository,
 		tokenManager *mock_services.MockTokenManager,
-		notificationService *mock_services.MockNotificationServiceI,
+		notificationService *mock_services.MockNotificationSender,
 		email,
 		city,
 		frequency,
 		token string,
 	)
 	mockConfirmBehavior func(
-		uc *mock_services.MockSubscriptionUseCase,
+		repo *mock_services.MockSubscriptionRepository,
 		tokenManager *mock_services.MockTokenManager,
-		notificationService *mock_services.MockNotificationServiceI,
+		notificationService *mock_services.MockNotificationSender,
 		token string,
 	)
 )
 
-func TestSubsctiptionService_Subscribe(t *testing.T) {
-
-	subscriptionTemplate := models.Subscription{
+var (
+	subscriptionTemplate = models.Subscription{
 		ID:        1,
 		Email:     "test@test.com",
 		Frequency: models.Hourly,
 		City:      "Kyiv",
 		Token:     "59d29860-39fa-4c9b-845a-3e91eab42e4b",
-		Confirmed: false,
-		CreatedAt: time.Now(),
+		Confirmed: true,
 	}
+)
+
+func TestSubsctiptionService_Subscribe(t *testing.T) {
 
 	testTable := []struct {
 		name           string
@@ -62,13 +62,14 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 			city:      subscriptionTemplate.City,
 			frequency: string(subscriptionTemplate.Frequency),
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				email,
 				city,
 				frequency,
 				token string) {
+				repo.EXPECT().GetByEmail(gomock.Any(), email).Return(nil, nil)
 				tokenManager.EXPECT().Generate(gomock.Any()).Return(token)
 				passedSubscription := models.Subscription{
 					Email:     email,
@@ -76,8 +77,7 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 					Frequency: models.Frequency(frequency),
 					Token:     token,
 				}
-
-				uc.EXPECT().Subscribe(gomock.Any(), passedSubscription).Return(&subscriptionTemplate, nil)
+				repo.EXPECT().Create(gomock.Any(), passedSubscription).Return(&subscriptionTemplate, nil)
 				notificationService.EXPECT().SendConfirmation(gomock.Any(), passedSubscription.Email, passedSubscription.Token, passedSubscription.Frequency)
 
 			},
@@ -91,26 +91,24 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 			city:      subscriptionTemplate.City,
 			frequency: string(subscriptionTemplate.Frequency),
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				email,
 				city,
 				frequency,
 				token string) {
-				tokenManager.EXPECT().Generate(gomock.Any()).Return(token)
 				passedSubscription := models.Subscription{
 					Email:     email,
 					City:      city,
 					Frequency: models.Frequency(frequency),
 					Token:     token,
 				}
-
-				uc.EXPECT().Subscribe(gomock.Any(), passedSubscription).Return(nil, domainerrors.AlreadySubscribedError)
+				repo.EXPECT().GetByEmail(gomock.Any(), passedSubscription.Email).Return(&passedSubscription, nil)
 
 			},
 			expectedResult: nil,
-			expectedError:  domainerrors.AlreadySubscribedError,
+			expectedError:  domainerr.ErrAlreadySubscribed,
 		},
 		{
 			name:      "Database error",
@@ -119,13 +117,16 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 			city:      subscriptionTemplate.City,
 			frequency: string(subscriptionTemplate.Frequency),
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				email,
 				city,
 				frequency,
 				token string) {
+
+				repo.EXPECT().GetByEmail(gomock.Any(), email).Return(nil, nil)
+
 				tokenManager.EXPECT().Generate(gomock.Any()).Return(token)
 				passedSubscription := models.Subscription{
 					Email:     email,
@@ -134,11 +135,11 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 					Token:     token,
 				}
 
-				uc.EXPECT().Subscribe(gomock.Any(), passedSubscription).Return(nil, infraerrors.DatabaseError)
+				repo.EXPECT().Create(gomock.Any(), passedSubscription).Return(nil, infraerrors.ErrDatabase)
 
 			},
 			expectedResult: nil,
-			expectedError:  infraerrors.DatabaseError,
+			expectedError:  infraerrors.ErrDatabase,
 		},
 	}
 
@@ -149,12 +150,12 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 
 			loggerMock := mock_logger.NewMockLogger(ctrl)
 			tokenManagerMock := mock_services.NewMockTokenManager(ctrl)
-			notificationServiceMock := mock_services.NewMockNotificationServiceI(ctrl)
-			subscriptionUCMock := mock_services.NewMockSubscriptionUseCase(ctrl)
+			notificationServiceMock := mock_services.NewMockNotificationSender(ctrl)
+			subscriptionRepo := mock_services.NewMockSubscriptionRepository(ctrl)
 
-			testCase.mockBehavior(subscriptionUCMock, tokenManagerMock, notificationServiceMock, testCase.email, testCase.city, testCase.frequency, testCase.token)
+			testCase.mockBehavior(subscriptionRepo, tokenManagerMock, notificationServiceMock, testCase.email, testCase.city, testCase.frequency, testCase.token)
 
-			subscriptionService := NewSubscriptionService(subscriptionUCMock, tokenManagerMock, notificationServiceMock, loggerMock)
+			subscriptionService := NewSubscriptionService(subscriptionRepo, tokenManagerMock, notificationServiceMock, loggerMock)
 			res, err := subscriptionService.Subscribe(context.Background(), testCase.email, testCase.frequency, testCase.city)
 
 			assert.Equal(t, testCase.expectedResult, res)
@@ -167,16 +168,6 @@ func TestSubsctiptionService_Subscribe(t *testing.T) {
 
 func TestSubscriptionService_Confirm(t *testing.T) {
 
-	subscriptionTemplate := models.Subscription{
-		ID:        1,
-		Email:     "test@test.com",
-		Frequency: models.Hourly,
-		City:      "Kyiv",
-		Token:     "59d29860-39fa-4c9b-845a-3e91eab42e4b",
-		Confirmed: true,
-		CreatedAt: time.Now(),
-	}
-
 	testTable := []struct {
 		name          string
 		token         string
@@ -187,13 +178,18 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 			name:  "Successful",
 			token: "59d29860-39fa-4c9b-845a-3e91eab42e4b",
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				token string,
 			) {
+				receivedSubsc := subscriptionTemplate
+				receivedSubsc.Confirmed = false
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Confirm(gomock.Any(), token).Return(&subscriptionTemplate, nil)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubsc, nil)
+				passedToUpdate := receivedSubsc
+				passedToUpdate.Confirmed = true
+				repo.EXPECT().Update(gomock.Any(), passedToUpdate).Return(&passedToUpdate, nil)
 				notificationService.EXPECT().SendConfirmed(gomock.Any(), subscriptionTemplate.Email, subscriptionTemplate.Token, subscriptionTemplate.Frequency)
 			},
 			expectedError: nil,
@@ -202,44 +198,64 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 			name:  "Invalid token",
 			token: "xxxx",
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(false)
 			},
-			expectedError: infraerrors.InvalidTokenError,
+			expectedError: domainerr.ErrInvalidToken,
 		},
 		{
 			name:  "Token not found",
 			token: "59d29860-39fa-3c2b-245a-3e9152b54e",
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Confirm(gomock.Any(), token).Return(nil, domainerrors.TokenNotFoundError)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, nil)
 
 			},
-			expectedError: domainerrors.TokenNotFoundError,
+			expectedError: domainerr.ErrTokenNotFound,
 		},
 		{
-			name:  "Database error",
+			name:  "Database error getting token",
 			token: "59d29860-39fa-3c2b-245a-3e9152b54e",
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Confirm(gomock.Any(), token).Return(nil, infraerrors.DatabaseError)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, infraerrors.ErrDatabase)
 
 			},
-			expectedError: infraerrors.DatabaseError,
+			expectedError: infraerrors.ErrDatabase,
+		},
+		{
+			name:  "Database error updating subsc",
+			token: "59d29860-39fa-3c2b-245a-3e9152b54e",
+			mockBehavior: func(
+				repo *mock_services.MockSubscriptionRepository,
+				tokenManager *mock_services.MockTokenManager,
+				notificationService *mock_services.MockNotificationSender,
+				token string,
+			) {
+				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
+				receivedSubscription := subscriptionTemplate
+				receivedSubscription.Confirmed = false
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
+				passedToUpdate := receivedSubscription
+				passedToUpdate.Confirmed = true
+				repo.EXPECT().Update(gomock.Any(), passedToUpdate).Return(nil, infraerrors.ErrDatabase)
+
+			},
+			expectedError: infraerrors.ErrDatabase,
 		},
 	}
 
@@ -250,12 +266,12 @@ func TestSubscriptionService_Confirm(t *testing.T) {
 
 			loggerMock := mock_logger.NewMockLogger(ctrl)
 			tokenManagerMock := mock_services.NewMockTokenManager(ctrl)
-			notificationServiceMock := mock_services.NewMockNotificationServiceI(ctrl)
-			subscriptionUCMock := mock_services.NewMockSubscriptionUseCase(ctrl)
+			notificationServiceMock := mock_services.NewMockNotificationSender(ctrl)
+			subscriptionRepo := mock_services.NewMockSubscriptionRepository(ctrl)
 
-			testCase.mockBehavior(subscriptionUCMock, tokenManagerMock, notificationServiceMock, testCase.token)
+			testCase.mockBehavior(subscriptionRepo, tokenManagerMock, notificationServiceMock, testCase.token)
 
-			subscriptionService := NewSubscriptionService(subscriptionUCMock, tokenManagerMock, notificationServiceMock, loggerMock)
+			subscriptionService := NewSubscriptionService(subscriptionRepo, tokenManagerMock, notificationServiceMock, loggerMock)
 
 			err := subscriptionService.Confirm(context.Background(), testCase.token)
 
@@ -277,13 +293,15 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 			name:  "Successful",
 			token: "59d29860-39fa-4c9b-845a-3e91eab42e4b",
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Unsubscribe(gomock.Any(), token).Return(nil)
+				receivedSubscription := subscriptionTemplate
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
+				repo.EXPECT().DeleteByToken(gomock.Any(), receivedSubscription.Token).Return(nil)
 			},
 			expectedError: nil,
 		},
@@ -291,28 +309,46 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 			name:  "Invalid token",
 			token: "xxxx",
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(false)
 			},
-			expectedError: infraerrors.InvalidTokenError,
+			expectedError: domainerr.ErrInvalidToken,
 		},
 		{
-			name:  "Database error",
+			name:  "Database error getting token",
 			token: "2812b8c0-44bh-aq9b-889y-3ey1oab42e4b",
 			mockBehavior: func(
-				uc *mock_services.MockSubscriptionUseCase,
+				repo *mock_services.MockSubscriptionRepository,
 				tokenManager *mock_services.MockTokenManager,
-				notificationService *mock_services.MockNotificationServiceI,
+				notificationService *mock_services.MockNotificationSender,
 				token string,
 			) {
 				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
-				uc.EXPECT().Unsubscribe(gomock.Any(), token).Return(infraerrors.DatabaseError)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(nil, infraerrors.ErrDatabase)
 			},
-			expectedError: infraerrors.DatabaseError,
+			expectedError: infraerrors.ErrDatabase,
+		},
+		{
+			name:  "Database error deleting subsc",
+			token: "2812b8c0-44bh-aq9b-889y-3ey1oab42e4b",
+			mockBehavior: func(
+				repo *mock_services.MockSubscriptionRepository,
+				tokenManager *mock_services.MockTokenManager,
+				notificationService *mock_services.MockNotificationSender,
+				token string,
+			) {
+				receivedSubscription := subscriptionTemplate
+				receivedSubscription.Token = token
+				tokenManager.EXPECT().Validate(gomock.Any(), token).Return(true)
+				repo.EXPECT().GetByToken(gomock.Any(), token).Return(&receivedSubscription, nil)
+				repo.EXPECT().DeleteByToken(gomock.Any(), receivedSubscription.Token).Return(infraerrors.ErrDatabase)
+
+			},
+			expectedError: infraerrors.ErrDatabase,
 		},
 	}
 
@@ -323,12 +359,12 @@ func TestSubscriptionService_Unsubscribe(t *testing.T) {
 
 			loggerMock := mock_logger.NewMockLogger(ctrl)
 			tokenManagerMock := mock_services.NewMockTokenManager(ctrl)
-			notificationServiceMock := mock_services.NewMockNotificationServiceI(ctrl)
-			subscriptionUCMock := mock_services.NewMockSubscriptionUseCase(ctrl)
+			notificationServiceMock := mock_services.NewMockNotificationSender(ctrl)
+			subscriptionRepo := mock_services.NewMockSubscriptionRepository(ctrl)
 
-			testCase.mockBehavior(subscriptionUCMock, tokenManagerMock, notificationServiceMock, testCase.token)
+			testCase.mockBehavior(subscriptionRepo, tokenManagerMock, notificationServiceMock, testCase.token)
 
-			subscriptionService := NewSubscriptionService(subscriptionUCMock, tokenManagerMock, notificationServiceMock, loggerMock)
+			subscriptionService := NewSubscriptionService(subscriptionRepo, tokenManagerMock, notificationServiceMock, loggerMock)
 
 			err := subscriptionService.Unsubscribe(context.Background(), testCase.token)
 

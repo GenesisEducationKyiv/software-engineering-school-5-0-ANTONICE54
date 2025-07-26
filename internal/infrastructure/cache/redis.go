@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"time"
-	infraerror "weather-forecast/internal/infrastructure/errors"
+	infraerrors "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
 
 	"github.com/redis/go-redis/v9"
@@ -44,12 +44,12 @@ func (c *Redis) Set(ctx context.Context, key string, value interface{}, expirati
 	data, err := json.Marshal(value)
 	if err != nil {
 		c.logger.Warnf("Marshal cache:%s", err.Error())
-		return infraerror.InternalError
+		return infraerrors.ErrInternal
 	}
 
 	if err := c.client.Set(ctx, key, data, expiration).Err(); err != nil {
 		c.logger.Warnf("Set cache key %s:%s", key, err.Error())
-		return infraerror.CacheError
+		return infraerrors.ErrCache
 	}
 
 	return nil
@@ -59,16 +59,16 @@ func (c *Redis) Get(ctx context.Context, key string, value interface{}) error {
 	if err != nil {
 		if err == redis.Nil {
 			c.logger.Infof("Cache miss for key %s", key)
-			return infraerror.CacheMissError
+			return infraerrors.ErrCacheMiss
 		}
 
 		c.logger.Warnf("Get cache key %s:%s", key, err.Error())
-		return infraerror.CacheError
+		return infraerrors.ErrCache
 	}
 
 	if err := json.Unmarshal([]byte(res), value); err != nil {
 		c.logger.Warnf("Unmarshal cache:%s", err.Error())
-		return infraerror.InternalError
+		return infraerrors.ErrInternal
 	}
 
 	return nil

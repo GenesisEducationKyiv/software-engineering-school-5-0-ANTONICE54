@@ -1,20 +1,19 @@
 package models
 
 import (
-	"time"
+	domainerr "weather-forecast/internal/domain/errors"
 )
 
 type (
 	Frequency string
 
 	Subscription struct {
-		ID        int    `gorm:"primaryKey"`
-		Email     string `gorm:"unique"`
+		ID        int
+		Email     string
 		City      string
-		Token     string `gorm:"unique"`
+		Token     string
 		Frequency Frequency
-		Confirmed bool      `gorm:"default:false"`
-		CreatedAt time.Time `gorm:"autoCreateTime"`
+		Confirmed bool
 	}
 )
 
@@ -22,3 +21,23 @@ const (
 	Daily  Frequency = "daily"
 	Hourly Frequency = "hourly"
 )
+
+func NewSubscription(email, city, token, frequency string) (*Subscription, error) {
+	var freq Frequency
+	switch frequency {
+	case string(Daily):
+		freq = Daily
+	case string(Hourly):
+		freq = Hourly
+	default:
+		return nil, domainerr.ErrInvalidFrequency
+	}
+
+	return &Subscription{
+		Email:     email,
+		City:      city,
+		Token:     token,
+		Frequency: freq,
+		Confirmed: false,
+	}, nil
+}

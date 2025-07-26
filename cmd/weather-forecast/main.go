@@ -14,7 +14,6 @@ import (
 	"weather-forecast/internal/infrastructure/providers/roundtrip"
 	"weather-forecast/internal/infrastructure/repositories"
 	"weather-forecast/internal/infrastructure/scheduler"
-	"weather-forecast/internal/infrastructure/services"
 	"weather-forecast/internal/infrastructure/token"
 	"weather-forecast/internal/presentation/server"
 	"weather-forecast/internal/presentation/server/handlers"
@@ -85,11 +84,10 @@ func main() {
 	cacheWeatherProviderChainSection.SetNext(weatherAPIChainSection)
 	weatherAPIChainSection.SetNext(openWeatherChainSection)
 
-	weatherService := services.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
+	weatherService := usecases.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
-	subscUseCase := usecases.NewSubscriptionUseCase(subscRepo, logrusLog)
 
 	serverHost := viper.GetString("SERVER_HOST")
 	mailerFrom := viper.GetString("MAILER_FROM")
@@ -98,11 +96,11 @@ func main() {
 	mailerUsername := viper.GetString("MAILER_USERNAME")
 	mailerPassword := viper.GetString("MAILER_PASSWORD")
 	mailer := mailer.NewSMTPMailer(mailerFrom, mailerHost, mailerPort, mailerUsername, mailerPassword, logrusLog)
-	notificationService := services.NewNotificationService(mailer, serverHost, logrusLog)
+	notificationService := usecases.NewNotificationService(mailer, serverHost, logrusLog)
 
 	tokenManager := token.NewUUIDManager()
 
-	subscService := services.NewSubscriptionService(subscUseCase, tokenManager, notificationService, logrusLog)
+	subscService := usecases.NewSubscriptionService(subscRepo, tokenManager, notificationService, logrusLog)
 	subscHandler := handlers.NewSubscriptionHandler(subscService, logrusLog)
 
 	timezone := viper.GetString("TIMEZONE")
@@ -111,7 +109,7 @@ func main() {
 		logrusLog.Fatalf("Failed to load timezone: %s", err.Error())
 	}
 
-	weatherBroadcastService := services.NewWeatherBroadcastService(subscUseCase, weatherService, notificationService, logrusLog)
+	weatherBroadcastService := usecases.NewWeatherBroadcastService(subscRepo, weatherService, notificationService, logrusLog)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

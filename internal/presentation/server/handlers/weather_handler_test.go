@@ -8,9 +8,8 @@ import (
 	"testing"
 	"weather-forecast/internal/domain/models"
 	infraerrors "weather-forecast/internal/infrastructure/errors"
+
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
-	apierrors "weather-forecast/internal/presentation/errors"
-	httperrors "weather-forecast/internal/presentation/http_errors"
 	mock_handlers "weather-forecast/internal/presentation/server/handlers/mock"
 
 	"github.com/gin-gonic/gin"
@@ -18,9 +17,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func errToString(errMsg map[string]any) string {
+func errToString(errMsg string) string {
 
-	bytes, err := json.Marshal(errMsg)
+	errMap := map[string]any{"error": errMsg}
+
+	bytes, err := json.Marshal(errMap)
 	if err != nil {
 		panic(err)
 	}
@@ -31,9 +32,6 @@ func errToString(errMsg map[string]any) string {
 type mockWeatherServiceBehavior func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest)
 
 func TestWeatherHandler_Get(t *testing.T) {
-
-	httpInvalidRequestError := httperrors.New(apierrors.InvalidRequestError)
-	httpCityNotFoundError := httperrors.New(infraerrors.CityNotFoundError)
 
 	testTable := []struct {
 		name                 string
@@ -66,8 +64,8 @@ func TestWeatherHandler_Get(t *testing.T) {
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
 				logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 			},
-			expectedStatusCode:   httpInvalidRequestError.Status(),
-			expectedResponseBody: errToString(httpInvalidRequestError.JSON()),
+			expectedStatusCode:   http.StatusBadRequest,
+			expectedResponseBody: errToString("invalid request format"),
 		},
 		{
 			name:      "City not found",
@@ -76,10 +74,10 @@ func TestWeatherHandler_Get(t *testing.T) {
 				City: "ABCD",
 			},
 			mockBehavior: func(s *mock_handlers.MockWeatherService, logger *mock_logger.MockLogger, city GetWeatherRequest) {
-				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, infraerrors.CityNotFoundError)
+				s.EXPECT().GetWeatherByCity(gomock.Any(), city.City).Return(nil, infraerrors.ErrCityNotFound)
 			},
-			expectedStatusCode:   httpCityNotFoundError.Status(),
-			expectedResponseBody: errToString(httpCityNotFoundError.JSON()),
+			expectedStatusCode:   http.StatusNotFound,
+			expectedResponseBody: errToString(infraerrors.ErrCityNotFound.Error()),
 		},
 	}
 

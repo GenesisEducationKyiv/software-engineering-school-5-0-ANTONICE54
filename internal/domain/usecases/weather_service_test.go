@@ -1,13 +1,13 @@
-package services
+package usecases
 
 import (
 	"context"
 	"testing"
 	"weather-forecast/internal/domain/models"
+	mock_services "weather-forecast/internal/domain/usecases/mocks"
 	infraerrors "weather-forecast/internal/infrastructure/errors"
 
 	mock_logger "weather-forecast/internal/infrastructure/logger/mocks"
-	mock_services "weather-forecast/internal/infrastructure/services/mocks"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -46,19 +46,19 @@ func TestWeatherService_GetWeatherByCity(t *testing.T) {
 			name: "City not found",
 			city: "Jitomyr",
 			mockBehavior: func(p *mock_services.MockWeatherProvider, city string) {
-				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, infraerrors.CityNotFoundError)
+				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, infraerrors.ErrCityNotFound)
 			},
 			expectedWeather: nil,
-			expectedError:   infraerrors.CityNotFoundError,
+			expectedError:   infraerrors.ErrCityNotFound,
 		},
 		{
 			name: "Invalid city",
 			city: "",
 			mockBehavior: func(p *mock_services.MockWeatherProvider, city string) {
-				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, infraerrors.GetWeatherError)
+				p.EXPECT().GetWeatherByCity(gomock.Any(), city).Return(nil, infraerrors.ErrGetWeather)
 			},
 			expectedWeather: nil,
-			expectedError:   infraerrors.GetWeatherError,
+			expectedError:   infraerrors.ErrGetWeather,
 		},
 	}
 

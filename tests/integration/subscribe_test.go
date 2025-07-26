@@ -8,11 +8,10 @@ import (
 	"testing"
 	"weather-forecast/internal/domain/models"
 	"weather-forecast/internal/domain/usecases"
+	stub_services "weather-forecast/internal/domain/usecases/stubs"
 	"weather-forecast/internal/infrastructure/database"
 	stub_logger "weather-forecast/internal/infrastructure/logger/stub"
 	"weather-forecast/internal/infrastructure/repositories"
-	"weather-forecast/internal/infrastructure/services"
-	stub_services "weather-forecast/internal/infrastructure/services/stubs"
 	"weather-forecast/internal/infrastructure/token"
 	"weather-forecast/internal/presentation/server/handlers"
 
@@ -35,14 +34,13 @@ func setupDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func setupSubscriptionHandler(db *gorm.DB, stubMailer services.NotificationServiceI) *handlers.SubscriptionHandler {
+func setupSubscriptionHandler(db *gorm.DB, stubMailer usecases.NotificationSender) *handlers.SubscriptionHandler {
 
 	stubLogger := stub_logger.New()
 	tokenManager := token.NewUUIDManager()
 
 	subscRepo := repositories.NewSubscriptionRepository(db, stubLogger)
-	subscUC := usecases.NewSubscriptionUseCase(subscRepo, stubLogger)
-	subscService := services.NewSubscriptionService(subscUC, tokenManager, stubMailer, stubLogger)
+	subscService := usecases.NewSubscriptionService(subscRepo, tokenManager, stubMailer, stubLogger)
 	subscHandler := handlers.NewSubscriptionHandler(subscService, stubLogger)
 
 	return subscHandler
@@ -126,7 +124,7 @@ func TestSubscribe_InvalidInput(t *testing.T) {
 	stubMailer := stub_services.NewStubMailer()
 	subscriptionHandler := setupSubscriptionHandler(db, stubMailer)
 	router := setupSubscribeRouter(subscriptionHandler)
-	errorMessage := `{"error":"invalid request"}`
+	errorMessage := `{"error":"invalid request format"}`
 	testTable := []struct {
 		name                string
 		request             handlers.SubscribeRequest

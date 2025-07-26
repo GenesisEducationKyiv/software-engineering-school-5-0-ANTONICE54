@@ -2,10 +2,10 @@ package providers
 
 import (
 	"context"
+	"errors"
 	"weather-forecast/internal/domain/models"
 	infraerrors "weather-forecast/internal/infrastructure/errors"
 	"weather-forecast/internal/infrastructure/logger"
-	"weather-forecast/pkg/apperrors"
 )
 
 type (
@@ -39,16 +39,19 @@ func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string
 	cachedWeather := &models.Weather{}
 	err := p.cache.Get(ctx, city, cachedWeather)
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			switch appErr.Code.String() {
-			case infraerrors.CacheMissError.Code.String():
-				p.metrics.RecordCacheMiss()
-			case infraerrors.CacheError.Code.String():
-				p.metrics.RecordCacheError()
-			}
+
+		if errors.Is(err, infraerrors.ErrCache) {
+			p.metrics.RecordCacheError()
 		}
+
+		if errors.Is(err, infraerrors.ErrCacheMiss) {
+			p.metrics.RecordCacheMiss()
+		}
+
 		return nil, err
+
 	}
+
 	p.metrics.RecordCacheHit()
 	return cachedWeather, nil
 }

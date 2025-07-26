@@ -1,4 +1,4 @@
-package services
+package usecases
 
 import (
 	"context"
@@ -13,12 +13,8 @@ const (
 )
 
 type (
-	WeatherServiceI interface {
-		GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error)
-	}
-
-	ListSubscriptionUseCase interface {
-		ListByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error)
+	SubscriptionProvider interface {
+		ListConfirmedByFrequency(ctx context.Context, frequency models.Frequency, lastID, pageSize int) ([]models.Subscription, error)
 	}
 
 	WeatherMailer interface {
@@ -27,19 +23,19 @@ type (
 	}
 
 	WeatherBroadcastService struct {
-		subscriptionUseCase ListSubscriptionUseCase
-		weatherService      WeatherServiceI
-		weatherMailer       WeatherMailer
-		logger              logger.Logger
+		subscriptionProvider SubscriptionProvider
+		weatherService       WeatherProvider
+		weatherMailer        WeatherMailer
+		logger               logger.Logger
 	}
 )
 
-func NewWeatherBroadcastService(subscriptionUC ListSubscriptionUseCase, weatherService WeatherServiceI, weatherMailer WeatherMailer, logger logger.Logger) *WeatherBroadcastService {
+func NewWeatherBroadcastService(subscriptionProvider SubscriptionProvider, weatherService WeatherProvider, weatherMailer WeatherMailer, logger logger.Logger) *WeatherBroadcastService {
 	return &WeatherBroadcastService{
-		subscriptionUseCase: subscriptionUC,
-		weatherService:      weatherService,
-		weatherMailer:       weatherMailer,
-		logger:              logger,
+		subscriptionProvider: subscriptionProvider,
+		weatherService:       weatherService,
+		weatherMailer:        weatherMailer,
+		logger:               logger,
 	}
 }
 
@@ -51,7 +47,7 @@ func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency model
 
 	lastID := 0
 	for {
-		subscriptions, err := s.subscriptionUseCase.ListByFrequency(ctx, frequency, lastID, PAGE_SIZE)
+		subscriptions, err := s.subscriptionProvider.ListConfirmedByFrequency(ctx, frequency, lastID, PAGE_SIZE)
 		if err != nil {
 			s.logger.Warnf("Failed to fetch subscriptions: %v", err)
 			break

@@ -161,7 +161,7 @@ func TestGetWeather_ErrorScenarios(t *testing.T) {
 			openWeatherCode:       0,
 			shouldCallOpenWeather: false,
 			expectedCode:          http.StatusBadRequest,
-			expectedErrorBody:     `{"error":"invalid request"}`,
+			expectedErrorBody:     `{"error":"invalid request format"}`,
 		},
 		{
 			name: "City Not Found",

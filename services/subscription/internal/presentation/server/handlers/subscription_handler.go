@@ -44,9 +44,7 @@ func (h *SubscriptionHandler) Subscribe(ctx context.Context, req *subscription.S
 	_, err := h.subscriptionUsecase.Subscribe(ctx, subscription)
 
 	if err != nil {
-
 		grpcErr := h.handleSubscribeError(err)
-
 		return &emptypb.Empty{}, grpcErr
 	}
 

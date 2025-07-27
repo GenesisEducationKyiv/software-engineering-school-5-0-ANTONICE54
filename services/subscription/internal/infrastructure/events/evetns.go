@@ -33,8 +33,8 @@ func NewConfirmation(info *contracts.ConfirmationInfo) (*Event, error) {
 		Token:     info.Token,
 		Frequency: string(info.Frequency),
 	}
-	body, err := proto.Marshal(e)
 
+	body, err := proto.Marshal(e)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +51,8 @@ func NewConfirmed(info *contracts.ConfirmedInfo) (*Event, error) {
 		Token:     info.Token,
 		Frequency: string(info.Frequency),
 	}
-	body, err := proto.Marshal(e)
 
+	body, err := proto.Marshal(e)
 	if err != nil {
 		return nil, err
 	}

@@ -28,10 +28,8 @@ func NewRabbitMQPublisher(ch *amqp.Channel, exchange string, logger logger.Logge
 func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) error {
 
 	routeKey, err := event.RoutingKey()
-
 	if err != nil {
 		return err
-
 	}
 
 	err = p.ch.PublishWithContext(
@@ -44,7 +42,6 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 			ContentType: "application/x-protobuf",
 			Body:        event.Body,
 		})
-
 	if err != nil {
 		return infraerror.ErrInternal
 	}

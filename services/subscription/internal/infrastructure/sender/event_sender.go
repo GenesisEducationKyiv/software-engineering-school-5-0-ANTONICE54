@@ -28,15 +28,16 @@ func NewEventSender(publisher EventPublisher, logger logger.Logger) *EventSender
 
 func (s *EventSender) SendConfirmation(ctx context.Context, info *contracts.ConfirmationInfo) {
 	event, err := events.NewConfirmation(info)
-
 	if err != nil {
 		s.logger.Warnf("failed to create event: %s", err.Error())
 		return
 	}
+
 	err = s.publisher.Publish(ctx, *event)
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
+	s.logger.Infof("Confirmation event published")
 }
 
 func (s *EventSender) SendConfirmed(ctx context.Context, info *contracts.ConfirmedInfo) {
@@ -50,4 +51,6 @@ func (s *EventSender) SendConfirmed(ctx context.Context, info *contracts.Confirm
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
+	s.logger.Infof("Confirmed event published")
+
 }

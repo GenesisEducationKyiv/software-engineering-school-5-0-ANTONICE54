@@ -6,8 +6,11 @@ import (
 	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/gateway/internal/mappers"
 	"weather-forecast/pkg/apperrors"
+	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
+
+	"google.golang.org/grpc/metadata"
 )
 
 type (
@@ -25,6 +28,10 @@ func NewWeatherGRPCClient(weatherGRPCClinet weather.WeatherServiceClient, logger
 }
 
 func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
+	processID := ctxutil.GetProcessID(ctx)
+	md := metadata.Pairs("process-id", processID)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
 	req := &weather.GetWeatherRequest{City: city}
 	resp, err := c.weatherGRPC.GetWeather(ctx, req)
 	if err != nil {

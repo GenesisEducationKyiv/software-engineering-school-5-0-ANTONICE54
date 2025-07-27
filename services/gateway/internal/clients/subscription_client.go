@@ -6,8 +6,11 @@ import (
 	"weather-forecast/gateway/internal/mappers"
 	"weather-forecast/gateway/internal/server/handlers"
 	"weather-forecast/pkg/apperrors"
+	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/subscription"
+
+	"google.golang.org/grpc/metadata"
 )
 
 type (
@@ -25,6 +28,9 @@ func NewSubscriptionGRPCClient(subscriptionGRPC subscription.SubscriptionService
 }
 
 func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.SubscribeRequest) error {
+	processID := ctxutil.GetProcessID(ctx)
+	md := metadata.Pairs("process-id", processID)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	req := &subscription.SubscribeRequest{
 		Email:     info.Email,
@@ -40,6 +46,9 @@ func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.Su
 
 }
 func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) error {
+	processID := ctxutil.GetProcessID(ctx)
+	md := metadata.Pairs("process-id", processID)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	req := &subscription.ConfirmRequest{
 		Token: token,
@@ -52,6 +61,9 @@ func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) erro
 	return nil
 }
 func (c *SubscriptionGRPCClient) Unsubscribe(ctx context.Context, token string) error {
+	processID := ctxutil.GetProcessID(ctx)
+	md := metadata.Pairs("process-id", processID)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	req := &subscription.UnsubscribeRequest{
 		Token: token,

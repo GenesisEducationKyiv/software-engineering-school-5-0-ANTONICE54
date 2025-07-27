@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 	"weather-forecast/pkg/logger"
@@ -20,12 +21,11 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logrusLog := logger.NewLogrus(cfg.ServiceName)
 
 	fileLog, err := filelogger.NewFile(cfg.LogFilePath)
 	if err != nil {

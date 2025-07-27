@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"strings"
-	"weather-forecast/pkg/logger"
 
 	"github.com/spf13/viper"
 )
@@ -18,11 +17,11 @@ type Config struct {
 	MailerUsername string `mapstructure:"MAILER_USERNAME"`
 	MailerPassword string `mapstructure:"MAILER_PASSWORD"`
 
-	//
-	ServerHost string `mapstructure:"SERVER_HOST"`
+	ServerHost  string `mapstructure:"SERVER_HOST"`
+	ServiceName string `mapstructure:"SERVICE_NAME"`
 }
 
-func Load(log logger.Logger) (*Config, error) {
+func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -51,6 +50,7 @@ func validate(config *Config) error {
 		"MAILER_USERNAME":  config.MailerUsername,
 		"MAILER_PASSWORD":  config.MailerPassword,
 		"SERVER_HOST":      config.ServerHost,
+		"SERVICE_NAME":     config.ServiceName,
 	}
 
 	var missing []string

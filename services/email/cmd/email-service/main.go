@@ -7,6 +7,7 @@ import (
 	"email-service/internal/mailer"
 	"email-service/internal/processors"
 	"email-service/internal/services"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,12 +17,12 @@ import (
 )
 
 func main() {
-	logrusLog := logger.NewLogrus()
 
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logrusLog := logger.NewLogrus(cfg.ServiceName)
 
 	conn, err := amqp.Dial(cfg.RabbitMQURL)
 	if err != nil {
@@ -45,12 +46,12 @@ func main() {
 		logrusLog.Fatalf("Failed to start consumer: %v", err)
 	}
 
-	logrusLog.Info("Email service started successfully")
+	logrusLog.Infof("Email service started successfully")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logrusLog.Info("Shutting down email service...")
+	logrusLog.Infof("Shutting down email service...")
 
 }

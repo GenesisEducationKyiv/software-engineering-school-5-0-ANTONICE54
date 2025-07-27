@@ -1,5 +1,7 @@
 package stub_logger
 
+import "weather-forecast/pkg/logger"
+
 type StubLogger struct{}
 
 func New() *StubLogger {
@@ -10,3 +12,7 @@ func (l *StubLogger) Debugf(format string, args ...interface{}) {}
 func (l *StubLogger) Infof(format string, args ...interface{})  {}
 func (l *StubLogger) Warnf(format string, args ...interface{})  {}
 func (l *StubLogger) Fatalf(format string, args ...interface{}) {}
+func (l *StubLogger) Errorf(format string, args ...interface{}) {}
+func (l *StubLogger) WithField(key string, value interface{}) logger.Logger {
+	return l
+}

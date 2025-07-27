@@ -58,6 +58,16 @@ func (c *Consumer) Start(ctx context.Context) error {
 	go func() {
 		for d := range msgs {
 			c.logger.Infof("Event received:", d.RoutingKey)
+
+			processID := "unknown-process"
+			if val, ok := d.Headers["process_id"]; ok {
+				if s, ok := val.(string); ok {
+					processID = s
+				}
+			}
+
+			ctx = context.WithValue(context.Background(), "process_id", processID)
+
 			c.handler.Handle(ctx, d.RoutingKey, d.Body)
 		}
 	}()

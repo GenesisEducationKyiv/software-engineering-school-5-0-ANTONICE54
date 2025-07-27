@@ -6,6 +6,7 @@ import (
 	"weather-forecast/gateway/internal/errors"
 	httperrors "weather-forecast/gateway/internal/server/http_errors"
 	"weather-forecast/pkg/apperrors"
+	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -38,6 +39,9 @@ func NewSubscriptionHandler(subscriptionClient SubscriptionClient, logger logger
 }
 
 func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
+	processID := ctxutil.GetProcessID(ctx)
+	log := h.logger.WithField("process_id", processID)
+
 	var req SubscribeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())

@@ -25,12 +25,11 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logrusLog := logger.NewLogrus(cfg.ServiceName)
 
 	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -97,11 +96,11 @@ func main() {
 	scheduler.SetUp()
 	scheduler.Run()
 
-	logrusLog.Info("Weather broadcast service started successfully")
+	logrusLog.Infof("Weather broadcast service started successfully")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logrusLog.Info("Shutting down weather broadcast service...")
+	logrusLog.Infof("Shutting down weather broadcast service...")
 }

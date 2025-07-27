@@ -1,6 +1,7 @@
 package server
 
 import (
+	"weather-forecast/gateway/internal/server/middleware"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -34,7 +35,12 @@ func New(weatherHandeler WeatherHandler, subscrtiptionHandler SubscriptionHandle
 		logger:               logger,
 	}
 	s.setUpRoutes()
+	s.setUpMiddleware()
 	return s
+}
+
+func (s *Server) setUpMiddleware() {
+	s.router.Use(middleware.ProcessIDMiddleware())
 }
 
 func (s *Server) setUpRoutes() {

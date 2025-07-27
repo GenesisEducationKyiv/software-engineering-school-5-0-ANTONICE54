@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"weather-forecast/pkg/apperrors"
+	"weather-forecast/pkg/ctxutil"
 
 	"weather-forecast/pkg/events"
 	"weather-forecast/pkg/logger"
@@ -28,6 +29,8 @@ func NewRabbitMQPublisher(ch *amqp.Channel, exchange string, logger logger.Logge
 }
 
 func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) error {
+	processID := ctxutil.GetProcessID(ctx)
+
 	body, err := json.Marshal(event)
 	if err != nil {
 		p.logger.Warnf("failed to marshal event: %w", err)
@@ -43,6 +46,9 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        body,
+			Headers: amqp.Table{
+				"request_id": processID,
+			},
 		})
 
 	if err != nil {

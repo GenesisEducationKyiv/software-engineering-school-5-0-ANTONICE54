@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"strings"
-	"weather-forecast/pkg/logger"
 
 	"github.com/spf13/viper"
 )
@@ -19,9 +18,11 @@ type Config struct {
 
 	RabbitMQSource string `mapstructure:"RABBIT_MQ_SOURCE"`
 	Exchange       string `mapstructure:"EXCHANGE"`
+
+	ServiceName string `mapstructure:"SERVICE_NAME"`
 }
 
-func Load(log logger.Logger) (*Config, error) {
+func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -50,6 +51,7 @@ func validate(config *Config) error {
 		"DB_PORT":          config.DBPort,
 		"RABBIT_MQ_SOURCE": config.RabbitMQSource,
 		"EXCHANGE":         config.Exchange,
+		"SERVICE_NAME":     config.ServiceName,
 	}
 
 	var missing []string

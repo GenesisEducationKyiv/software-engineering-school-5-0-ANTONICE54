@@ -6,6 +6,7 @@ import (
 	"subscription-service/internal/presentation/mappers"
 	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
+
 	"weather-forecast/pkg/proto/subscription"
 
 	"google.golang.org/grpc/codes"

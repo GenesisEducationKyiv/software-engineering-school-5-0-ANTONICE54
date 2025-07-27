@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"weather-forecast/gateway/internal/clients"
 	"weather-forecast/gateway/internal/config"
 	"weather-forecast/gateway/internal/server"
@@ -14,12 +15,11 @@ import (
 )
 
 func main() {
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logrusLog := logger.NewLogrus(cfg.ServiceName)
 
 	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

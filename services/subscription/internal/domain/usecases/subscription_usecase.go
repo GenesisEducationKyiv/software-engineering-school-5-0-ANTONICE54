@@ -47,8 +47,10 @@ func NewSubscriptionService(subscriptionRepo SubscriptionRepository, tokenManage
 
 func (s *SubscriptionService) Subscribe(ctx context.Context, subscription *models.Subscription) (*models.Subscription, error) {
 
-	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
-
+	receivedSubsc, err := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
+	if err != nil {
+		return nil, err
+	}
 	if receivedSubsc != nil {
 		return nil, domainerrors.ErrAlreadySubscribed
 	}
@@ -88,7 +90,6 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	if !receivedSubsc.Confirmed {
 		receivedSubsc.Confirmed = true
 		updatedSubsc, err := s.subscriptionRepository.Update(ctx, *receivedSubsc)
-
 		if err != nil {
 			return err
 		}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 	"weather-forecast/gateway/internal/dto"
-	"weather-forecast/gateway/internal/mappers"
+	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -47,8 +47,8 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 
 	weather, err := h.weatherClient.GetWeatherByCity(ctx, req.City)
 	if err != nil {
-		code, body := mappers.HTTPFromGRPCError(err, h.logger)
-		ctx.JSON(code, body)
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 

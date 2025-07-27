@@ -35,6 +35,8 @@ func (c *Consumer) Start(ctx context.Context) error {
 		return err
 	}
 
+	defer ch.Close()
+
 	err = ch.ExchangeDeclare(c.exchangeName, "topic", true, false, false, false, nil)
 	if err != nil {
 		return err

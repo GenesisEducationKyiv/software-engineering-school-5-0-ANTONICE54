@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
-	"weather-forecast/gateway/internal/mappers"
+	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -46,8 +46,8 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 	err := h.subscriptionClient.Subscribe(ctx, req)
 
 	if err != nil {
-		code, body := mappers.HTTPFromGRPCError(err, h.logger)
-		ctx.JSON(code, body)
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 
@@ -61,8 +61,8 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 	err := h.subscriptionClient.Confirm(ctx, token)
 
 	if err != nil {
-		code, body := mappers.HTTPFromGRPCError(err, h.logger)
-		ctx.JSON(code, body)
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 
@@ -76,8 +76,8 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 	err := h.subscriptionClient.Unsubscribe(ctx, token)
 
 	if err != nil {
-		code, body := mappers.HTTPFromGRPCError(err, h.logger)
-		ctx.JSON(code, body)
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 

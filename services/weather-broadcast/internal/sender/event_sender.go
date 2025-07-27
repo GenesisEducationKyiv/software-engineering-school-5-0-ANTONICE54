@@ -39,6 +39,7 @@ func (s *EventSender) SendWeather(ctx context.Context, info *dto.WeatherMailSucc
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
 }
+
 func (s *EventSender) SendError(ctx context.Context, info *dto.WeatherMailErrorInfo) {
 	event, err := events.NewWeatherError(info)
 	if err != nil {

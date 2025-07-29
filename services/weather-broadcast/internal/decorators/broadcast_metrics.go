@@ -5,17 +5,17 @@ import (
 	"time"
 	"weather-broadcast-service/internal/metrics"
 	"weather-broadcast-service/internal/models"
-	"weather-broadcast-service/internal/services"
+	"weather-broadcast-service/internal/scheduler"
 	"weather-forecast/pkg/logger"
 )
 
 type BroadcastMetricsDecorator struct {
-	service services.WeatherBroadcastService
+	service scheduler.WeatherBroadcastService
 	metrics metrics.BroadcastRecorder
 	logger  logger.Logger
 }
 
-func NewBroadcastMetricsDecorator(service services.WeatherBroadcastService, metrics metrics.BroadcastRecorder, logger logger.Logger) *BroadcastMetricsDecorator {
+func NewBroadcastMetricsDecorator(service scheduler.WeatherBroadcastService, metrics metrics.BroadcastRecorder, logger logger.Logger) *BroadcastMetricsDecorator {
 	return &BroadcastMetricsDecorator{
 		service: service,
 		metrics: metrics,
@@ -24,14 +24,16 @@ func NewBroadcastMetricsDecorator(service services.WeatherBroadcastService, metr
 }
 
 func (d *BroadcastMetricsDecorator) Broadcast(ctx context.Context, frequency models.Frequency) {
+	log := d.logger.WithContext(ctx)
+
 	start := time.Now()
 
-	d.logger.Infof("Starting weather broadcast for frequency: %s", frequency)
+	log.Infof("Starting weather broadcast for frequency: %s", frequency)
 
 	d.service.Broadcast(ctx, frequency)
 
 	duration := time.Since(start)
 	d.metrics.RecordBroadcastDuration(string(frequency), duration)
 
-	d.logger.Infof("Weather broadcast completed for %s subscription in %v", frequency, duration)
+	log.Infof("Weather broadcast completed for %s subscription in %v", frequency, duration)
 }

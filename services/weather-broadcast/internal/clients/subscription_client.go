@@ -26,6 +26,9 @@ func NewSubscriptionGRPCClient(subscriptionGRPC subscription.SubscriptionService
 }
 
 func (c *SubscriptionGRPCClient) ListByFrequency(ctx context.Context, query dto.ListSubscriptionsQuery) (*dto.SubscriptionList, error) {
+	log := c.logger.WithContext(ctx)
+
+	log.Debugf("Calling subscription service: frequency=%s, lastID=%d, pageSize=%d", query.Frequency, query.LastID, query.PageSize)
 
 	req := &subscription.GetSubscriptionsByFrequencyRequest{
 		Frequency: mappers.MapFrequencyToProto(query.Frequency),
@@ -36,8 +39,12 @@ func (c *SubscriptionGRPCClient) ListByFrequency(ctx context.Context, query dto.
 	res, err := c.subscriptionGRPC.GetSubscriptionsByFrequency(ctx, req)
 
 	if err != nil {
+		log.Errorf("Subscription service call failed: %v", err)
 		return nil, apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
 	}
+
+	log.Infof("Retrieved %d subscriptions from service", len(res.Subscriptions))
+
 	return mappers.MapProtoToSubscriptionList(res), nil
 
 }

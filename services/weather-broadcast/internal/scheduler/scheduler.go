@@ -37,21 +37,35 @@ func New(ctx context.Context, notificationService WeatherBroadcastService, locat
 
 func (s *Scheduler) SetUp() {
 
-	_, err := s.cron.AddFunc(DAILY, func() { s.broadcastService.Broadcast(s.ctx, models.Daily) })
+	s.logger.Infof("Setting up scheduler with daily and hourly broadcasts")
+
+	_, err := s.cron.AddFunc(DAILY, func() {
+		s.logger.Infof("Daily broadcast triggered")
+
+		s.broadcastService.Broadcast(s.ctx, models.Daily)
+	})
 	if err != nil {
 		s.logger.Fatalf("Failed to setup daily sender: %s", err.Error())
 		return
 	}
 	_, err = s.cron.AddFunc(HOURLY, func() {
-
+		s.logger.Infof("Hourly broadcast triggered")
 		s.broadcastService.Broadcast(s.ctx, models.Hourly)
 	})
 	if err != nil {
 		s.logger.Fatalf("Failed to setup hourly sender: %s", err.Error())
 		return
 	}
+
+	s.logger.Infof("Scheduler setup completed successfully")
+
 }
 
 func (s *Scheduler) Run() {
+	s.logger.Infof("Starting scheduler")
+
 	s.cron.Start()
+
+	s.logger.Infof("Scheduler started successfully")
+
 }

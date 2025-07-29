@@ -91,13 +91,15 @@ func main() {
 	}
 
 	weatherBroadcastService := services.NewWeatherBroadcastService(sunbscriptionClient, weatherClient, eventSender, logrusLog)
-	metricWeatherBroadcastService := decorators.NewBroadcastMetricsDecorator(*weatherBroadcastService, prometheusMetrics, logrusLog)
+	processIdBroadcastDecorator := decorators.NewProcessIDDecorator(weatherBroadcastService, logrusLog)
+	metricBroadcastDecorator := decorators.NewBroadcastMetricsDecorator(processIdBroadcastDecorator, prometheusMetrics, logrusLog)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	scheduler := scheduler.New(ctx, metricWeatherBroadcastService, location, logrusLog)
+	scheduler := scheduler.New(ctx, metricBroadcastDecorator, location, logrusLog)
 	scheduler.SetUp()
 	scheduler.Run()
 

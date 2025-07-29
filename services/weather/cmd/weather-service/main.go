@@ -25,7 +25,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
-	logrusLog := logger.NewLogrus(cfg.ServiceName)
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
 
 	fileLog, err := filelogger.NewFile(cfg.LogFilePath)
 	if err != nil {

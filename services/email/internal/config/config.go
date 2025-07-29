@@ -17,6 +17,8 @@ type (
 		RabbitMQURL string `mapstructure:"RABBIT_MQ_SOURCE"`
 		Exchange    string `mapstructure:"EXCHANGE"`
 
+		LogLevel string `mapsturcutre:"LOG_LEVEL"`
+
 		MailerFrom     string `mapstructure:"MAILER_FROM"`
 		MailerHost     string `mapstructure:"MAILER_HOST"`
 		MailerPort     string `mapstructure:"MAILER_PORT"`
@@ -29,6 +31,7 @@ type (
 		ServiceName string `mapstructure:"SERVICE_NAME"`
 
 		MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
+		LogSamplingRate   int    `mapstructure:"LOG_SAMPLING_RATE"`
 	}
 )
 
@@ -63,6 +66,7 @@ func validate(config *Config) error {
 		"SERVER_HOST":         config.ServerHost,
 		"SERVICE_NAME":        config.ServiceName,
 		"METRICS_SERVER_PORT": config.MetricsServerPort,
+		"LOG_LEVEL":           config.LogLevel,
 	}
 
 	var missing []string
@@ -77,6 +81,10 @@ func validate(config *Config) error {
 	}
 	if config.Retry.MaxRetries == 0 {
 		missing = append(missing, "MAILER_MAX_RETRIES")
+	}
+	if config.LogSamplingRate == 0 {
+		missing = append(missing, "LOG_SAMPLING_RATE")
+
 	}
 
 	if len(missing) > 0 {

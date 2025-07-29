@@ -13,6 +13,8 @@ type Config struct {
 	ServerPort                 string `mapstructure:"SERVER_PORT"`
 	ServiceName                string `mapstructure:"SERVICE_NAME"`
 	MetricsServerPort          string `mapstructure:"METRICS_SERVER_PORT"`
+	LogLevel                   string `mapsturcutre:"LOG_LEVEL"`
+	LogSamplingRate            int    `mapstructure:"LOG_SAMPLING_RATE"`
 }
 
 func Load() (*Config, error) {
@@ -41,6 +43,7 @@ func validate(config *Config) error {
 		"SERVER_PORT":                  config.ServerPort,
 		"SERVICE_NAME":                 config.ServiceName,
 		"METRICS_SERVER_PORT":          config.MetricsServerPort,
+		"LOG_LEVEL":                    config.LogLevel,
 	}
 
 	var missing []string
@@ -48,6 +51,11 @@ func validate(config *Config) error {
 		if value == "" {
 			missing = append(missing, name)
 		}
+	}
+
+	if config.LogSamplingRate == 0 {
+		missing = append(missing, "LOG_SAMPLING_RATE")
+
 	}
 
 	if len(missing) > 0 {

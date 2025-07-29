@@ -30,32 +30,42 @@ func NewConsumer(conn *amqp.Connection, exchange string, handler EventHandler, l
 }
 
 func (c *Consumer) Start(ctx context.Context) error {
+
+	c.logger.Infof("Starting RabbitMQ consumer for exchange: %s", c.exchangeName)
+
 	ch, err := c.conn.Channel()
 	if err != nil {
 		return err
 	}
 
+	c.logger.Debugf("Declaring exchange: %s", c.exchangeName)
 	err = ch.ExchangeDeclare(c.exchangeName, "topic", true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 
+	c.logger.Debugf("Declaring queue")
 	q, err := ch.QueueDeclare("", false, true, true, false, nil)
 	if err != nil {
 		return err
 	}
+	c.logger.Debugf("Created queue: %s", q.Name)
 
+	c.logger.Debugf("Binding queue %s to exchange %s with routing key '#'", q.Name, c.exchangeName)
 	err = ch.QueueBind(q.Name, "#", c.exchangeName, false, nil)
 	if err != nil {
 		return err
 	}
 
+	c.logger.Debugf("Starting to consume messages from queue: %s", q.Name)
 	msgs, err := ch.Consume(q.Name, "", true, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	go func() {
+		c.logger.Infof("RabbitMQ consumer started successfully, waiting for messages...")
+
 		for d := range msgs {
 			c.logger.Infof("Event received: %s", d.RoutingKey)
 

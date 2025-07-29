@@ -48,12 +48,16 @@ func NewClient(cfg *config.Config, client *http.Client, logger logger.Logger) *O
 }
 
 func (c *OpenWeatherClient) GetWeather(ctx context.Context, city string) (*OpenWeatherSuccessResponse, error) {
+	log := c.logger.WithContext(ctx)
+
+	log.Infof("Calling OpenWeather API for city: %s", city)
+
 	const notFoundOpenWeatherErrorCode = "404"
 	const metricUnits = "metric"
 
 	url, err := url.Parse(c.apiURL)
 	if err != nil {
-		c.logger.Warnf("Form url: %s", err.Error())
+		log.Warnf("Form url: %s", err.Error())
 		return nil, errors.GetWeatherError
 	}
 	queryString := url.Query()
@@ -63,26 +67,30 @@ func (c *OpenWeatherClient) GetWeather(ctx context.Context, city string) (*OpenW
 	url.RawQuery = queryString.Encode()
 	stringURL := url.String()
 
+	log.Debugf("Making request to OpenWeather: %s", stringURL)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stringURL, nil)
 	if err != nil {
-		c.logger.Warnf("Failed to create get weather request: %s", err.Error())
+		log.Warnf("Failed to create get weather request: %s", err.Error())
 		return nil, errors.GetWeatherError
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		c.logger.Warnf("Failed make get weather request: %s", err.Error())
+		log.Warnf("Failed make get weather request: %s", err.Error())
 		return nil, errors.GetWeatherError
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			c.logger.Warnf("Failed to close response body: %s", err.Error())
+			log.Warnf("Failed to close response body: %s", err.Error())
 		}
 	}()
 
+	log.Debugf("OpenWeather API responded with status: %d", resp.StatusCode)
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.logger.Warnf("Failed to read response body: %s", err.Error())
+		log.Warnf("Failed to read response body: %s", err.Error())
 		return nil, errors.GetWeatherError
 	}
 
@@ -90,16 +98,16 @@ func (c *OpenWeatherClient) GetWeather(ctx context.Context, city string) (*OpenW
 		var errResponse OpenWeatherErrorResponse
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
-			c.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
+			log.Warnf("Failed to unmarshal response body: %s", err.Error())
 			return nil, errors.GetWeatherError
 		}
 
 		if errResponse.Cod == notFoundOpenWeatherErrorCode {
 
-			c.logger.Warnf("City not found: %s", city)
+			log.Warnf("City not found: %s", city)
 			return nil, errors.CityNotFoundError
 		} else {
-			c.logger.Warnf("Error from open weather: %s", errResponse.Message)
+			log.Warnf("Error from open weather: %s", errResponse.Message)
 			return nil, errors.GetWeatherError
 		}
 
@@ -108,9 +116,11 @@ func (c *OpenWeatherClient) GetWeather(ctx context.Context, city string) (*OpenW
 	var weatherResponse OpenWeatherSuccessResponse
 
 	if err := json.Unmarshal(body, &weatherResponse); err != nil {
-		c.logger.Warnf("Failed to unmarshal response body: %s", err.Error())
+		log.Warnf("Failed to unmarshal response body: %s", err.Error())
 		return nil, errors.GetWeatherError
 	}
+
+	log.Infof("Successfully received weather from OpenWeather for city: %s", city)
 
 	return &weatherResponse, nil
 

@@ -47,7 +47,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) err
 			ContentType: "application/json",
 			Body:        body,
 			Headers: amqp.Table{
-				"request_id": processID,
+				"process_id": processID,
 			},
 		})
 

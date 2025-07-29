@@ -32,52 +32,63 @@ func NewEventProcessor(sender NotificationService, logger logger.Logger) *EventP
 }
 
 func (h *EventProcessor) Handle(ctx context.Context, routingKey string, body []byte) {
+	log := h.logger.WithContext(ctx)
+
+	log.Debugf("Processing event: routing_key=%s, size=%d bytes", routingKey, len(body))
 
 	switch events.EventType(routingKey) {
 
 	case events.SubsctiptionEmail:
 		var e events.SubscriptionEvent
 		if err := json.Unmarshal(body, &e); err != nil {
-			h.logger.Warnf("failed to unmarshal SubscritpionEvent:%s", err.Error())
+			log.Warnf("failed to unmarshal SubscritpionEvent from routing_key = %s:%s", routingKey, err.Error())
 			return
 		}
+		log.Debugf("Successfully parsed SubscriptionEvent for email: %s", e.Email)
 		h.sender.SendConfirmation(ctx, mappers.SubscribeEventToDTO(e))
 
 	case events.ConfirmedEmail:
 		var e events.ConfirmedEvent
 		if err := json.Unmarshal(body, &e); err != nil {
-			h.logger.Warnf("failed to unmarshal ConfirmedEvent:%s", err.Error())
+			log.Warnf("failed to unmarshal ConfirmedEvent from routing_key = %s:%s", routingKey, err.Error())
 			return
 		}
+		log.Debugf("Successfully parsed ConfirmedEvent for email: %s", e.Email)
+
 		h.sender.SendConfirmed(ctx, mappers.ConfirmEventToDTO(e))
 
 	case events.UnsubscribedEmail:
 		var e events.UnsubscribedEvent
 		if err := json.Unmarshal(body, &e); err != nil {
-			h.logger.Warnf("failed to unmarshal UnsubscribeEvent:%s", err.Error())
+			log.Warnf("failed to unmarshal UnsubscribeEvent from routing_key = %s:%s", routingKey, err.Error())
 			return
 		}
+		log.Debugf("Successfully parsed UnsubscribedEvent for email: %s", e.Email)
 		h.sender.SendUnsubscribed(ctx, mappers.UnsubscribeEventToDTO(e))
 
 	case events.WeatherEmailSuccess:
 		var e events.WeatherSuccessEvent
 		if err := json.Unmarshal(body, &e); err != nil {
-			h.logger.Warnf("failed to unmarshal WeatherSuccessEvent:%s", err.Error())
+			log.Warnf("failed to unmarshal WeatherSuccessEvent from routing_key = %s:%s", routingKey, err.Error())
 			return
 		}
+		log.Debugf("Successfully parsed WeatherSuccessEvent for email: %s, city: %s", e.Email, e.City)
 		h.sender.SendWeather(ctx, mappers.SuccessWeatehrToDTO(e))
 
 	case events.WeatherEmailError:
 		var e events.WeatherErrorEvent
 		if err := json.Unmarshal(body, &e); err != nil {
-			h.logger.Warnf("failed to unmarshal WeatherErrorEvent:%s", err.Error())
+			log.Warnf("failed to unmarshal WeatherErrorEvent from routing_key = %s:%s", routingKey, err.Error())
 			return
 		}
+		log.Debugf("Successfully parsed WeatherErrorEvent for email: %s, city: %s", e.Email, e.City)
 		h.sender.SendError(ctx, mappers.ErrorWeatehrToDTO(e))
 
 	default:
-		h.logger.Warnf("unknown event: %s", routingKey)
+		log.Warnf("unknown event: %s", routingKey)
 
 	}
+
+	log.Debugf("Event processing completed for routing_key: %s", routingKey)
 
 }

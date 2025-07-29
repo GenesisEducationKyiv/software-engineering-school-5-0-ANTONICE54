@@ -48,8 +48,15 @@ func main() {
 		}
 	}()
 
-	db := database.Connect(cfg)
-	database.RunMigration(db)
+	db, err := database.Connect(cfg)
+	if err != nil {
+		logrusLog.Fatalf("Failed to establish connection with database: %s", err.Error())
+	}
+
+	err = database.RunMigration(db)
+	if err != nil {
+		logrusLog.Fatalf("Failed to migrate database: %s", err.Error())
+	}
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
 	tokenManager := token.NewUUIDManager()

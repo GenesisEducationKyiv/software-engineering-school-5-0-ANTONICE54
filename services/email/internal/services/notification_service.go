@@ -38,11 +38,13 @@ func (s *NotificationService) SendConfirmation(ctx context.Context, info *dto.Su
 	log := s.logger.WithContext(ctx)
 
 	email := s.emailBuilder.CreateConfirmationEmail(info)
+	log.Debugf("Created subscription email with subject: '%s' for %s", email.Subject, info.Email)
+
 	err := s.mailer.Send(ctx, email.Subject, email.Body, info.Email)
 	if err != nil {
-		log.Debugf("Failed to send email with subject %s to %s. Due to error: %s", email.Subject, info.Email, err.Error())
+		log.Errorf("Failed to send confirmation email to %s: %v", info.Email, err)
 	} else {
-		log.Debugf("Email sent successfully to %s", info.Email)
+		log.Infof("Confirmation email sent successfully to %s", info.Email)
 	}
 }
 
@@ -50,11 +52,13 @@ func (s *NotificationService) SendConfirmed(ctx context.Context, info *dto.Confi
 	log := s.logger.WithContext(ctx)
 
 	email := s.emailBuilder.CreateConfirmedEmail(info)
+	log.Debugf("Created confirmation email with subject: '%s' for %s", email.Subject, info.Email)
+
 	err := s.mailer.Send(ctx, email.Subject, email.Body, info.Email)
 	if err != nil {
-		log.Debugf("Failed to send email with subject %s to %s. Due to error: %s", email.Subject, info.Email, err.Error())
+		log.Errorf("Failed to send confirmed email to %s: %v", info.Email, err)
 	} else {
-		log.Debugf("Email sent successfully to %s", info.Email)
+		log.Infof("Confirmed email sent successfully to %s", info.Email)
 	}
 }
 
@@ -62,11 +66,13 @@ func (s *NotificationService) SendUnsubscribed(ctx context.Context, info *dto.Un
 	log := s.logger.WithContext(ctx)
 
 	email := s.emailBuilder.CreateUnsubscribeEmail(info)
+	log.Debugf("Created unsubscribed email with subject: '%s' for %s", email.Subject, info.Email)
+
 	err := s.mailer.Send(ctx, email.Subject, email.Body, info.Email)
 	if err != nil {
-		log.Debugf("Failed to send email with subject %s to %s. Due to error: %s", email.Subject, info.Email, err.Error())
+		log.Errorf("Failed to send canceled email to %s: %v", info.Email, err)
 	} else {
-		log.Debugf("Email sent successfully to %s", info.Email)
+		log.Infof("Canceled email sent successfully to %s", info.Email)
 	}
 }
 
@@ -74,11 +80,13 @@ func (s *NotificationService) SendWeather(ctx context.Context, info *dto.Weather
 	log := s.logger.WithContext(ctx)
 
 	email := s.emailBuilder.CreateWeatherEmail(info)
+	log.Debugf("Created weather email for: %s, city: %s", info.Email, info.City)
+
 	err := s.mailer.Send(ctx, email.Subject, email.Body, info.Email)
 	if err != nil {
-		log.Debugf("Failed to send email with subject %s to %s. Due to error: %s", email.Subject, info.Email, err.Error())
+		log.Errorf("Failed to send weather email to %s (city: %s): %v", info.Email, info.City, err)
 	} else {
-		log.Debugf("Email sent successfully to %s", info.Email)
+		log.Infof("Weather email sent successfully to %s (city: %s)", info.Email, info.City)
 	}
 }
 
@@ -86,10 +94,12 @@ func (s *NotificationService) SendError(ctx context.Context, info *dto.WeatherEr
 	log := s.logger.WithContext(ctx)
 
 	email := s.emailBuilder.CreateWeatherErrorEmail(info)
+	log.Debugf("Created weather error email for: %s, city: %s", info.Email, info.City)
+
 	err := s.mailer.Send(ctx, email.Subject, email.Body, info.Email)
 	if err != nil {
-		log.Debugf("Failed to send email with subject %s to %s. Due to error: %s", email.Subject, info.Email, err.Error())
+		log.Errorf("Failed to send weather error email to %s (city: %s): %v", info.Email, info.City, err)
 	} else {
-		log.Debugf("Email sent successfully to %s", info.Email)
+		log.Infof("Weather error email sent successfully to %s (city: %s)", info.Email, info.City)
 	}
 }

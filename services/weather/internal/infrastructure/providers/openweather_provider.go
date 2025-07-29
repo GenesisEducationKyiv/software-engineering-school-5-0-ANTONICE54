@@ -24,6 +24,10 @@ func NewOpenWeatherProvider(client *openweather.OpenWeatherClient, logger logger
 
 func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
+	log := p.logger.WithContext(ctx)
+
+	log.Debugf("Processing OpenWeather response for city: %s", city)
+
 	weatherResponse, err := p.client.GetWeather(ctx, city)
 	if err != nil {
 		return nil, err
@@ -34,7 +38,7 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 	if len(weatherResponse.Weather) > 0 {
 		weatherDesc = weatherResponse.Weather[0].Description
 	} else {
-		p.logger.Warnf("OpenWeather did not provide weather description for city: %s", city)
+		log.Warnf("OpenWeather did not provide weather description for city: %s", city)
 	}
 
 	result := models.Weather{
@@ -42,6 +46,8 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 		Humidity:    weatherResponse.Main.Humidity,
 		Description: weatherDesc,
 	}
+
+	log.Infof("OpenWeather data processed successfully for city: %s", city)
 
 	return &result, nil
 

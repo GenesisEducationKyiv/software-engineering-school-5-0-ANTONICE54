@@ -6,6 +6,7 @@ import (
 	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/gateway/internal/mappers"
 	"weather-forecast/pkg/apperrors"
+	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
 
@@ -27,7 +28,8 @@ func NewWeatherGRPCClient(weatherGRPCClinet weather.WeatherServiceClient, logger
 }
 
 func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
-	log := c.logger.WithContext(ctx)
+	processID := ctxutil.GetProcessID(ctx)
+	log := c.logger.WithField("process_id", processID)
 
 	md := metadata.Pairs("process-id", processID)
 	ctx = metadata.NewOutgoingContext(ctx, md)

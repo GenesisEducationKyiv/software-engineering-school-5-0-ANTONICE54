@@ -28,7 +28,6 @@ func (d *SubscriptionServiceMetricsDecorator) Subscribe(ctx context.Context, sub
 
 	if err == nil && result != nil {
 		log.Debugf("Incrementing subscriptions_created_total metric")
-
 		d.metrics.RecordSubscriptionCreated()
 	}
 
@@ -42,7 +41,6 @@ func (d *SubscriptionServiceMetricsDecorator) Confirm(ctx context.Context, token
 
 	if err == nil {
 		log.Debugf("Incrementing subscriptions_confirmed_total metric")
-
 		d.metrics.RecordSubscriptionConfirmed()
 	}
 
@@ -56,7 +54,6 @@ func (d *SubscriptionServiceMetricsDecorator) Unsubscribe(ctx context.Context, t
 
 	if err == nil {
 		log.Debugf("Incrementing subscriptions_deleted_total metric")
-
 		d.metrics.RecordSubscriptionDeleted()
 	}
 

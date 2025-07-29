@@ -17,3 +17,4 @@ scrape_configs:
           job: docker-logs
           __path__: /var/lib/docker/containers/*/*.log
 
+

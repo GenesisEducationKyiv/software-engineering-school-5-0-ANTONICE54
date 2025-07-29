@@ -31,12 +31,17 @@ func NewWeatherHandler(weatherService WeatherService, logger logger.Logger) *Wea
 }
 
 func (h *WeatherHandler) GetWeather(ctx context.Context, req *weather.GetWeatherRequest) (*weather.GetWeatherResponse, error) {
+	log := h.logger.WithContext(ctx)
 
+	log.Infof("GRPC GetWeather called: city=%s", req.City)
 	weatherRes, err := h.weatherService.GetWeatherByCity(ctx, req.City)
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
+			log.Warnf("GetWeather error: %s", appErr.Message)
+
 			return nil, appErr.ToGRPCStatus()
 		}
+		log.Errorf("GetWeather unexpected error: %v", err)
 		return nil, status.Errorf(codes.Internal, "failed to get weather: %v", err)
 	}
 
@@ -45,6 +50,8 @@ func (h *WeatherHandler) GetWeather(ctx context.Context, req *weather.GetWeather
 		Humidity:    int32(weatherRes.Humidity),
 		Description: weatherRes.Description,
 	}
+
+	log.Infof("Weather recieved successfully: city=%s", req.City)
 
 	return protoWeather, nil
 }

@@ -38,6 +38,10 @@ func NewCacheDecorator(provider usecases.WeatherProvider, cache CacheWriter, met
 
 func (d *CacheDecorator) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
+	log := d.logger.WithContext(ctx)
+
+	log.Debugf("Getting weather and caching for city: %s", city)
+
 	weather, err := d.provider.GetWeatherByCity(ctx, city)
 
 	if err != nil {
@@ -46,8 +50,10 @@ func (d *CacheDecorator) GetWeatherByCity(ctx context.Context, city string) (*mo
 
 	if err := d.cache.Set(ctx, city, weather, cacheTTL); err != nil {
 		d.metrics.RecordCacheError()
-		d.logger.Warnf("Cache weather %s:", err.Error())
+		log.Warnf("Failed to cache weather for city %s: %v", city, err)
 	}
+
+	log.Debugf("Weather cached successfully for city: %s", city)
 
 	return weather, nil
 

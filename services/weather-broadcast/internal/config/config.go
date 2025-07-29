@@ -19,7 +19,7 @@ type Config struct {
 	ServiceName       string `mapstructure:"SERVICE_NAME"`
 	MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
 
-	LogLevel        string `mapsturcutre:"LOG_LEVEL"`
+	LogLevel        string `mapstructure:"LOG_LEVEL"`
 	LogSamplingRate int    `mapstructure:"LOG_SAMPLING_RATE"`
 }
 

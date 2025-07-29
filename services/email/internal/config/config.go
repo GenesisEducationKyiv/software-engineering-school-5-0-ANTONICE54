@@ -17,7 +17,7 @@ type (
 		RabbitMQURL string `mapstructure:"RABBIT_MQ_SOURCE"`
 		Exchange    string `mapstructure:"EXCHANGE"`
 
-		LogLevel string `mapsturcutre:"LOG_LEVEL"`
+		LogLevel string `mapstructure:"LOG_LEVEL"`
 
 		MailerFrom     string `mapstructure:"MAILER_FROM"`
 		MailerHost     string `mapstructure:"MAILER_HOST"`

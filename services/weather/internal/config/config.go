@@ -22,7 +22,7 @@ type Config struct {
 	LogFilePath string `mapstructure:"LOG_FILE_PATH"`
 	ServiceName string `mapstructure:"SERVICE_NAME"`
 
-	LogLevel        string `mapsturcutre:"LOG_LEVEL"`
+	LogLevel        string `mapstructure:"LOG_LEVEL"`
 	LogSamplingRate int    `mapstructure:"LOG_SAMPLING_RATE"`
 }
 

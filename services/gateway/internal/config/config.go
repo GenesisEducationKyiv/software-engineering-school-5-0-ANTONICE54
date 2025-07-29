@@ -12,6 +12,7 @@ type Config struct {
 	SubscriptionServiceAddress string `mapstructure:"SUBSCRIPTION_SERVICE_ADDRESS"`
 	ServerPort                 string `mapstructure:"SERVER_PORT"`
 	ServiceName                string `mapstructure:"SERVICE_NAME"`
+	MetricsServerPort          string `mapstructure:"METRICS_SERVER_PORT"`
 }
 
 func Load() (*Config, error) {
@@ -39,6 +40,7 @@ func validate(config *Config) error {
 		"SUBSCRIPTION_SERVICE_ADDRESS": config.SubscriptionServiceAddress,
 		"SERVER_PORT":                  config.ServerPort,
 		"SERVICE_NAME":                 config.ServiceName,
+		"METRICS_SERVER_PORT":          config.MetricsServerPort,
 	}
 
 	var missing []string

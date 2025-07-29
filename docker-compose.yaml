@@ -6,7 +6,9 @@ services:
       context: .
       dockerfile: services/gateway/Dockerfile
     ports:
-      - 8083:8080
+      - 8080:8080
+      - 8090:8090
+
 
       
     restart: always
@@ -34,7 +36,7 @@ services:
       dockerfile: services/weather/Dockerfile
     ports:
       - 8081:8081
-      - 8090:8090
+      - 8091:8091
     volumes:
       - ./logs:/app/logs
 
@@ -91,6 +93,7 @@ services:
       dockerfile: services/subscription/Dockerfile
     ports:
       - 8082:8082
+      - 8093:8093
 
     depends_on:
       postgres:
@@ -107,6 +110,10 @@ services:
     build:
       context: .
       dockerfile: services/email/Dockerfile
+    
+    ports:
+      - 8092:8092
+
 
     depends_on:
       rabbitmq:
@@ -120,6 +127,8 @@ services:
     build:
       context: .
       dockerfile: services/weather-broadcast/Dockerfile
+    ports:
+      - 8094:8094
 
     depends_on:
       rabbitmq:

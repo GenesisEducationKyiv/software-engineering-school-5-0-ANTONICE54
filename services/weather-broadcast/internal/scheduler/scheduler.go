@@ -10,7 +10,7 @@ import (
 )
 
 const DAILY = "0 12 * * * " //every day at 12 am
-const HOURLY = "4 * * * * " //every hour at 0 minute
+const HOURLY = "3 * * * * " //every hour at 0 minute
 
 type (
 	WeatherBroadcastService interface {

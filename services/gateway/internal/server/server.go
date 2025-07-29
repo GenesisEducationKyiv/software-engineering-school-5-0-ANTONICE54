@@ -1,6 +1,7 @@
 package server
 
 import (
+	"time"
 	"weather-forecast/gateway/internal/server/middleware"
 	"weather-forecast/pkg/logger"
 
@@ -18,28 +19,35 @@ type (
 		Unsubscribe(ctx *gin.Context)
 	}
 
+	MetricRecorder interface {
+		RecordRequest(path, method string, duration time.Duration)
+	}
+
 	Server struct {
 		router               *gin.Engine
 		weatherHandler       WeatherHandler
 		subscrtiptionHandler SubscriptionHandler
+		metric               MetricRecorder
 		logger               logger.Logger
 	}
 )
 
-func New(weatherHandeler WeatherHandler, subscrtiptionHandler SubscriptionHandler, logger logger.Logger) *Server {
+func New(weatherHandeler WeatherHandler, subscrtiptionHandler SubscriptionHandler, metricRecorder MetricRecorder, logger logger.Logger) *Server {
 
 	s := &Server{
 		router:               gin.Default(),
 		weatherHandler:       weatherHandeler,
 		subscrtiptionHandler: subscrtiptionHandler,
+		metric:               metricRecorder,
 		logger:               logger,
 	}
-	s.setUpRoutes()
 	s.setUpMiddleware()
+	s.setUpRoutes()
 	return s
 }
 
 func (s *Server) setUpMiddleware() {
+	s.router.Use(middleware.MetricsMiddleware(s.metric))
 	s.router.Use(middleware.ProcessIDMiddleware())
 }
 

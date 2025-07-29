@@ -40,25 +40,35 @@ func NewWeatherHandler(weatherClient WeatherClient, logger logger.Logger) *Weath
 }
 
 func (h *WeatherHandler) Get(ctx *gin.Context) {
+	log := h.logger.WithContext(ctx)
+
 	var req GetWeatherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
+		log.Debugf("Failed to unmarshal request: %s", err.Error())
 		httpErr := httperrors.New(errors.InvalidRequestError)
 		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
 
+	log.Infof("Incoming get weather request: City: %s", req.City)
+
 	weather, err := h.weatherClient.GetWeatherByCity(ctx, req.City)
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
+			log.Debugf("Get weather failed for city %s: %s", req.City, appErr.Error())
+
 			httpErr := httperrors.New(appErr)
 			ctx.JSON(httpErr.Status(), httpErr.JSON())
 			return
 		}
+		log.Errorf("Unexpected error during get weather request: %s", err.Error())
+
 		httpErr := httperrors.New(apperrors.InternalServerError)
 		ctx.JSON(httpErr.Status(), httpErr.JSON())
 		return
 	}
+
+	log.Infof("Weather successfully retrieved: City: %s", req.City)
 
 	response := GetWeatherResponse{
 		Temperature: weather.Temperature,

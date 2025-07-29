@@ -19,7 +19,8 @@ type Config struct {
 	RabbitMQSource string `mapstructure:"RABBIT_MQ_SOURCE"`
 	Exchange       string `mapstructure:"EXCHANGE"`
 
-	ServiceName string `mapstructure:"SERVICE_NAME"`
+	ServiceName       string `mapstructure:"SERVICE_NAME"`
+	MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
 }
 
 func Load() (*Config, error) {
@@ -43,15 +44,16 @@ func Load() (*Config, error) {
 
 func validate(config *Config) error {
 	required := map[string]string{
-		"GRPC_PORT":        config.GRPCPort,
-		"DB_HOST":          config.DBHost,
-		"DB_USER":          config.DBUser,
-		"DB_PASSWORD":      config.DBPassword,
-		"DB_NAME":          config.DBName,
-		"DB_PORT":          config.DBPort,
-		"RABBIT_MQ_SOURCE": config.RabbitMQSource,
-		"EXCHANGE":         config.Exchange,
-		"SERVICE_NAME":     config.ServiceName,
+		"GRPC_PORT":           config.GRPCPort,
+		"DB_HOST":             config.DBHost,
+		"DB_USER":             config.DBUser,
+		"DB_PASSWORD":         config.DBPassword,
+		"DB_NAME":             config.DBName,
+		"DB_PORT":             config.DBPort,
+		"RABBIT_MQ_SOURCE":    config.RabbitMQSource,
+		"EXCHANGE":            config.Exchange,
+		"SERVICE_NAME":        config.ServiceName,
+		"METRICS_SERVER_PORT": config.MetricsServerPort,
 	}
 
 	var missing []string

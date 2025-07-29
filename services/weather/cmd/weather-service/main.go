@@ -44,7 +44,7 @@ func main() {
 		logrusLog.Fatalf("Connect to redis: %s", err.Error())
 	}
 
-	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
+	providerRoundTrip := roundtrip.New(logrusLog, logrusLog)
 
 	client := http.Client{
 		Timeout:   time.Second * 5,

@@ -9,6 +9,8 @@ import (
 	"time"
 	"weather-broadcast-service/internal/clients"
 	"weather-broadcast-service/internal/config"
+	"weather-broadcast-service/internal/decorators"
+	"weather-broadcast-service/internal/metrics"
 	"weather-broadcast-service/internal/scheduler"
 	"weather-broadcast-service/internal/sender"
 	"weather-broadcast-service/internal/services"
@@ -30,6 +32,7 @@ func main() {
 		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
 	logrusLog := logger.NewLogrus(cfg.ServiceName)
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -88,11 +91,13 @@ func main() {
 	}
 
 	weatherBroadcastService := services.NewWeatherBroadcastService(sunbscriptionClient, weatherClient, eventSender, logrusLog)
+	metricWeatherBroadcastService := decorators.NewBroadcastMetricsDecorator(*weatherBroadcastService, prometheusMetrics, logrusLog)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	scheduler := scheduler.New(ctx, weatherBroadcastService, location, logrusLog)
+	scheduler := scheduler.New(ctx, metricWeatherBroadcastService, location, logrusLog)
 	scheduler.SetUp()
 	scheduler.Run()
 

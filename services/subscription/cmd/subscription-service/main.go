@@ -5,8 +5,11 @@ import (
 	"subscription-service/internal/config"
 	"subscription-service/internal/domain/usecases"
 	"subscription-service/internal/infrastructure/database"
+	"subscription-service/internal/infrastructure/decorators"
+	"subscription-service/internal/infrastructure/metrics"
 	"subscription-service/internal/infrastructure/repositories"
 	"subscription-service/internal/infrastructure/sender"
+
 	"subscription-service/internal/infrastructure/token"
 	"subscription-service/internal/presentation/server"
 	"subscription-service/internal/presentation/server/handlers"
@@ -23,6 +26,7 @@ func main() {
 		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
 	logrusLog := logger.NewLogrus(cfg.ServiceName)
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	conn, err := amqp.Dial(cfg.RabbitMQSource)
 	if err != nil {
@@ -55,7 +59,10 @@ func main() {
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 
 	subscUseCase := usecases.NewSubscriptionService(subscRepo, tokenManager, eventSender, logrusLog)
-	subscHandler := handlers.NewSubscriptionHandler(subscUseCase, logrusLog)
+	metricSubscUseCase := decorators.NewSubscriptionServiceMetricsDecorator(*subscUseCase, prometheusMetrics, logrusLog)
+	subscHandler := handlers.NewSubscriptionHandler(metricSubscUseCase, logrusLog)
+
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
 	app := server.New(subscHandler, logrusLog)
 

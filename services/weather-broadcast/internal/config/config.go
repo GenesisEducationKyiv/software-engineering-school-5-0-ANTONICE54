@@ -16,7 +16,8 @@ type Config struct {
 
 	Timezone string `mapstructure:"TIMEZONE"`
 
-	ServiceName string `mapstructure:"SERVICE_NAME"`
+	ServiceName       string `mapstructure:"SERVICE_NAME"`
+	MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
 }
 
 func Load() (*Config, error) {
@@ -46,6 +47,7 @@ func validate(config *Config) error {
 		"EXCHANGE":                     config.Exchange,
 		"TIMEZONE":                     config.Timezone,
 		"SERVICE_NAME":                 config.ServiceName,
+		"METRICS_SERVER_PORT":          config.MetricsServerPort,
 	}
 
 	var missing []string

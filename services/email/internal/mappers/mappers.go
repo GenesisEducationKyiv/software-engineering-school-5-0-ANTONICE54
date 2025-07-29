@@ -2,6 +2,7 @@ package mappers
 
 import (
 	"email-service/internal/dto"
+	"strings"
 	"weather-forecast/pkg/events"
 )
 
@@ -51,5 +52,21 @@ func ErrorWeatehrToDTO(event events.WeatherErrorEvent) *dto.WeatherError {
 	return &dto.WeatherError{
 		City:  event.City,
 		Email: event.Email,
+	}
+}
+
+func SubjectToSubjectType(subject string) string {
+	subject = strings.ToLower(subject)
+	switch {
+	case strings.Contains(subject, "confirm"):
+		return "subscription"
+	case strings.Contains(subject, "weather"):
+		return "weather"
+	case strings.Contains(subject, "canceled"):
+		return "unsubscribe"
+	case strings.Contains(subject, "comfirmed"):
+		return "comfirmation"
+	default:
+		return "other"
 	}
 }

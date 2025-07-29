@@ -1,7 +1,9 @@
 package logger
 
 import (
+	"context"
 	"os"
+	"weather-forecast/pkg/ctxutil"
 
 	"github.com/sirupsen/logrus"
 )
@@ -28,6 +30,11 @@ func (l *logrusWrapper) Errorf(format string, args ...interface{}) {
 
 func (l *logrusWrapper) WithField(key string, value interface{}) Logger {
 	return &logrusWrapper{entry: l.entry.WithField(key, value)}
+}
+
+func (l *logrusWrapper) WithContext(ctx context.Context) Logger {
+	processID := ctxutil.GetProcessID(ctx)
+	return l.WithField("process_id", processID)
 }
 
 func NewLogrus(serviceName string) *logrusWrapper {

@@ -7,19 +7,30 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	RabbitMQURL string `mapstructure:"RABBIT_MQ_SOURCE"`
-	Exchange    string `mapstructure:"EXCHANGE"`
+type (
+	Retry struct {
+		MaxRetries int `mapstructure:"MAILER_MAX_RETRIES"`
+		Delay      int `mapstructure:"MAILER_DELAY"`
+	}
 
-	MailerFrom     string `mapstructure:"MAILER_FROM"`
-	MailerHost     string `mapstructure:"MAILER_HOST"`
-	MailerPort     string `mapstructure:"MAILER_PORT"`
-	MailerUsername string `mapstructure:"MAILER_USERNAME"`
-	MailerPassword string `mapstructure:"MAILER_PASSWORD"`
+	Config struct {
+		RabbitMQURL string `mapstructure:"RABBIT_MQ_SOURCE"`
+		Exchange    string `mapstructure:"EXCHANGE"`
 
-	ServerHost  string `mapstructure:"SERVER_HOST"`
-	ServiceName string `mapstructure:"SERVICE_NAME"`
-}
+		MailerFrom     string `mapstructure:"MAILER_FROM"`
+		MailerHost     string `mapstructure:"MAILER_HOST"`
+		MailerPort     string `mapstructure:"MAILER_PORT"`
+		MailerUsername string `mapstructure:"MAILER_USERNAME"`
+		MailerPassword string `mapstructure:"MAILER_PASSWORD"`
+
+		Retry Retry `mapstructure:",squash"`
+
+		ServerHost  string `mapstructure:"SERVER_HOST"`
+		ServiceName string `mapstructure:"SERVICE_NAME"`
+
+		MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
+	}
+)
 
 func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
@@ -42,15 +53,16 @@ func Load() (*Config, error) {
 
 func validate(config *Config) error {
 	required := map[string]string{
-		"RABBIT_MQ_SOURCE": config.RabbitMQURL,
-		"EXCHANGE":         config.Exchange,
-		"MAILER_FROM":      config.MailerFrom,
-		"MAILER_HOST":      config.MailerHost,
-		"MAILER_PORT":      config.MailerPort,
-		"MAILER_USERNAME":  config.MailerUsername,
-		"MAILER_PASSWORD":  config.MailerPassword,
-		"SERVER_HOST":      config.ServerHost,
-		"SERVICE_NAME":     config.ServiceName,
+		"RABBIT_MQ_SOURCE":    config.RabbitMQURL,
+		"EXCHANGE":            config.Exchange,
+		"MAILER_FROM":         config.MailerFrom,
+		"MAILER_HOST":         config.MailerHost,
+		"MAILER_PORT":         config.MailerPort,
+		"MAILER_USERNAME":     config.MailerUsername,
+		"MAILER_PASSWORD":     config.MailerPassword,
+		"SERVER_HOST":         config.ServerHost,
+		"SERVICE_NAME":        config.ServiceName,
+		"METRICS_SERVER_PORT": config.MetricsServerPort,
 	}
 
 	var missing []string
@@ -58,6 +70,13 @@ func validate(config *Config) error {
 		if value == "" {
 			missing = append(missing, name)
 		}
+	}
+
+	if config.Retry.Delay == 0 {
+		missing = append(missing, "MAILER_DELAY")
+	}
+	if config.Retry.MaxRetries == 0 {
+		missing = append(missing, "MAILER_MAX_RETRIES")
 	}
 
 	if len(missing) > 0 {

@@ -8,9 +8,9 @@ import (
 const processIDKey = "process_id"
 
 func ProcessIDMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		processID := uuid.New().String()
-		c.Set("process_id", processID)
-		c.Next()
+		ctx.Set("process_id", processID)
+		ctx.Next()
 	}
 }

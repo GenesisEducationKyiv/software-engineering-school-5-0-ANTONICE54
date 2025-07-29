@@ -4,6 +4,7 @@ import (
 	"log"
 	"weather-forecast/gateway/internal/clients"
 	"weather-forecast/gateway/internal/config"
+	"weather-forecast/gateway/internal/metrics"
 	"weather-forecast/gateway/internal/server"
 	"weather-forecast/gateway/internal/server/handlers"
 	"weather-forecast/pkg/logger"
@@ -20,6 +21,7 @@ func main() {
 		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
 	logrusLog := logger.NewLogrus(cfg.ServiceName)
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -53,6 +55,9 @@ func main() {
 	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
 	subsbscriptionHandler := handlers.NewSubscriptionHandler(sunbscriptionClient, logrusLog)
 
-	app := server.New(weatherHandler, subsbscriptionHandler, logrusLog)
+	app := server.New(weatherHandler, subsbscriptionHandler, prometheusMetrics, logrusLog)
+
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
+
 	app.Run(cfg.ServerPort)
 }

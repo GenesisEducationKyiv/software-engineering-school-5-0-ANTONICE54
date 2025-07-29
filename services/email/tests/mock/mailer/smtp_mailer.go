@@ -24,7 +24,7 @@ func NewMockSMTPMailer() *MockSMTPMailer {
 	}
 }
 
-func (m *MockSMTPMailer) Send(ctx context.Context, subject string, body, email string) {
+func (m *MockSMTPMailer) Send(ctx context.Context, subject string, body, email string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -33,6 +33,8 @@ func (m *MockSMTPMailer) Send(ctx context.Context, subject string, body, email s
 		Body:    body,
 		SentTo:  email,
 	})
+
+	return nil
 }
 
 func (m *MockSMTPMailer) GetSentEmails() []SentEmail {

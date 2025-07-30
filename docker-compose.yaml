@@ -1,56 +1,38 @@
 
 services:
-  postgres:
-    image: "postgres:12-alpine"
-    ports: 
-      - 5432:5432
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-    healthcheck:
-      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${DB_USER} -d ${DB_NAME}'"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
 
-  redis:
-    image: "redis:8-alpine"
-    ports: 
-      - 6379:6379
+
+
+
+
+
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    ports:
+      - "5672:5672"      
+      - "15672:15672"    
     env_file:
       - .env
+
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_DEFAULT_USER: ${RABBIT_MQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_MQ_PASS}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 5s
+    restart: unless-stopped
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - 8080:8080
-      - 8090:8090
-    volumes:
-      - ./logs:/app/logs
 
-    depends_on:
-      postgres:
-        condition: service_healthy 
-      redis:
-        condition: service_healthy
-      
-    restart: always
-    command: ["/app/main"]
+
+
+
+
+
 
 
   prometheus:
@@ -60,5 +42,9 @@ services:
     ports: 
       - 9090:9090
 
-    
-    
+
+
+networks:
+  default:
+    name: microservices-network
+    external: true

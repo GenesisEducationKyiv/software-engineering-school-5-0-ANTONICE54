@@ -1,0 +1,33 @@
+syntax = "proto3";
+package events;
+option go_package = "./;events";
+
+
+message Weather {
+  double temperature = 1;
+  int32 humidity = 2;
+  string description = 3;
+}
+
+message SubscriptionEvent {
+  string email = 1;
+  string token = 2;
+  string frequency = 3;
+}
+
+message ConfirmedEvent {
+  string email = 1;
+  string token = 2;
+  string frequency = 3;
+}
+
+message WeatherSuccessEvent {
+  string email = 1;
+  string city = 2;
+  Weather weather = 3;
+}
+
+message WeatherErrorEvent {
+  string email = 1;
+  string city = 2;
+}

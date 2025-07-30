@@ -64,7 +64,7 @@ func (h *EventProcessor) Handle(ctx context.Context, routingKey string, body []b
 			h.logger.Warnf("failed to unmarshal WeatherSuccessEvent:%s", err.Error())
 			return
 		}
-		h.sender.SendWeather(ctx, mappers.SuccessWeatehrToDTO(e))
+		h.sender.SendWeather(ctx, mappers.SuccessWeatherToDTO(e))
 
 	case WeatherErrorRoute:
 		e := &events.WeatherErrorEvent{}
@@ -72,7 +72,7 @@ func (h *EventProcessor) Handle(ctx context.Context, routingKey string, body []b
 			h.logger.Warnf("failed to unmarshal WeatherErrorEvent:%s", err.Error())
 			return
 		}
-		h.sender.SendError(ctx, mappers.ErrorWeatehrToDTO(e))
+		h.sender.SendError(ctx, mappers.ErrorWeatherToDTO(e))
 
 	default:
 		h.logger.Warnf("unknown event: %s", routingKey)

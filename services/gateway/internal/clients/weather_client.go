@@ -15,9 +15,9 @@ type (
 	}
 )
 
-func NewWeatherGRPCClient(weatherGRPCClinet weather.WeatherServiceClient, logger logger.Logger) *WeatherGRPCClient {
+func NewWeatherGRPCClient(weatherGRPCClient weather.WeatherServiceClient, logger logger.Logger) *WeatherGRPCClient {
 	return &WeatherGRPCClient{
-		weatherGRPC: weatherGRPCClinet,
+		weatherGRPC: weatherGRPCClient,
 		logger:      logger,
 	}
 }

@@ -29,7 +29,7 @@ func WeatherToDTO(weather *events.Weather) *dto.Weather {
 	}
 }
 
-func SuccessWeatehrToDTO(event *events.WeatherSuccessEvent) *dto.WeatherSuccess {
+func SuccessWeatherToDTO(event *events.WeatherSuccessEvent) *dto.WeatherSuccess {
 	weather := WeatherToDTO(event.Weather)
 
 	return &dto.WeatherSuccess{
@@ -39,7 +39,7 @@ func SuccessWeatehrToDTO(event *events.WeatherSuccessEvent) *dto.WeatherSuccess 
 	}
 }
 
-func ErrorWeatehrToDTO(event *events.WeatherErrorEvent) *dto.WeatherError {
+func ErrorWeatherToDTO(event *events.WeatherErrorEvent) *dto.WeatherError {
 	return &dto.WeatherError{
 		City:  event.City,
 		Email: event.Email,

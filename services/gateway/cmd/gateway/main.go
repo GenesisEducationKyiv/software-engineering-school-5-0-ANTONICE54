@@ -46,9 +46,9 @@ func main() {
 	}()
 
 	subscriptionGRPCClient := subscription.NewSubscriptionServiceClient(subscConn)
-	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
-	subsbscriptionHandler := handlers.NewSubscriptionHandler(sunbscriptionClient, logrusLog)
+	subscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
+	subscriptionHandler := handlers.NewSubscriptionHandler(subscriptionClient, logrusLog)
 
-	app := server.New(weatherHandler, subsbscriptionHandler, logrusLog)
+	app := server.New(weatherHandler, subscriptionHandler, logrusLog)
 	app.Run(cfg.ServerPort)
 }

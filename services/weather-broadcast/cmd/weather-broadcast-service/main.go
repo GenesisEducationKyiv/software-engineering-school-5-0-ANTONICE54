@@ -32,7 +32,7 @@ func main() {
 
 	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)
 	if err != nil {
-		logrusLog.Fatalf("Failed to connect to Subscription Service: %v", err)
+		logrusLog.Fatalf("Failed to connect to Weather Service: %v", err)
 	}
 	defer func() {
 		if err := weatherConn.Close(); err != nil {
@@ -53,7 +53,7 @@ func main() {
 	}()
 
 	subscriptionGRPCClient := subscription.NewSubscriptionServiceClient(subscConn)
-	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
+	subscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
 
 	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
 	if err != nil {
@@ -82,7 +82,7 @@ func main() {
 		logrusLog.Fatalf("Failed to load timezone: %s", err.Error())
 	}
 
-	weatherBroadcastService := services.NewWeatherBroadcastService(sunbscriptionClient, weatherClient, eventSender, logrusLog)
+	weatherBroadcastService := services.NewWeatherBroadcastService(subscriptionClient, weatherClient, eventSender, logrusLog)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

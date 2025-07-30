@@ -11,6 +11,9 @@ import (
 const (
 	confirmationRoute = "emails.subscription"
 	confirmedRoute    = "emails.confirmed"
+
+	confirmedEvent    EventType = "CONFIRMED"
+	confirmationEvent EventType = "CONFIRMATION"
 )
 
 type (
@@ -20,11 +23,6 @@ type (
 		Type EventType
 		Body []byte
 	}
-)
-
-var (
-	confirmedEvent    EventType = "CONFIRMED"
-	confirmationEvent EventType = "CONFIRMATION"
 )
 
 func NewConfirmation(info *contracts.ConfirmationInfo) (*Event, error) {

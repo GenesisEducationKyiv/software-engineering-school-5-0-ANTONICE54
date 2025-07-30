@@ -9,16 +9,16 @@ import (
 )
 
 type (
-	HTTPReponse struct {
+	HTTPResponse struct {
 		StatusCode int
 		Body       map[string]any
 	}
 )
 
-func NewHTTPFromGRPC(err error, logger logger.Logger) *HTTPReponse {
+func NewHTTPFromGRPC(err error, logger logger.Logger) *HTTPResponse {
 	st, ok := status.FromError(err)
 	if !ok {
-		return &HTTPReponse{
+		return &HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
 			Body:       map[string]any{"error": "unexpected error"},
 		}
@@ -27,26 +27,26 @@ func NewHTTPFromGRPC(err error, logger logger.Logger) *HTTPReponse {
 	switch st.Code() {
 
 	case codes.AlreadyExists:
-		return &HTTPReponse{
+		return &HTTPResponse{
 			StatusCode: http.StatusConflict,
 			Body:       map[string]any{"error": st.Message()},
 		}
 
 	case codes.InvalidArgument:
-		return &HTTPReponse{
+		return &HTTPResponse{
 			StatusCode: http.StatusBadRequest,
 			Body:       map[string]any{"error": st.Message()},
 		}
 
 	case codes.NotFound:
-		return &HTTPReponse{
+		return &HTTPResponse{
 			StatusCode: http.StatusNotFound,
 			Body:       map[string]any{"error": st.Message()},
 		}
 
 	default:
 		logger.Warnf("Unexpected gRPC error: %s", err.Error())
-		return &HTTPReponse{
+		return &HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
 			Body:       map[string]any{"error": "internal server error"},
 		}

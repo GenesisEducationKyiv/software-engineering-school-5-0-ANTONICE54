@@ -35,4 +35,4 @@ jobs:
         with:
           version: latest
           working-directory: ${{ matrix.service }}
-          args: --config=${{ github.workspace }}/.golangci.yml
+          args: --config=${{ github.workspace }}/.golangci.yaml

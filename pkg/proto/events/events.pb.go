@@ -317,7 +317,7 @@ var File_events_proto protoreflect.FileDescriptor
 
 const file_events_proto_rawDesc = "" +
 	"\n" +
-	"\fevents.proto\"i\n" +
+	"\fevents.proto\x12\x06events\"i\n" +
 	"\aWeather\x12 \n" +
 	"\vtemperature\x18\x01 \x01(\x01R\vtemperature\x12\x1a\n" +
 	"\bhumidity\x18\x02 \x01(\x05R\bhumidity\x12 \n" +
@@ -329,11 +329,11 @@ const file_events_proto_rawDesc = "" +
 	"\x0eConfirmedEvent\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1c\n" +
-	"\tfrequency\x18\x03 \x01(\tR\tfrequency\"c\n" +
+	"\tfrequency\x18\x03 \x01(\tR\tfrequency\"j\n" +
 	"\x13WeatherSuccessEvent\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
-	"\x04city\x18\x02 \x01(\tR\x04city\x12\"\n" +
-	"\aweather\x18\x03 \x01(\v2\b.WeatherR\aweather\"=\n" +
+	"\x04city\x18\x02 \x01(\tR\x04city\x12)\n" +
+	"\aweather\x18\x03 \x01(\v2\x0f.events.WeatherR\aweather\"=\n" +
 	"\x11WeatherErrorEvent\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
 	"\x04city\x18\x02 \x01(\tR\x04cityB\vZ\t./;eventsb\x06proto3"
@@ -352,14 +352,14 @@ func file_events_proto_rawDescGZIP() []byte {
 
 var file_events_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_events_proto_goTypes = []any{
-	(*Weather)(nil),             // 0: Weather
-	(*SubscriptionEvent)(nil),   // 1: SubscriptionEvent
-	(*ConfirmedEvent)(nil),      // 2: ConfirmedEvent
-	(*WeatherSuccessEvent)(nil), // 3: WeatherSuccessEvent
-	(*WeatherErrorEvent)(nil),   // 4: WeatherErrorEvent
+	(*Weather)(nil),             // 0: events.Weather
+	(*SubscriptionEvent)(nil),   // 1: events.SubscriptionEvent
+	(*ConfirmedEvent)(nil),      // 2: events.ConfirmedEvent
+	(*WeatherSuccessEvent)(nil), // 3: events.WeatherSuccessEvent
+	(*WeatherErrorEvent)(nil),   // 4: events.WeatherErrorEvent
 }
 var file_events_proto_depIdxs = []int32{
-	0, // 0: WeatherSuccessEvent.weather:type_name -> Weather
+	0, // 0: events.WeatherSuccessEvent.weather:type_name -> events.Weather
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

@@ -10,9 +10,9 @@ import (
 	"testing"
 	stub_logger "weather-forecast/pkg/stubs/logger"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 type (

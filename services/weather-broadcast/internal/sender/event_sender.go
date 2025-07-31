@@ -3,15 +3,14 @@ package sender
 import (
 	"context"
 	"weather-broadcast-service/internal/dto"
-	"weather-broadcast-service/internal/mappers"
 
-	"weather-forecast/pkg/events"
+	"weather-broadcast-service/internal/events"
 	"weather-forecast/pkg/logger"
 )
 
 type (
 	EventPublisher interface {
-		Publish(ctx context.Context, event events.Event) error
+		Publish(ctx context.Context, routingKey string, body []byte) error
 	}
 
 	EventSender struct {
@@ -28,15 +27,36 @@ func NewEventSender(publisher EventPublisher, logger logger.Logger) *EventSender
 }
 
 func (s *EventSender) SendWeather(ctx context.Context, info *dto.WeatherMailSuccessInfo) {
-	e := mappers.MapWeatherSuccessMailToEvent(info)
-	err := s.publisher.Publish(ctx, e)
+	event, err := events.NewWeatherSuccess(info)
+	if err != nil {
+		s.logger.Warnf("failed to create event: %s", err.Error())
+		return
+	}
+
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		s.logger.Warnf("failed to get routing key: %s", err.Error())
+	}
+
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
 }
+
 func (s *EventSender) SendError(ctx context.Context, info *dto.WeatherMailErrorInfo) {
-	e := mappers.MapWeatherErrorMailToEvent(info)
-	err := s.publisher.Publish(ctx, e)
+	event, err := events.NewWeatherError(info)
+	if err != nil {
+		s.logger.Warnf("failed to create event: %s", err.Error())
+		return
+	}
+
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		s.logger.Warnf("failed to get routing key: %s", err.Error())
+	}
+
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}

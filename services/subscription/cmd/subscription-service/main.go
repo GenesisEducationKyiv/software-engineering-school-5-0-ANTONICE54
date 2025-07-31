@@ -12,8 +12,7 @@ import (
 	"subscription-service/internal/presentation/server/handlers"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/publisher"
-
-	amqp "github.com/rabbitmq/amqp091-go"
+	"weather-forecast/pkg/rabbitmq"
 )
 
 func main() {
@@ -25,7 +24,7 @@ func main() {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	conn, err := amqp.Dial(cfg.RabbitMQSource)
+	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
@@ -45,13 +44,13 @@ func main() {
 		}
 	}()
 
-	db := database.Connect(cfg)
+	db := database.Connect(&cfg.DB)
 	database.RunMigration(db)
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
 	tokenManager := token.NewUUIDManager()
 
-	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.Exchange, logrusLog)
+	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.RabbitMQ.Exchange, logrusLog)
 
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 

@@ -1,0 +1,17 @@
+services:
+
+  weather-broadcast-service:
+    build:
+      context: ../../
+      dockerfile: services/weather-broadcast/Dockerfile
+
+
+      
+    restart: always
+    command: ["/app/main"]
+
+
+networks:
+  default:
+    name: microservices-network
+    external: true

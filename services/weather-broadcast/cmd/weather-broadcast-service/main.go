@@ -18,9 +18,8 @@ import (
 
 	"weather-forecast/pkg/proto/weather"
 
-	amqp "github.com/rabbitmq/amqp091-go"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	grpcpkg "weather-forecast/pkg/grpc"
+	"weather-forecast/pkg/rabbitmq"
 )
 
 func main() {
@@ -32,11 +31,9 @@ func main() {
 		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
 	}
 
-	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)
 	if err != nil {
-		logrusLog.Fatalf("Failed to connect to Subscription Service: %v", err)
+		logrusLog.Fatalf("Failed to connect to Weather Service: %v", err)
 	}
 	defer func() {
 		if err := weatherConn.Close(); err != nil {
@@ -46,9 +43,7 @@ func main() {
 	weatherGRPCClient := weather.NewWeatherServiceClient(weatherConn)
 	weatherClient := clients.NewWeatherGRPCClient(weatherGRPCClient, logrusLog)
 
-	subscConn, err := grpc.NewClient(cfg.SubscriptionServiceAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	subscConn, err := grpcpkg.ConnectWithRetry(cfg.SubscriptionServiceAddress, cfg.GRPC, logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to Subscription Service: %v", err)
 	}
@@ -59,9 +54,9 @@ func main() {
 	}()
 
 	subscriptionGRPCClient := subscription.NewSubscriptionServiceClient(subscConn)
-	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
+	subscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
 
-	conn, err := amqp.Dial(cfg.RabbitMQSource)
+	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
@@ -80,7 +75,7 @@ func main() {
 			logrusLog.Errorf("Failed to close RabbitMQ channel: %v", err)
 		}
 	}()
-	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.Exchange, logrusLog)
+	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.RabbitMQ.Exchange, logrusLog)
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 
 	location, err := time.LoadLocation(cfg.Timezone)
@@ -88,7 +83,7 @@ func main() {
 		logrusLog.Fatalf("Failed to load timezone: %s", err.Error())
 	}
 
-	weatherBroadcastService := services.NewWeatherBroadcastService(sunbscriptionClient, weatherClient, eventSender, logrusLog)
+	weatherBroadcastService := services.NewWeatherBroadcastService(subscriptionClient, weatherClient, eventSender, logrusLog)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

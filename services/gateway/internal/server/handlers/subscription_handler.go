@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 	"weather-forecast/gateway/internal/errors"
-	httperrors "weather-forecast/gateway/internal/server/http_errors"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -41,22 +39,15 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 	var req SubscribeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
-		httpErr := httperrors.New(errors.InvalidRequestError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
 	err := h.subscriptionClient.Subscribe(ctx, req)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			httpErr := httperrors.New(appErr)
-
-			ctx.JSON(httpErr.Status(), httpErr.JSON())
-			return
-		}
-		httpErr := httperrors.New(apperrors.InternalServerError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 
@@ -70,14 +61,8 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 	err := h.subscriptionClient.Confirm(ctx, token)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			httpErr := httperrors.New(appErr)
-
-			ctx.JSON(httpErr.Status(), httpErr.JSON())
-			return
-		}
-		httpErr := httperrors.New(apperrors.InternalServerError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 
@@ -91,14 +76,8 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 	err := h.subscriptionClient.Unsubscribe(ctx, token)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			httpErr := httperrors.New(appErr)
-
-			ctx.JSON(httpErr.Status(), httpErr.JSON())
-			return
-		}
-		httpErr := httperrors.New(apperrors.InternalServerError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 

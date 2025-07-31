@@ -3,9 +3,7 @@ package clients
 import (
 	"context"
 	"weather-forecast/gateway/internal/dto"
-	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/gateway/internal/mappers"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
 )
@@ -17,9 +15,9 @@ type (
 	}
 )
 
-func NewWeatherGRPCClient(weatherGRPCClinet weather.WeatherServiceClient, logger logger.Logger) *WeatherGRPCClient {
+func NewWeatherGRPCClient(weatherGRPCClient weather.WeatherServiceClient, logger logger.Logger) *WeatherGRPCClient {
 	return &WeatherGRPCClient{
-		weatherGRPC: weatherGRPCClinet,
+		weatherGRPC: weatherGRPCClient,
 		logger:      logger,
 	}
 }
@@ -28,7 +26,7 @@ func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (
 	req := &weather.GetWeatherRequest{City: city}
 	resp, err := c.weatherGRPC.GetWeather(ctx, req)
 	if err != nil {
-		return nil, apperrors.FromGRPCError(err, errors.WeatherServiceErrorCode)
+		return nil, err
 	}
 
 	return mappers.MapProtoToWeatherDTO(resp), nil

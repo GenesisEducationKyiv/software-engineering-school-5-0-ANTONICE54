@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	grpcpkg "weather-forecast/pkg/grpc"
 	"weather-forecast/pkg/logger"
 
 	"github.com/spf13/viper"
@@ -12,6 +13,8 @@ type Config struct {
 	WeatherServiceAddress      string `mapstructure:"WEATHER_SERVICE_ADDRESS"`
 	SubscriptionServiceAddress string `mapstructure:"SUBSCRIPTION_SERVICE_ADDRESS"`
 	ServerPort                 string `mapstructure:"SERVER_PORT"`
+
+	GRPC grpcpkg.Config `mapstructure:",squash"`
 }
 
 func Load(log logger.Logger) (*Config, error) {
@@ -34,6 +37,9 @@ func Load(log logger.Logger) (*Config, error) {
 }
 
 func validate(config *Config) error {
+	if err := config.GRPC.Validate(); err != nil {
+		return err
+	}
 	required := map[string]string{
 		"WEATHER_SERVICE_ADDRESS":      config.WeatherServiceAddress,
 		"SUBSCRIPTION_SERVICE_ADDRESS": config.SubscriptionServiceAddress,

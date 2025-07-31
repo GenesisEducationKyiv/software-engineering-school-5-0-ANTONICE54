@@ -4,23 +4,28 @@ import (
 	"fmt"
 	"strings"
 	"weather-forecast/pkg/logger"
+	"weather-forecast/pkg/rabbitmq"
 
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	RabbitMQURL string `mapstructure:"RABBIT_MQ_SOURCE"`
-	Exchange    string `mapstructure:"EXCHANGE"`
+type (
+	Mailer struct {
+		From     string `mapstructure:"MAILER_FROM"`
+		Host     string `mapstructure:"MAILER_HOST"`
+		Port     string `mapstructure:"MAILER_PORT"`
+		Username string `mapstructure:"MAILER_USERNAME"`
+		Password string `mapstructure:"MAILER_PASSWORD"`
+	}
 
-	MailerFrom     string `mapstructure:"MAILER_FROM"`
-	MailerHost     string `mapstructure:"MAILER_HOST"`
-	MailerPort     string `mapstructure:"MAILER_PORT"`
-	MailerUsername string `mapstructure:"MAILER_USERNAME"`
-	MailerPassword string `mapstructure:"MAILER_PASSWORD"`
+	Config struct {
+		RabbitMQ rabbitmq.Config `mapstructure:",squash"`
 
-	//
-	ServerHost string `mapstructure:"SERVER_HOST"`
-}
+		Mailer Mailer `mapstructure:",squash"`
+
+		ServerHost string `mapstructure:"SERVER_HOST"`
+	}
+)
 
 func Load(log logger.Logger) (*Config, error) {
 	viper.SetConfigFile(".env")
@@ -42,15 +47,18 @@ func Load(log logger.Logger) (*Config, error) {
 }
 
 func validate(config *Config) error {
+
+	if err := config.RabbitMQ.Validate(); err != nil {
+		return err
+	}
+
 	required := map[string]string{
-		"RABBIT_MQ_SOURCE": config.RabbitMQURL,
-		"EXCHANGE":         config.Exchange,
-		"MAILER_FROM":      config.MailerFrom,
-		"MAILER_HOST":      config.MailerHost,
-		"MAILER_PORT":      config.MailerPort,
-		"MAILER_USERNAME":  config.MailerUsername,
-		"MAILER_PASSWORD":  config.MailerPassword,
-		"SERVER_HOST":      config.ServerHost,
+		"MAILER_FROM":     config.Mailer.From,
+		"MAILER_HOST":     config.Mailer.Host,
+		"MAILER_PORT":     config.Mailer.Port,
+		"MAILER_USERNAME": config.Mailer.Username,
+		"MAILER_PASSWORD": config.Mailer.Password,
+		"SERVER_HOST":     config.ServerHost,
 	}
 
 	var missing []string

@@ -3,10 +3,8 @@ package clients
 import (
 	"context"
 	"weather-broadcast-service/internal/dto"
-	"weather-broadcast-service/internal/errors"
 	"weather-broadcast-service/internal/mappers"
 
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/subscription"
 )
@@ -36,7 +34,8 @@ func (c *SubscriptionGRPCClient) ListByFrequency(ctx context.Context, query dto.
 	res, err := c.subscriptionGRPC.GetSubscriptionsByFrequency(ctx, req)
 
 	if err != nil {
-		return nil, apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
+		c.logger.Warnf("Failed to get subscription list %s:", err.Error())
+		return nil, err
 	}
 	return mappers.MapProtoToSubscriptionList(res), nil
 

@@ -2,10 +2,8 @@ package clients
 
 import (
 	"context"
-	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/gateway/internal/mappers"
 	"weather-forecast/gateway/internal/server/handlers"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/subscription"
 )
@@ -33,12 +31,13 @@ func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.Su
 	}
 	_, err := c.subscriptionGRPC.Subscribe(ctx, req)
 	if err != nil {
-		return apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
+		return err
 	}
 
 	return nil
 
 }
+
 func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) error {
 
 	req := &subscription.ConfirmRequest{
@@ -46,11 +45,12 @@ func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) erro
 	}
 	_, err := c.subscriptionGRPC.Confirm(ctx, req)
 	if err != nil {
-		return apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
+		return err
 	}
 
 	return nil
 }
+
 func (c *SubscriptionGRPCClient) Unsubscribe(ctx context.Context, token string) error {
 
 	req := &subscription.UnsubscribeRequest{
@@ -58,7 +58,7 @@ func (c *SubscriptionGRPCClient) Unsubscribe(ctx context.Context, token string) 
 	}
 	_, err := c.subscriptionGRPC.Unsubscribe(ctx, req)
 	if err != nil {
-		return apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
+		return err
 	}
 
 	return nil

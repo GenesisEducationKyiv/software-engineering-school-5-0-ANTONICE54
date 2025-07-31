@@ -48,10 +48,12 @@ func NewSubscriptionService(subscriptionRepo SubscriptionRepository, tokenManage
 
 func (s *SubscriptionService) Subscribe(ctx context.Context, subscription *models.Subscription) (*models.Subscription, error) {
 
-	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
-
+	receivedSubsc, err := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
+	if err != nil {
+		return nil, err
+	}
 	if receivedSubsc != nil {
-		return nil, domainerrors.AlreadySubscribedError
+		return nil, domainerrors.ErrAlreadySubscribed
 	}
 
 	token := s.tokenManager.Generate(ctx)
@@ -75,7 +77,7 @@ func (s *SubscriptionService) Subscribe(ctx context.Context, subscription *model
 func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
-		return domainerrors.InvalidTokenError
+		return domainerrors.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -83,13 +85,12 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 		return err
 	}
 	if receivedSubsc == nil {
-		return domainerrors.TokenNotFoundError
+		return domainerrors.ErrTokenNotFound
 	}
 
 	if !receivedSubsc.Confirmed {
 		receivedSubsc.Confirmed = true
 		updatedSubsc, err := s.subscriptionRepository.Update(ctx, *receivedSubsc)
-
 		if err != nil {
 			return err
 		}
@@ -109,7 +110,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
-		return domainerrors.InvalidTokenError
+		return domainerrors.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -117,7 +118,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 		return err
 	}
 	if receivedSubsc == nil {
-		return domainerrors.TokenNotFoundError
+		return domainerrors.ErrTokenNotFound
 	}
 
 	err = s.subscriptionRepository.DeleteByToken(ctx, token)

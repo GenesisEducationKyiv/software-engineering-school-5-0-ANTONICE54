@@ -5,7 +5,7 @@ import (
 	"weather-forecast/pkg/proto/subscription"
 )
 
-func ProtoToFreaquency(protoFrequency subscription.Frequency) models.Frequency {
+func ProtoToFrequency(protoFrequency subscription.Frequency) models.Frequency {
 
 	switch protoFrequency {
 	case subscription.Frequency_DAILY:
@@ -60,14 +60,14 @@ func SubscribeRequestToSubscribe(req *subscription.SubscribeRequest) *models.Sub
 	return &models.Subscription{
 		Email:     req.Email,
 		City:      req.City,
-		Frequency: ProtoToFreaquency(req.Frequency),
+		Frequency: ProtoToFrequency(req.Frequency),
 		Confirmed: false,
 	}
 }
 
 func ProtoToListQuery(req *subscription.GetSubscriptionsByFrequencyRequest) *models.ListSubscriptionsQuery {
 	return &models.ListSubscriptionsQuery{
-		Frequency: ProtoToFreaquency(req.Frequency),
+		Frequency: ProtoToFrequency(req.Frequency),
 		LastID:    int(req.PageToken),
 		PageSize:  int(req.PageSize),
 	}

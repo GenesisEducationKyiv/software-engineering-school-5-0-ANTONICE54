@@ -6,6 +6,7 @@ import (
 	"weather-forecast/pkg/proto/subscription"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type (
@@ -17,6 +18,7 @@ type (
 
 func New(subscriptionHandler subscription.SubscriptionServiceServer, logger logger.Logger) *Server {
 	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
 
 	subscription.RegisterSubscriptionServiceServer(grpcServer, subscriptionHandler)
 

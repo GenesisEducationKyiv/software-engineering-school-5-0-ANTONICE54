@@ -3,7 +3,6 @@ package mappers
 import (
 	"weather-broadcast-service/internal/dto"
 	"weather-broadcast-service/internal/models"
-	"weather-forecast/pkg/events"
 	"weather-forecast/pkg/proto/subscription"
 	"weather-forecast/pkg/proto/weather"
 )
@@ -42,24 +41,5 @@ func MapProtoToWeatherDTO(weatherResponse *weather.GetWeatherResponse) *dto.Weat
 		Temperature: weatherResponse.Temperature,
 		Humidity:    int(weatherResponse.Humidity),
 		Description: weatherResponse.Description,
-	}
-}
-
-func MapWeatherSuccessMailToEvent(weatherInfo *dto.WeatherMailSuccessInfo) *events.WeatherSuccessEvent {
-	return &events.WeatherSuccessEvent{
-		Email: weatherInfo.Email,
-		City:  weatherInfo.City,
-		Weather: events.Weather{
-			Temperature: weatherInfo.Weather.Temperature,
-			Humidity:    weatherInfo.Weather.Humidity,
-			Description: weatherInfo.Weather.Description,
-		},
-	}
-}
-
-func MapWeatherErrorMailToEvent(weatherInfo *dto.WeatherMailErrorInfo) *events.WeatherErrorEvent {
-	return &events.WeatherErrorEvent{
-		Email: weatherInfo.Email,
-		City:  weatherInfo.City,
 	}
 }

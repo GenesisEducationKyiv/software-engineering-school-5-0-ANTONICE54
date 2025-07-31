@@ -8,8 +8,10 @@ require (
 )
 
 require (
+	github.com/golang/protobuf v1.5.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/stretchr/testify v1.10.0
+	google.golang.org/protobuf v1.36.6
 )
 
 require (

@@ -2,13 +2,14 @@ package integration
 
 import (
 	"context"
-	"encoding/json"
 	"subscription-service/internal/domain/models"
 	"subscription-service/tests/mocks/publisher"
 	"testing"
 	"time"
-	"weather-forecast/pkg/events"
+	protoevents "weather-forecast/pkg/proto/events"
 	"weather-forecast/pkg/proto/subscription"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,10 +25,10 @@ func assertConfirmedEventPublished(t *testing.T, publisher *publisher.MockEventP
 	require.Len(t, eventList, 1)
 
 	lastEvent := eventList[0]
-	assert.Equal(t, events.ConfirmedEmail, lastEvent.EventType)
+	assert.Equal(t, "emails.confirmed", lastEvent.EventType)
 
-	var confirmedEvent events.ConfirmedEvent
-	err := json.Unmarshal(lastEvent.RawData, &confirmedEvent)
+	var confirmedEvent protoevents.ConfirmedEvent
+	err := proto.Unmarshal(lastEvent.RawData, &confirmedEvent)
 	require.NoError(t, err)
 
 	assert.Equal(t, expectedEmail, confirmedEvent.Email)

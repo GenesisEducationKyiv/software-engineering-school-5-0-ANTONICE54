@@ -45,12 +45,12 @@ func (c *InMemoryCache) Get(ctx context.Context, key string, value interface{}) 
 
 	item, exists := c.data[key]
 	if !exists {
-		return infraerrors.CacheMissError
+		return infraerrors.ErrCacheMiss
 	}
 
 	if time.Now().After(item.expiration) {
 		delete(c.data, key)
-		return infraerrors.CacheMissError
+		return infraerrors.ErrCacheMiss
 	}
 
 	if weather, ok := value.(*models.Weather); ok {
@@ -60,7 +60,7 @@ func (c *InMemoryCache) Get(ctx context.Context, key string, value interface{}) 
 		}
 	}
 
-	return infraerrors.CacheError
+	return infraerrors.ErrCache
 }
 
 func (c *InMemoryCache) Clear() {

@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WeatherService_GetWeather_FullMethodName = "/WeatherService/GetWeather"
+	WeatherService_GetWeather_FullMethodName = "/weather.WeatherService/GetWeather"
 )
 
 // WeatherServiceClient is the client API for WeatherService service.
@@ -108,7 +108,7 @@ func _WeatherService_GetWeather_Handler(srv interface{}, ctx context.Context, de
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var WeatherService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "WeatherService",
+	ServiceName: "weather.WeatherService",
 	HandlerType: (*WeatherServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

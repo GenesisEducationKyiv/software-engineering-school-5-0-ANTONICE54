@@ -20,10 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SubscriptionService_Subscribe_FullMethodName                   = "/SubscriptionService/Subscribe"
-	SubscriptionService_Confirm_FullMethodName                     = "/SubscriptionService/Confirm"
-	SubscriptionService_Unsubscribe_FullMethodName                 = "/SubscriptionService/Unsubscribe"
-	SubscriptionService_GetSubscriptionsByFrequency_FullMethodName = "/SubscriptionService/GetSubscriptionsByFrequency"
+	SubscriptionService_Subscribe_FullMethodName                   = "/subscription.SubscriptionService/Subscribe"
+	SubscriptionService_Confirm_FullMethodName                     = "/subscription.SubscriptionService/Confirm"
+	SubscriptionService_Unsubscribe_FullMethodName                 = "/subscription.SubscriptionService/Unsubscribe"
+	SubscriptionService_GetSubscriptionsByFrequency_FullMethodName = "/subscription.SubscriptionService/GetSubscriptionsByFrequency"
 )
 
 // SubscriptionServiceClient is the client API for SubscriptionService service.
@@ -211,7 +211,7 @@ func _SubscriptionService_GetSubscriptionsByFrequency_Handler(srv interface{}, c
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var SubscriptionService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "SubscriptionService",
+	ServiceName: "subscription.SubscriptionService",
 	HandlerType: (*SubscriptionServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

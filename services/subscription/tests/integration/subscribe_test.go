@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"encoding/json"
 	"subscription-service/internal/domain/models"
 	"subscription-service/internal/domain/usecases"
 	"subscription-service/internal/infrastructure/database"
@@ -12,11 +11,11 @@ import (
 	"subscription-service/internal/presentation/mappers"
 	"subscription-service/internal/presentation/server/handlers"
 	"subscription-service/tests/mocks/publisher"
+	protoevents "weather-forecast/pkg/proto/events"
 
 	"testing"
 	"time"
 
-	"weather-forecast/pkg/events"
 	"weather-forecast/pkg/proto/subscription"
 	stub_logger "weather-forecast/pkg/stubs/logger"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -61,10 +61,10 @@ func assertSubscriptionEventPublished(t *testing.T, publisher *publisher.MockEve
 	eventList := publisher.GetPublishedEvents()
 	require.Len(t, eventList, 1)
 	lastEvent := eventList[0]
-	assert.Equal(t, events.SubsctiptionEmail, lastEvent.EventType)
+	assert.Equal(t, "emails.subscription", lastEvent.EventType)
 
-	var subscriptionEvent events.SubscriptionEvent
-	err := json.Unmarshal(lastEvent.RawData, &subscriptionEvent)
+	var subscriptionEvent protoevents.SubscriptionEvent
+	err := proto.Unmarshal(lastEvent.RawData, &subscriptionEvent)
 	require.NoError(t, err)
 
 	assert.Equal(t, expectedEmail, subscriptionEvent.Email)
@@ -93,10 +93,10 @@ func TestSubscribe_Success(t *testing.T) {
 	err = db.Where("email = ?", requestBody.Email).First(&subscFromDB).Error
 	require.NoError(t, err)
 	assert.Equal(t, requestBody.City, subscFromDB.City)
-	assert.Equal(t, mappers.ProtoToFreaquency(requestBody.Frequency), subscFromDB.Frequency)
+	assert.Equal(t, mappers.ProtoToFrequency(requestBody.Frequency), subscFromDB.Frequency)
 	assert.False(t, subscFromDB.Confirmed)
 	assert.Equal(t, requestBody.Email, subscFromDB.Email)
-	assertSubscriptionEventPublished(t, mockPublisher, requestBody.Email, mappers.ProtoToFreaquency(requestBody.Frequency))
+	assertSubscriptionEventPublished(t, mockPublisher, requestBody.Email, mappers.ProtoToFrequency(requestBody.Frequency))
 }
 
 func TestSubscribe_AlreadySubscribed(t *testing.T) {
@@ -116,7 +116,7 @@ func TestSubscribe_AlreadySubscribed(t *testing.T) {
 	resp, err := subscriptionHandler.Subscribe(ctx, requestBody)
 	require.NoError(t, err)
 	assert.IsType(t, &emptypb.Empty{}, resp)
-	assertSubscriptionEventPublished(t, mockPublisher, requestBody.Email, mappers.ProtoToFreaquency(requestBody.Frequency))
+	assertSubscriptionEventPublished(t, mockPublisher, requestBody.Email, mappers.ProtoToFrequency(requestBody.Frequency))
 
 	resp, err = subscriptionHandler.Subscribe(ctx, requestBody)
 

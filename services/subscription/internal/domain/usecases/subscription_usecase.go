@@ -26,6 +26,7 @@ type (
 	NotificationSender interface {
 		SendConfirmation(ctx context.Context, info *contracts.ConfirmationInfo)
 		SendConfirmed(ctx context.Context, info *contracts.ConfirmedInfo)
+		SendUnsubscribed(ctx context.Context, info *contracts.UnsubscribeInfo)
 	}
 
 	SubscriptionService struct {
@@ -124,6 +125,14 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	if err != nil {
 		return err
 	}
+
+	unsubscribeInfo := contracts.UnsubscribeInfo{
+		Email:     receivedSubsc.Email,
+		City:      receivedSubsc.City,
+		Frequency: receivedSubsc.Frequency,
+	}
+
+	s.mailer.SendUnsubscribed(ctx, &unsubscribeInfo)
 
 	return nil
 }

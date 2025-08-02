@@ -21,6 +21,13 @@ message ConfirmedEvent {
   string frequency = 3;
 }
 
+message UnsubscribedEvent {
+  string email = 1;
+  string city = 2;
+  string frequency = 3;
+}
+
+
 message WeatherSuccessEvent {
   string email = 1;
   string city = 2;

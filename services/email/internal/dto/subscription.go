@@ -11,4 +11,9 @@ type (
 		Token     string
 		Frequency string
 	}
+	UnsubscribedEmailInfo struct {
+		Email     string
+		City      string
+		Frequency string
+	}
 )

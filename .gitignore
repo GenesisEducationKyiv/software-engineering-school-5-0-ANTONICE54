@@ -1,7 +1,7 @@
-.env
 /logs/
 ./services/email/.env
 ./services/gateway/.env
 ./services/weather/.env
 ./services/subscription/.env
 ./services/weather-broadcast/.env
+.env

@@ -37,7 +37,7 @@ func main() {
 		}
 	}()
 
-	prometherusMetrics := metrics.NewPrometheus(logrusLog)
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	redisCache, err := cache.NewRedis(cfg.RedisSource, logrusLog)
 	if err != nil {
@@ -53,13 +53,13 @@ func main() {
 
 	weatherAPIClient := weatherapi.NewClient(cfg, &client, logrusLog)
 	weatherAPIProvider := providers.NewWeatherAPIProvider(weatherAPIClient, logrusLog)
-	cacheableWeatherAPIProvider := providers.NewCacheDecorator(weatherAPIProvider, redisCache, prometherusMetrics, logrusLog)
+	cacheableWeatherAPIProvider := providers.NewCacheDecorator(weatherAPIProvider, redisCache, prometheusMetrics, logrusLog)
 
 	openWeatherClient := openweather.NewClient(cfg, &client, logrusLog)
 	openWeatherProvider := providers.NewOpenWeatherProvider(openWeatherClient, logrusLog)
-	cacheableOpenWeatherProvider := providers.NewCacheDecorator(openWeatherProvider, redisCache, prometherusMetrics, logrusLog)
+	cacheableOpenWeatherProvider := providers.NewCacheDecorator(openWeatherProvider, redisCache, prometheusMetrics, logrusLog)
 
-	cacheWeatherProvider := providers.NewCacheWeather(redisCache, prometherusMetrics, logrusLog)
+	cacheWeatherProvider := providers.NewCacheWeather(redisCache, prometheusMetrics, logrusLog)
 
 	weatherAPIChainSection := providers.NewWeatherLink(cacheableWeatherAPIProvider)
 	openWeatherChainSection := providers.NewWeatherLink(cacheableOpenWeatherProvider)
@@ -73,7 +73,7 @@ func main() {
 
 	app := server.New(weatherHandler, logrusLog)
 
-	go prometherusMetrics.StartMetricsServer(cfg.MetricsServerPort)
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
 	if err := app.Start(cfg.GRPCPort); err != nil {
 		logrusLog.Fatalf("Failed to start server: %v", err)

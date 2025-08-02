@@ -11,8 +11,10 @@ import (
 const (
 	confirmationRoute = "emails.subscription"
 	confirmedRoute    = "emails.confirmed"
+	unsubscribedRoute = "emails.unsubscribed"
 
 	confirmedEvent    EventType = "CONFIRMED"
+	unsubscribedEvent EventType = "UNSUBSCRIBED"
 	confirmationEvent EventType = "CONFIRMATION"
 )
 
@@ -61,6 +63,24 @@ func NewConfirmed(info *contracts.ConfirmedInfo) (*Event, error) {
 	}, nil
 }
 
+func NewUnsubscribed(info *contracts.UnsubscribeInfo) (*Event, error) {
+	e := &protoevents.UnsubscribedEvent{
+		Email:     info.Email,
+		City:      info.City,
+		Frequency: string(info.Frequency),
+	}
+
+	body, err := proto.Marshal(e)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Event{
+		Type: unsubscribedEvent,
+		Body: body,
+	}, nil
+}
+
 func (e *Event) RoutingKey() (string, error) {
 
 	switch e.Type {
@@ -68,6 +88,8 @@ func (e *Event) RoutingKey() (string, error) {
 		return confirmationRoute, nil
 	case confirmedEvent:
 		return confirmedRoute, nil
+	case unsubscribedEvent:
+		return unsubscribedRoute, nil
 	default:
 		return "", infraerror.ErrUnknownEventRoute
 	}

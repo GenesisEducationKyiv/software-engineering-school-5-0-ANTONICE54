@@ -10,7 +10,7 @@ import (
 
 type (
 	EventPublisher interface {
-		Publish(ctx context.Context, event events.Event) error
+		Publish(ctx context.Context, routingKey string, body []byte) error
 	}
 
 	EventSender struct {
@@ -33,7 +33,12 @@ func (s *EventSender) SendConfirmation(ctx context.Context, info *contracts.Conf
 		return
 	}
 
-	err = s.publisher.Publish(ctx, *event)
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		s.logger.Warnf("failed to get routing key: %s", err.Error())
+	}
+
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
@@ -47,10 +52,33 @@ func (s *EventSender) SendConfirmed(ctx context.Context, info *contracts.Confirm
 		return
 	}
 
-	err = s.publisher.Publish(ctx, *event)
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		s.logger.Warnf("failed to get routing key: %s", err.Error())
+	}
+
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		s.logger.Warnf("failed to publish event: %s", err.Error())
 	}
 	s.logger.Infof("Confirmed event published")
 
+}
+
+func (s *EventSender) SendUnsubscribed(ctx context.Context, info *contracts.UnsubscribeInfo) {
+	event, err := events.NewUnsubscribed(info)
+	if err != nil {
+		s.logger.Warnf("failed to create event: %s", err.Error())
+		return
+	}
+
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		s.logger.Warnf("failed to get routing key: %s", err.Error())
+	}
+
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
+	if err != nil {
+		s.logger.Warnf("failed to publish event: %s", err.Error())
+	}
 }

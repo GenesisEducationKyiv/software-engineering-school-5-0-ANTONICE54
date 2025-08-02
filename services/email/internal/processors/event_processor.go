@@ -13,6 +13,7 @@ import (
 const (
 	ConfirmationRoute   = "emails.subscription"
 	ConfirmedRoute      = "emails.confirmed"
+	UnsubscribedRoute   = "emails.unsubscribed"
 	WeatherSuccessRoute = "emails.weather.success"
 	WeatherErrorRoute   = "emails.weather.error"
 )
@@ -21,6 +22,7 @@ type (
 	NotificationService interface {
 		SendConfirmation(ctx context.Context, info *dto.SubscriptionEmailInfo)
 		SendConfirmed(ctx context.Context, info *dto.ConfirmedEmailInfo)
+		SendUnsubscribed(ctx context.Context, info *dto.UnsubscribedEmailInfo)
 		SendWeather(ctx context.Context, info *dto.WeatherSuccess)
 		SendError(ctx context.Context, info *dto.WeatherError)
 	}
@@ -57,6 +59,14 @@ func (h *EventProcessor) Handle(ctx context.Context, routingKey string, body []b
 			return
 		}
 		h.sender.SendConfirmed(ctx, mappers.ConfirmEventToDTO(e))
+
+	case UnsubscribedRoute:
+		e := &events.UnsubscribedEvent{}
+		if err := proto.Unmarshal(body, e); err != nil {
+			h.logger.Warnf("failed to unmarshal UnsubscribeEvent:%s", err.Error())
+			return
+		}
+		h.sender.SendUnsubscribed(ctx, mappers.UnsubscribeEventToDTO(e))
 
 	case WeatherSuccessRoute:
 		e := &events.WeatherSuccessEvent{}

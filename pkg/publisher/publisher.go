@@ -2,7 +2,6 @@ package publisher
 
 import (
 	"context"
-	"weather-broadcast-service/internal/events"
 	"weather-forecast/pkg/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -24,29 +23,17 @@ func NewRabbitMQPublisher(ch *amqp.Channel, exchange string, logger logger.Logge
 	}
 }
 
-func (p *RabbitMQPublisher) Publish(ctx context.Context, event events.Event) error {
+func (p *RabbitMQPublisher) Publish(ctx context.Context, routingKey string, body []byte) error {
 
-	routeKey, err := event.RoutingKey()
-
-	if err != nil {
-		return err
-
-	}
-
-	err = p.ch.PublishWithContext(
+	return p.ch.PublishWithContext(
 		ctx,
 		p.exchange,
-		routeKey,
+		routingKey,
 		false,
 		false,
 		amqp.Publishing{
 			ContentType: "application/x-protobuf",
-			Body:        event.Body,
+			Body:        body,
 		})
 
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

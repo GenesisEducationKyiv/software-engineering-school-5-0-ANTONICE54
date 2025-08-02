@@ -201,6 +201,66 @@ func (x *ConfirmedEvent) GetFrequency() string {
 	return ""
 }
 
+type UnsubscribedEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	City          string                 `protobuf:"bytes,2,opt,name=city,proto3" json:"city,omitempty"`
+	Frequency     string                 `protobuf:"bytes,3,opt,name=frequency,proto3" json:"frequency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnsubscribedEvent) Reset() {
+	*x = UnsubscribedEvent{}
+	mi := &file_events_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnsubscribedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnsubscribedEvent) ProtoMessage() {}
+
+func (x *UnsubscribedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_events_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnsubscribedEvent.ProtoReflect.Descriptor instead.
+func (*UnsubscribedEvent) Descriptor() ([]byte, []int) {
+	return file_events_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *UnsubscribedEvent) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *UnsubscribedEvent) GetCity() string {
+	if x != nil {
+		return x.City
+	}
+	return ""
+}
+
+func (x *UnsubscribedEvent) GetFrequency() string {
+	if x != nil {
+		return x.Frequency
+	}
+	return ""
+}
+
 type WeatherSuccessEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -212,7 +272,7 @@ type WeatherSuccessEvent struct {
 
 func (x *WeatherSuccessEvent) Reset() {
 	*x = WeatherSuccessEvent{}
-	mi := &file_events_proto_msgTypes[3]
+	mi := &file_events_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -224,7 +284,7 @@ func (x *WeatherSuccessEvent) String() string {
 func (*WeatherSuccessEvent) ProtoMessage() {}
 
 func (x *WeatherSuccessEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_events_proto_msgTypes[3]
+	mi := &file_events_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -237,7 +297,7 @@ func (x *WeatherSuccessEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WeatherSuccessEvent.ProtoReflect.Descriptor instead.
 func (*WeatherSuccessEvent) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{3}
+	return file_events_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *WeatherSuccessEvent) GetEmail() string {
@@ -271,7 +331,7 @@ type WeatherErrorEvent struct {
 
 func (x *WeatherErrorEvent) Reset() {
 	*x = WeatherErrorEvent{}
-	mi := &file_events_proto_msgTypes[4]
+	mi := &file_events_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -283,7 +343,7 @@ func (x *WeatherErrorEvent) String() string {
 func (*WeatherErrorEvent) ProtoMessage() {}
 
 func (x *WeatherErrorEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_events_proto_msgTypes[4]
+	mi := &file_events_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -296,7 +356,7 @@ func (x *WeatherErrorEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WeatherErrorEvent.ProtoReflect.Descriptor instead.
 func (*WeatherErrorEvent) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{4}
+	return file_events_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *WeatherErrorEvent) GetEmail() string {
@@ -329,6 +389,10 @@ const file_events_proto_rawDesc = "" +
 	"\x0eConfirmedEvent\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1c\n" +
+	"\tfrequency\x18\x03 \x01(\tR\tfrequency\"[\n" +
+	"\x11UnsubscribedEvent\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
+	"\x04city\x18\x02 \x01(\tR\x04city\x12\x1c\n" +
 	"\tfrequency\x18\x03 \x01(\tR\tfrequency\"j\n" +
 	"\x13WeatherSuccessEvent\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
@@ -350,13 +414,14 @@ func file_events_proto_rawDescGZIP() []byte {
 	return file_events_proto_rawDescData
 }
 
-var file_events_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_events_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_events_proto_goTypes = []any{
 	(*Weather)(nil),             // 0: events.Weather
 	(*SubscriptionEvent)(nil),   // 1: events.SubscriptionEvent
 	(*ConfirmedEvent)(nil),      // 2: events.ConfirmedEvent
-	(*WeatherSuccessEvent)(nil), // 3: events.WeatherSuccessEvent
-	(*WeatherErrorEvent)(nil),   // 4: events.WeatherErrorEvent
+	(*UnsubscribedEvent)(nil),   // 3: events.UnsubscribedEvent
+	(*WeatherSuccessEvent)(nil), // 4: events.WeatherSuccessEvent
+	(*WeatherErrorEvent)(nil),   // 5: events.WeatherErrorEvent
 }
 var file_events_proto_depIdxs = []int32{
 	0, // 0: events.WeatherSuccessEvent.weather:type_name -> events.Weather
@@ -378,7 +443,7 @@ func file_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_events_proto_rawDesc), len(file_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

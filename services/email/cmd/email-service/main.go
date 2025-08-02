@@ -34,7 +34,8 @@ func main() {
 	}()
 
 	mailer := mailer.NewSMTPMailer(&cfg.Mailer, logrusLog)
-	notificationService := services.NewNotificationService(mailer, cfg.ServerHost, logrusLog)
+	emailBuilder := services.NewSimpleEmailBuild(cfg.ServerHost, logrusLog)
+	notificationService := services.NewNotificationService(mailer, emailBuilder, logrusLog)
 
 	eventProcessor := processors.NewEventProcessor(notificationService, logrusLog)
 

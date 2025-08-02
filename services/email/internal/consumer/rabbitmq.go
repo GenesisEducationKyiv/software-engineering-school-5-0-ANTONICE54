@@ -8,8 +8,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-const processIDKey = "process_id"
-
 type (
 	EventHandler interface {
 		Handle(ctx context.Context, routingKey string, body []byte)
@@ -73,12 +71,12 @@ func (c *Consumer) Start(ctx context.Context) error {
 			c.logger.Infof("Event received: %s", d.RoutingKey)
 
 			processID := "unknown-process"
-			if val, ok := d.Headers["process_id"]; ok {
+			if val, ok := d.Headers[ctxutil.ProcessIDKey.String()]; ok {
 				if s, ok := val.(string); ok {
 					processID = s
 				}
 			}
-			ctx = context.WithValue(context.Background(), ctxutil.ProcessIDKey, processID)
+			ctx = context.WithValue(context.Background(), ctxutil.ProcessIDKey.String(), processID)
 
 			c.handler.Handle(ctx, d.RoutingKey, d.Body)
 		}

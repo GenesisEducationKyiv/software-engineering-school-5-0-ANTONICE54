@@ -37,7 +37,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, routingKey string, body
 			ContentType: "application/x-protobuf",
 			Body:        body,
 			Headers: amqp.Table{
-				"process_id": processID,
+				ctxutil.ProcessIDKey.String(): processID,
 			},
 		})
 

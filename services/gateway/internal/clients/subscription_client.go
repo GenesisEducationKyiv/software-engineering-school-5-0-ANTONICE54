@@ -27,9 +27,9 @@ func NewSubscriptionGRPCClient(subscriptionGRPC subscription.SubscriptionService
 
 func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.SubscribeRequest) error {
 	processID := ctxutil.GetProcessID(ctx)
-	log := c.logger.WithField("process_id", processID)
+	log := c.logger.WithContext(ctx)
 
-	md := metadata.Pairs("process-id", processID)
+	md := metadata.Pairs(ctxutil.ProcessIDKey.String(), processID)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling subscribe via GRPC: Email: %s, City: %s, Frequency: %s", info.Email, info.City, info.Frequency)
@@ -53,9 +53,9 @@ func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.Su
 
 func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) error {
 	processID := ctxutil.GetProcessID(ctx)
-	log := c.logger.WithField("process_id", processID)
+	log := c.logger.WithContext(ctx)
 
-	md := metadata.Pairs("process-id", processID)
+	md := metadata.Pairs(ctxutil.ProcessIDKey.String(), processID)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling confirm via GRPC: Token: %s", token)
@@ -76,9 +76,9 @@ func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) erro
 
 func (c *SubscriptionGRPCClient) Unsubscribe(ctx context.Context, token string) error {
 	processID := ctxutil.GetProcessID(ctx)
-	log := c.logger.WithField("process_id", processID)
+	log := c.logger.WithContext(ctx)
 
-	md := metadata.Pairs("process-id", processID)
+	md := metadata.Pairs(ctxutil.ProcessIDKey.String(), processID)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling unsubscribe via GRPC: Token: %s", token)

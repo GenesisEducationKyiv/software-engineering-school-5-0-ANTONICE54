@@ -10,8 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const processIDKey = "process_id"
-
 type ProcessIDDecorator struct {
 	service scheduler.WeatherBroadcastService
 	logger  logger.Logger
@@ -27,7 +25,7 @@ func NewProcessIDDecorator(service scheduler.WeatherBroadcastService, logger log
 func (d *ProcessIDDecorator) Broadcast(ctx context.Context, frequency models.Frequency) {
 	processID := uuid.New().String()
 
-	ctx = context.WithValue(ctx, ctxutil.ProcessIDKey, processID)
+	ctx = context.WithValue(ctx, ctxutil.ProcessIDKey.String(), processID)
 	d.service.Broadcast(ctx, frequency)
 
 }

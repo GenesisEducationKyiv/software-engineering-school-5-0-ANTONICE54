@@ -54,7 +54,7 @@ func (l *logrusWrapper) WithField(key string, value interface{}) Logger {
 
 func (l *logrusWrapper) WithContext(ctx context.Context) Logger {
 	processID := ctxutil.GetProcessID(ctx)
-	return l.WithField("process_id", processID)
+	return l.WithField(ctxutil.ProcessIDKey.String(), processID)
 }
 
 func NewLogrus(serviceName, level string, sampler Sampler) *logrusWrapper {

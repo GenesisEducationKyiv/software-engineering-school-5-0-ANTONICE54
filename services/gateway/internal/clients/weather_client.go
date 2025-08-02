@@ -27,9 +27,9 @@ func NewWeatherGRPCClient(weatherGRPCClient weather.WeatherServiceClient, logger
 
 func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
 	processID := ctxutil.GetProcessID(ctx)
-	log := c.logger.WithField("process_id", processID)
+	log := c.logger.WithContext(ctx)
 
-	md := metadata.Pairs("process-id", processID)
+	md := metadata.Pairs(ctxutil.ProcessIDKey.String(), processID)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling get weather via GRPC: %s", city)

@@ -6,11 +6,13 @@ type (
 	Sampler interface {
 		ShouldLog() bool
 	}
+
 	RateSampler struct {
 		rate    int64
 		counter int64
 		mu      sync.Mutex
 	}
+
 	NoSampler struct {
 	}
 )

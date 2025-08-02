@@ -8,10 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Sampler interface {
-	ShouldLog() bool
-}
-
 type logrusWrapper struct {
 	entry   *logrus.Entry
 	sampler Sampler

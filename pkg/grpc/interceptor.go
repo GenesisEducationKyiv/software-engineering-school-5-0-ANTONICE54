@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 
 	"google.golang.org/grpc"
@@ -18,15 +19,14 @@ func ProcessIDInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
 		processID := "unknown"
 		md, ok := metadata.FromIncomingContext(ctx)
 		if ok {
-			if ids := md.Get("process-id"); len(ids) > 0 {
+			if ids := md.Get(string(ctxutil.ProcessIDKey)); len(ids) > 0 {
 				processID = ids[0]
 			} else {
 				log.Warnf("process-id not found in metadata")
 			}
 		}
 
-		ctx = context.WithValue(ctx, "process_id", processID)
-
+		ctx = context.WithValue(ctx, ctxutil.ProcessIDKey, processID)
 		return handler(ctx, req)
 	}
 }

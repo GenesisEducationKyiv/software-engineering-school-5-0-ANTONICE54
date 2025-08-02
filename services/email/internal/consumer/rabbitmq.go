@@ -2,10 +2,13 @@ package consumer
 
 import (
 	"context"
+	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
+
+const processIDKey = "process_id"
 
 type (
 	EventHandler interface {
@@ -75,8 +78,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 					processID = s
 				}
 			}
-
-			ctx = context.WithValue(context.Background(), "process_id", processID)
+			ctx = context.WithValue(context.Background(), ctxutil.ProcessIDKey, processID)
 
 			c.handler.Handle(ctx, d.RoutingKey, d.Body)
 		}

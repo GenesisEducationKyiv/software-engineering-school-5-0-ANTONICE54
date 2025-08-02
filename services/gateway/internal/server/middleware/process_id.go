@@ -10,7 +10,7 @@ const processIDKey = "process_id"
 func ProcessIDMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		processID := uuid.New().String()
-		ctx.Set("process_id", processID)
+		ctx.Set(processIDKey, processID)
 		ctx.Next()
 	}
 }

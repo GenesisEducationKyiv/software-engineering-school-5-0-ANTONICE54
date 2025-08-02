@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log"
 	"weather-forecast/gateway/internal/clients"
 	"weather-forecast/gateway/internal/config"
+	"weather-forecast/gateway/internal/metrics"
 	"weather-forecast/gateway/internal/server"
 	"weather-forecast/gateway/internal/server/handlers"
 	grpcpkg "weather-forecast/pkg/grpc"
@@ -12,12 +14,13 @@ import (
 )
 
 func main() {
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)
 
@@ -49,6 +52,9 @@ func main() {
 	subscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
 	subscriptionHandler := handlers.NewSubscriptionHandler(subscriptionClient, logrusLog)
 
-	app := server.New(weatherHandler, subscriptionHandler, logrusLog)
+	app := server.New(weatherHandler, subscriptionHandler, prometheusMetrics, logrusLog)
+
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
+
 	app.Run(cfg.ServerPort)
 }

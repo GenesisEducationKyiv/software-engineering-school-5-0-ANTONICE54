@@ -5,8 +5,11 @@ import (
 	"subscription-service/internal/config"
 	"subscription-service/internal/domain/usecases"
 	"subscription-service/internal/infrastructure/database"
+	"subscription-service/internal/infrastructure/decorators"
+	"subscription-service/internal/infrastructure/metrics"
 	"subscription-service/internal/infrastructure/repositories"
 	"subscription-service/internal/infrastructure/sender"
+
 	"subscription-service/internal/infrastructure/token"
 	"subscription-service/internal/presentation/server"
 	"subscription-service/internal/presentation/server/handlers"
@@ -17,12 +20,13 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
 	if err != nil {
@@ -44,8 +48,15 @@ func main() {
 		}
 	}()
 
-	db := database.Connect(&cfg.DB)
-	database.RunMigration(db)
+	db, err := database.Connect(&cfg.DB)
+	if err != nil {
+		logrusLog.Fatalf("Failed to establish connection with database: %s", err.Error())
+	}
+
+	err = database.RunMigration(db)
+	if err != nil {
+		logrusLog.Fatalf("Failed to migrate database: %s", err.Error())
+	}
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
 	tokenManager := token.NewUUIDManager()
@@ -55,7 +66,10 @@ func main() {
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 
 	subscUseCase := usecases.NewSubscriptionService(subscRepo, tokenManager, eventSender, logrusLog)
-	subscHandler := handlers.NewSubscriptionHandler(subscUseCase, logrusLog)
+	metricSubscUseCase := decorators.NewSubscriptionServiceMetricsDecorator(*subscUseCase, prometheusMetrics, logrusLog)
+	subscHandler := handlers.NewSubscriptionHandler(metricSubscUseCase, logrusLog)
+
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
 	app := server.New(subscHandler, logrusLog)
 

@@ -45,6 +45,10 @@ func NewWeatherBroadcastService(subscriptionClient SubscriptionClient, weatherCl
 }
 
 func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency models.Frequency) {
+	log := s.logger.WithContext(ctx)
+
+	log.Debugf("Starting broadcast process for %s subscription", frequency)
+
 	cityWeatherMap := make(map[string]*dto.Weather)
 	sem := make(chan struct{}, WORKER_AMOUNT)
 	wg := &sync.WaitGroup{}
@@ -58,9 +62,10 @@ func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency model
 			PageSize:  PAGE_SIZE,
 		}
 
+		log.Debugf("Getting subsctiption list batch from index %d with page size=%d", query.LastID, query.PageSize)
 		res, err := s.subscriptionClient.ListByFrequency(ctx, query)
 		if err != nil {
-			s.logger.Warnf("Failed to fetch subscriptions: %v", err)
+			log.Errorf("Failed to fetch subscriptions for %s broadcast: %v", frequency, err)
 			break
 		}
 
@@ -68,18 +73,23 @@ func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency model
 		lastID = res.LastIndex
 
 		if len(subscriptions) == 0 {
+			log.Debugf("No more subscriptions found, stopping broadcast")
 			break
 		}
 
 		for _, subscription := range subscriptions {
 
 			if _, ok := cityWeatherMap[subscription.City]; !ok {
+				log.Debugf("Getting weather for new city: %s", subscription.City)
+
 				weather, err := s.weatherClient.GetWeatherByCity(ctx, subscription.City)
-				s.logger.Infof("Weather: %v", weather)
+				log.Infof("Weather: %v", weather)
 
 				if err != nil {
+					log.Warnf("Failed to get weather for city %s: %v", subscription.City, err)
 					cityWeatherMap[subscription.City] = nil
 				} else {
+					log.Debugf("Weather fetched successfully for city: %s", subscription.City)
 					cityWeatherMap[subscription.City] = weather
 				}
 
@@ -92,6 +102,7 @@ func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency model
 				defer func() { <-sem }()
 				defer wg.Done()
 				if weather != nil {
+					log.Debugf("Sending weather email to: %s for city: %s", sub.Email, sub.City)
 					info := &dto.WeatherMailSuccessInfo{
 						Email:   sub.Email,
 						City:    sub.City,
@@ -100,6 +111,7 @@ func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency model
 
 					s.weatherMailer.SendWeather(ctx, info)
 				} else {
+					log.Debugf("Sending error email to: %s for city: %s", sub.Email, sub.City)
 					info := &dto.WeatherMailErrorInfo{
 						Email: sub.Email,
 						City:  sub.City,

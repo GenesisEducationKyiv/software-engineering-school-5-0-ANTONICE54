@@ -2,7 +2,9 @@ package server
 
 import (
 	"net"
+	grpcpkg "weather-forecast/pkg/grpc"
 	"weather-forecast/pkg/logger"
+
 	"weather-forecast/pkg/proto/weather"
 
 	"google.golang.org/grpc"
@@ -17,7 +19,9 @@ type (
 )
 
 func New(weatherHandler weather.WeatherServiceServer, logger logger.Logger) *Server {
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(grpcpkg.ProcessIDInterceptor(logger)),
+	)
 	reflection.Register(grpcServer)
 
 	weather.RegisterWeatherServiceServer(grpcServer, weatherHandler)

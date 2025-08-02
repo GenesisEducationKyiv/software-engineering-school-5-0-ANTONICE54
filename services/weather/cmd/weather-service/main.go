@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 	"weather-forecast/pkg/logger"
@@ -20,12 +21,12 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
 
 	fileLog, err := filelogger.NewFile(cfg.LogFilePath)
 	if err != nil {
@@ -44,7 +45,7 @@ func main() {
 		logrusLog.Fatalf("Connect to redis: %s", err.Error())
 	}
 
-	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
+	providerRoundTrip := roundtrip.New(logrusLog, logrusLog)
 
 	client := http.Client{
 		Timeout:   time.Second * 5,

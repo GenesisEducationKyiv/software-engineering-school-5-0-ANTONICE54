@@ -9,6 +9,8 @@ import (
 	"time"
 	"weather-broadcast-service/internal/clients"
 	"weather-broadcast-service/internal/config"
+	"weather-broadcast-service/internal/decorators"
+	"weather-broadcast-service/internal/metrics"
 	"weather-broadcast-service/internal/scheduler"
 	"weather-broadcast-service/internal/sender"
 	"weather-broadcast-service/internal/services"
@@ -24,12 +26,13 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)
 	if err != nil {
@@ -84,19 +87,23 @@ func main() {
 	}
 
 	weatherBroadcastService := services.NewWeatherBroadcastService(subscriptionClient, weatherClient, eventSender, logrusLog)
+	processIdBroadcastDecorator := decorators.NewProcessIDDecorator(weatherBroadcastService, logrusLog)
+	metricBroadcastDecorator := decorators.NewBroadcastMetricsDecorator(processIdBroadcastDecorator, prometheusMetrics, logrusLog)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	scheduler := scheduler.New(ctx, weatherBroadcastService, location, logrusLog)
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
+
+	scheduler := scheduler.New(ctx, metricBroadcastDecorator, location, logrusLog)
 	scheduler.SetUp()
 	scheduler.Run()
 
-	logrusLog.Info("Weather broadcast service started successfully")
+	logrusLog.Infof("Weather broadcast service started successfully")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logrusLog.Info("Shutting down weather broadcast service...")
+	logrusLog.Infof("Shutting down weather broadcast service...")
 }

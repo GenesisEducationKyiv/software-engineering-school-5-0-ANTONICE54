@@ -25,6 +25,10 @@ func NewWeatherAPIProvider(client *weatherapi.WeatherAPIClient, logger logger.Lo
 
 func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
 
+	log := p.logger.WithContext(ctx)
+
+	log.Debugf("Processing WeatherAPI response for city: %s", city)
+
 	weatherResponse, err := p.client.GetWeather(ctx, city)
 
 	if err != nil {
@@ -36,6 +40,8 @@ func (p *WeatherAPIProvider) GetWeatherByCity(ctx context.Context, city string) 
 		Humidity:    weatherResponse.Current.Humidity,
 		Description: weatherResponse.Current.Condition.Text,
 	}
+
+	log.Infof("WeatherAPI data processed successfully for city: %s", city)
 
 	return &result, nil
 }

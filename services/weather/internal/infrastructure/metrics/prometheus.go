@@ -50,6 +50,8 @@ func (m *Prometheus) StartMetricsServer(port string) {
 	router := gin.New()
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	addr := fmt.Sprintf(":%s", port)
+	m.logger.Infof("Starting weather metrics server on %s", addr)
+
 	if err := router.Run(addr); err != nil {
 		m.logger.Fatalf("Metrics server start: %s", err.Error())
 	}

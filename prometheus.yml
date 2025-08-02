@@ -4,4 +4,9 @@ global:
 scrape_configs:
   - job_name: 'app-metrics'
     static_configs:
-      - targets: ['weather-service:8090']
+      - targets: 
+          - 'weather-service:8091'
+          - 'gateway:8090'
+          - 'email-service:8092'
+          - 'subscription-service:8093'
+          - 'weather-broadcast-service:8094'

@@ -76,6 +76,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 					processID = s
 				}
 			}
+			//nolint:staticcheck
 			ctx = context.WithValue(context.Background(), ctxutil.ProcessIDKey.String(), processID)
 
 			c.handler.Handle(ctx, d.RoutingKey, d.Body)

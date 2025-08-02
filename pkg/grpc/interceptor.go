@@ -25,7 +25,7 @@ func ProcessIDInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
 				log.Warnf("process-id not found in metadata")
 			}
 		}
-
+		//nolint:staticcheck
 		ctx = context.WithValue(ctx, ctxutil.ProcessIDKey.String(), processID)
 		return handler(ctx, req)
 	}

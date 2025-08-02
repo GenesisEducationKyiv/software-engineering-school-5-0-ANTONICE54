@@ -41,8 +41,14 @@ func (m *RetryMailer) Send(ctx context.Context, subject string, body, email stri
 		err = m.mailer.Send(ctx, subject, body, email)
 
 		if err != nil {
-			log.Warnf("Attempt %d failed for email to %s, retrying in %v. Error: %s",
-				attempt+1, email, m.delay, err.Error())
+			if attempt < m.maxRetries-1 {
+				log.Warnf("Attempt %d failed for email to %s, retrying in %v. Error: %s", attempt+1, email, m.delay, err.Error())
+
+				time.Sleep(m.delay)
+			} else {
+				log.Errorf("Final attempt %d failed for email to %s. Error: %s", attempt+1, email, err.Error())
+			}
+
 			continue
 		}
 

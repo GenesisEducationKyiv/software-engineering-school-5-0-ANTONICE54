@@ -3,6 +3,9 @@ package logger
 import "sync"
 
 type (
+	Sampler interface {
+		ShouldLog() bool
+	}
 	RateSampler struct {
 		rate    int64
 		counter int64

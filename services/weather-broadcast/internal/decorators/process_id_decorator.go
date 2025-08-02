@@ -25,6 +25,7 @@ func NewProcessIDDecorator(service scheduler.WeatherBroadcastService, logger log
 func (d *ProcessIDDecorator) Broadcast(ctx context.Context, frequency models.Frequency) {
 	processID := uuid.New().String()
 
+	//nolint:staticcheck
 	ctx = context.WithValue(ctx, ctxutil.ProcessIDKey.String(), processID)
 	d.service.Broadcast(ctx, frequency)
 

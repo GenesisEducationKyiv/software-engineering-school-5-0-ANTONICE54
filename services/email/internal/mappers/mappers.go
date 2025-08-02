@@ -58,14 +58,15 @@ func ErrorWeatherToDTO(event *events.WeatherErrorEvent) *dto.WeatherError {
 func SubjectToSubjectType(subject string) string {
 	subject = strings.ToLower(subject)
 	switch {
+	case strings.Contains(subject, "confirmed"):
+		return "confirmation"
 	case strings.Contains(subject, "confirm"):
 		return "subscription"
 	case strings.Contains(subject, "weather"):
 		return "weather"
 	case strings.Contains(subject, "canceled"):
 		return "unsubscribe"
-	case strings.Contains(subject, "comfirmed"):
-		return "comfirmation"
+
 	default:
 		return "other"
 	}

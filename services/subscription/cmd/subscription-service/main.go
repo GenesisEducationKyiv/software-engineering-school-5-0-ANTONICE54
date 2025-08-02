@@ -48,7 +48,7 @@ func main() {
 		}
 	}()
 
-	db, err := database.Connect(cfg)
+	db, err := database.Connect(&cfg.DB)
 	if err != nil {
 		logrusLog.Fatalf("Failed to establish connection with database: %s", err.Error())
 	}

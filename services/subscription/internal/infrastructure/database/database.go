@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Connect(cfg *config.Config) (*gorm.DB, error) {
+func Connect(cfg *config.DB) (*gorm.DB, error) {
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		cfg.Host,

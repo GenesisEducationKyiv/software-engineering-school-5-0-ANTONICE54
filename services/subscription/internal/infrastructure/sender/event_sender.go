@@ -83,7 +83,7 @@ func (s *EventSender) SendConfirmed(ctx context.Context, info *contracts.Confirm
 func (s *EventSender) SendUnsubscribed(ctx context.Context, info *contracts.UnsubscribeInfo) {
 	log := s.logger.WithContext(ctx)
 
-	log.Debugf("Creating unsubscribed event: email=%s, token=%s", info.Email, info.Token)
+	log.Debugf("Creating unsubscribed event: email=%s", info.Email)
 	event, err := events.NewUnsubscribed(info)
 	if err != nil {
 		log.Errorf("Failed to create unsubscribed event for email %s: %v", info.Email, err)
@@ -96,7 +96,7 @@ func (s *EventSender) SendUnsubscribed(ctx context.Context, info *contracts.Unsu
 		return
 	}
 
-	log.Infof("Publishing unsubscribed event: email=%s, token=%s", info.Email, info.Token)
+	log.Infof("Publishing unsubscribed event: email=%s", info.Email)
 	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		log.Errorf("Failed to publish unsubscribed event for email %s: %v", info.Email, err)

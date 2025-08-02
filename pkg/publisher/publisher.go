@@ -2,6 +2,7 @@ package publisher
 
 import (
 	"context"
+	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -24,6 +25,7 @@ func NewRabbitMQPublisher(ch *amqp.Channel, exchange string, logger logger.Logge
 }
 
 func (p *RabbitMQPublisher) Publish(ctx context.Context, routingKey string, body []byte) error {
+	processID := ctxutil.GetProcessID(ctx)
 
 	return p.ch.PublishWithContext(
 		ctx,
@@ -34,6 +36,9 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, routingKey string, body
 		amqp.Publishing{
 			ContentType: "application/x-protobuf",
 			Body:        body,
+			Headers: amqp.Table{
+				"process_id": processID,
+			},
 		})
 
 }

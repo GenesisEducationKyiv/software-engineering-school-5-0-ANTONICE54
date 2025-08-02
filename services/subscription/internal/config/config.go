@@ -58,11 +58,11 @@ func validate(config *Config) error {
 
 	required := map[string]string{
 		"GRPC_PORT":           config.GRPCPort,
-		"DB_HOST":             config.DBHost,
-		"DB_USER":             config.DBUser,
-		"DB_PASSWORD":         config.DBPassword,
-		"DB_NAME":             config.DBName,
-		"DB_PORT":             config.DBPort,
+		"DB_HOST":             config.DB.Host,
+		"DB_USER":             config.DB.User,
+		"DB_PASSWORD":         config.DB.Password,
+		"DB_NAME":             config.DB.Name,
+		"DB_PORT":             config.DB.Port,
 		"SERVICE_NAME":        config.ServiceName,
 		"METRICS_SERVER_PORT": config.MetricsServerPort,
 		"LOG_LEVEL":           config.LogLevel,

@@ -14,8 +14,7 @@ import (
 	"os/signal"
 	"syscall"
 	"weather-forecast/pkg/logger"
-
-	amqp "github.com/rabbitmq/amqp091-go"
+	"weather-forecast/pkg/rabbitmq"
 )
 
 func main() {
@@ -29,7 +28,8 @@ func main() {
 	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
 	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
-	conn, err := amqp.Dial(cfg.RabbitMQURL)
+	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
+
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
@@ -39,7 +39,7 @@ func main() {
 		}
 	}()
 
-	mailer := mailer.NewSMTPMailer(cfg, logrusLog)
+	mailer := mailer.NewSMTPMailer(&cfg.Mailer, logrusLog)
 	retryMailer := decorators.NewRetryMailer(mailer, cfg.Retry, logrusLog)
 	metricsMailer := decorators.NewMetricMailer(retryMailer, prometheusMetrics, logrusLog)
 	emailBuilder := services.NewSimpleEmailBuild(cfg.ServerHost, logrusLog)
@@ -47,7 +47,7 @@ func main() {
 
 	eventProcessor := processors.NewEventProcessor(notificationService, logrusLog)
 
-	rabbitMQConsumer := consumer.NewConsumer(conn, cfg.Exchange, eventProcessor, logrusLog)
+	rabbitMQConsumer := consumer.NewConsumer(conn, cfg.RabbitMQ.Exchange, eventProcessor, logrusLog)
 
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 

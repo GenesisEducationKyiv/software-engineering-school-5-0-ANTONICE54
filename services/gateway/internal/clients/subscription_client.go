@@ -2,10 +2,8 @@ package clients
 
 import (
 	"context"
-	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/gateway/internal/mappers"
 	"weather-forecast/gateway/internal/server/handlers"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/subscription"
@@ -41,11 +39,10 @@ func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.Su
 		City:      info.City,
 		Frequency: mappers.MapFrequencyToProto(info.Frequency),
 	}
-
 	_, err := c.subscriptionGRPC.Subscribe(ctx, req)
 	if err != nil {
 		log.Warnf("Failed to subscribe via GRPC: Email: %s", info.Email)
-		return apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
+		return err
 	}
 
 	log.Debugf("Successfully subscribed via gRPC: Email: %s", info.Email)
@@ -53,6 +50,7 @@ func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.Su
 	return nil
 
 }
+
 func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) error {
 	processID := ctxutil.GetProcessID(ctx)
 	log := c.logger.WithField("process_id", processID)
@@ -68,14 +66,14 @@ func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) erro
 	_, err := c.subscriptionGRPC.Confirm(ctx, req)
 	if err != nil {
 		log.Warnf("Failed to confirm subscription via GRPC: Token: %s", token)
-
-		return apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
+		return err
 	}
 
 	log.Debugf("Successfully confirmed subscription via gRPC: Token: %s", token)
 
 	return nil
 }
+
 func (c *SubscriptionGRPCClient) Unsubscribe(ctx context.Context, token string) error {
 	processID := ctxutil.GetProcessID(ctx)
 	log := c.logger.WithField("process_id", processID)
@@ -91,8 +89,7 @@ func (c *SubscriptionGRPCClient) Unsubscribe(ctx context.Context, token string) 
 	_, err := c.subscriptionGRPC.Unsubscribe(ctx, req)
 	if err != nil {
 		log.Warnf("Failed to cancel subscription via GRPC: Token: %s", token)
-
-		return apperrors.FromGRPCError(err, errors.SubscriptionServiceErrorCode)
+		return err
 	}
 
 	log.Debugf("Successfully canceled subscription via gRPC: Token: %s", token)

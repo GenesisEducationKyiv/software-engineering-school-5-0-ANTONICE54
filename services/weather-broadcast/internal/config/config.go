@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"strings"
+	grpcpkg "weather-forecast/pkg/grpc"
+	"weather-forecast/pkg/rabbitmq"
 
 	"github.com/spf13/viper"
 )
@@ -11,8 +13,9 @@ type Config struct {
 	WeatherServiceAddress      string `mapstructure:"WEATHER_SERVICE_ADDRESS"`
 	SubscriptionServiceAddress string `mapstructure:"SUBSCRIPTION_SERVICE_ADDRESS"`
 
-	RabbitMQSource string `mapstructure:"RABBIT_MQ_SOURCE"`
-	Exchange       string `mapstructure:"EXCHANGE"`
+	RabbitMQ rabbitmq.Config `mapstructure:",squash"`
+
+	GRPC grpcpkg.Config `mapstructure:",squash"`
 
 	Timezone string `mapstructure:"TIMEZONE"`
 
@@ -43,11 +46,17 @@ func Load() (*Config, error) {
 }
 
 func validate(config *Config) error {
+	if err := config.RabbitMQ.Validate(); err != nil {
+		return err
+	}
+
+	if err := config.GRPC.Validate(); err != nil {
+		return err
+	}
+
 	required := map[string]string{
 		"WEATHER_SERVICE_ADDRESS":      config.WeatherServiceAddress,
 		"SUBSCRIPTION_SERVICE_ADDRESS": config.SubscriptionServiceAddress,
-		"RABBIT_MQ_SOURCE":             config.RabbitMQSource,
-		"EXCHANGE":                     config.Exchange,
 		"TIMEZONE":                     config.Timezone,
 		"SERVICE_NAME":                 config.ServiceName,
 		"METRICS_SERVER_PORT":          config.MetricsServerPort,

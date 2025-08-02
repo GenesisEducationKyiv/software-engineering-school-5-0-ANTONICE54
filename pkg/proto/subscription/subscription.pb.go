@@ -25,19 +25,22 @@ const (
 type Frequency int32
 
 const (
-	Frequency_DAILY  Frequency = 0
-	Frequency_HOURLY Frequency = 1
+	Frequency_UNSPECIFIED Frequency = 0
+	Frequency_DAILY       Frequency = 1
+	Frequency_HOURLY      Frequency = 2
 )
 
 // Enum value maps for Frequency.
 var (
 	Frequency_name = map[int32]string{
-		0: "DAILY",
-		1: "HOURLY",
+		0: "UNSPECIFIED",
+		1: "DAILY",
+		2: "HOURLY",
 	}
 	Frequency_value = map[string]int32{
-		"DAILY":  0,
-		"HOURLY": 1,
+		"UNSPECIFIED": 0,
+		"DAILY":       1,
+		"HOURLY":      2,
 	}
 )
 
@@ -72,7 +75,7 @@ type SubscribeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	City          string                 `protobuf:"bytes,2,opt,name=city,proto3" json:"city,omitempty"`
-	Frequency     Frequency              `protobuf:"varint,3,opt,name=frequency,proto3,enum=Frequency" json:"frequency,omitempty"`
+	Frequency     Frequency              `protobuf:"varint,3,opt,name=frequency,proto3,enum=subscription.Frequency" json:"frequency,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -125,12 +128,12 @@ func (x *SubscribeRequest) GetFrequency() Frequency {
 	if x != nil {
 		return x.Frequency
 	}
-	return Frequency_DAILY
+	return Frequency_UNSPECIFIED
 }
 
 type GetSubscriptionsByFrequencyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Frequency     Frequency              `protobuf:"varint,1,opt,name=frequency,proto3,enum=Frequency" json:"frequency,omitempty"`
+	Frequency     Frequency              `protobuf:"varint,1,opt,name=frequency,proto3,enum=subscription.Frequency" json:"frequency,omitempty"`
 	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	PageToken     int32                  `protobuf:"varint,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -171,7 +174,7 @@ func (x *GetSubscriptionsByFrequencyRequest) GetFrequency() Frequency {
 	if x != nil {
 		return x.Frequency
 	}
-	return Frequency_DAILY
+	return Frequency_UNSPECIFIED
 }
 
 func (x *GetSubscriptionsByFrequencyRequest) GetPageSize() int32 {
@@ -278,8 +281,8 @@ func (x *UnsubscribeRequest) GetToken() string {
 
 type Subscription struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	City          string                 `protobuf:"bytes,3,opt,name=city,proto3" json:"city,omitempty"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	City          string                 `protobuf:"bytes,2,opt,name=city,proto3" json:"city,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -384,15 +387,13 @@ var File_subscription_proto protoreflect.FileDescriptor
 
 const file_subscription_proto_rawDesc = "" +
 	"\n" +
-	"\x12subscription.proto\x1a\x1bgoogle/protobuf/empty.proto\"f\n" +
+	"\x12subscription.proto\x12\fsubscription\x1a\x1bgoogle/protobuf/empty.proto\"s\n" +
 	"\x10SubscribeRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
-	"\x04city\x18\x02 \x01(\tR\x04city\x12(\n" +
-	"\tfrequency\x18\x03 \x01(\x0e2\n" +
-	".FrequencyR\tfrequency\"\x8a\x01\n" +
-	"\"GetSubscriptionsByFrequencyRequest\x12(\n" +
-	"\tfrequency\x18\x01 \x01(\x0e2\n" +
-	".FrequencyR\tfrequency\x12\x1b\n" +
+	"\x04city\x18\x02 \x01(\tR\x04city\x125\n" +
+	"\tfrequency\x18\x03 \x01(\x0e2\x17.subscription.FrequencyR\tfrequency\"\x97\x01\n" +
+	"\"GetSubscriptionsByFrequencyRequest\x125\n" +
+	"\tfrequency\x18\x01 \x01(\x0e2\x17.subscription.FrequencyR\tfrequency\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\x05R\tpageToken\"&\n" +
@@ -401,20 +402,21 @@ const file_subscription_proto_rawDesc = "" +
 	"\x12UnsubscribeRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"8\n" +
 	"\fSubscription\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
-	"\x04city\x18\x03 \x01(\tR\x04city\"\x82\x01\n" +
-	"#GetSubscriptionsByFrequencyResponse\x123\n" +
-	"\rsubscriptions\x18\x01 \x03(\v2\r.SubscriptionR\rsubscriptions\x12&\n" +
-	"\x0fnext_page_index\x18\x02 \x01(\x05R\rnextPageIndex*\"\n" +
-	"\tFrequency\x12\t\n" +
-	"\x05DAILY\x10\x00\x12\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
+	"\x04city\x18\x02 \x01(\tR\x04city\"\x8f\x01\n" +
+	"#GetSubscriptionsByFrequencyResponse\x12@\n" +
+	"\rsubscriptions\x18\x01 \x03(\v2\x1a.subscription.SubscriptionR\rsubscriptions\x12&\n" +
+	"\x0fnext_page_index\x18\x02 \x01(\x05R\rnextPageIndex*3\n" +
+	"\tFrequency\x12\x0f\n" +
+	"\vUNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05DAILY\x10\x01\x12\n" +
 	"\n" +
-	"\x06HOURLY\x10\x012\xa7\x02\n" +
-	"\x13SubscriptionService\x126\n" +
-	"\tSubscribe\x12\x11.SubscribeRequest\x1a\x16.google.protobuf.Empty\x122\n" +
-	"\aConfirm\x12\x0f.ConfirmRequest\x1a\x16.google.protobuf.Empty\x12:\n" +
-	"\vUnsubscribe\x12\x13.UnsubscribeRequest\x1a\x16.google.protobuf.Empty\x12h\n" +
-	"\x1bGetSubscriptionsByFrequency\x12#.GetSubscriptionsByFrequencyRequest\x1a$.GetSubscriptionsByFrequencyResponseB\x11Z\x0f./;subscriptionb\x06proto3"
+	"\x06HOURLY\x10\x022\xe9\x02\n" +
+	"\x13SubscriptionService\x12C\n" +
+	"\tSubscribe\x12\x1e.subscription.SubscribeRequest\x1a\x16.google.protobuf.Empty\x12?\n" +
+	"\aConfirm\x12\x1c.subscription.ConfirmRequest\x1a\x16.google.protobuf.Empty\x12G\n" +
+	"\vUnsubscribe\x12 .subscription.UnsubscribeRequest\x1a\x16.google.protobuf.Empty\x12\x82\x01\n" +
+	"\x1bGetSubscriptionsByFrequency\x120.subscription.GetSubscriptionsByFrequencyRequest\x1a1.subscription.GetSubscriptionsByFrequencyResponseB\x11Z\x0f./;subscriptionb\x06proto3"
 
 var (
 	file_subscription_proto_rawDescOnce sync.Once
@@ -431,27 +433,27 @@ func file_subscription_proto_rawDescGZIP() []byte {
 var file_subscription_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_subscription_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_subscription_proto_goTypes = []any{
-	(Frequency)(0),                              // 0: Frequency
-	(*SubscribeRequest)(nil),                    // 1: SubscribeRequest
-	(*GetSubscriptionsByFrequencyRequest)(nil),  // 2: GetSubscriptionsByFrequencyRequest
-	(*ConfirmRequest)(nil),                      // 3: ConfirmRequest
-	(*UnsubscribeRequest)(nil),                  // 4: UnsubscribeRequest
-	(*Subscription)(nil),                        // 5: Subscription
-	(*GetSubscriptionsByFrequencyResponse)(nil), // 6: GetSubscriptionsByFrequencyResponse
+	(Frequency)(0),                              // 0: subscription.Frequency
+	(*SubscribeRequest)(nil),                    // 1: subscription.SubscribeRequest
+	(*GetSubscriptionsByFrequencyRequest)(nil),  // 2: subscription.GetSubscriptionsByFrequencyRequest
+	(*ConfirmRequest)(nil),                      // 3: subscription.ConfirmRequest
+	(*UnsubscribeRequest)(nil),                  // 4: subscription.UnsubscribeRequest
+	(*Subscription)(nil),                        // 5: subscription.Subscription
+	(*GetSubscriptionsByFrequencyResponse)(nil), // 6: subscription.GetSubscriptionsByFrequencyResponse
 	(*emptypb.Empty)(nil),                       // 7: google.protobuf.Empty
 }
 var file_subscription_proto_depIdxs = []int32{
-	0, // 0: SubscribeRequest.frequency:type_name -> Frequency
-	0, // 1: GetSubscriptionsByFrequencyRequest.frequency:type_name -> Frequency
-	5, // 2: GetSubscriptionsByFrequencyResponse.subscriptions:type_name -> Subscription
-	1, // 3: SubscriptionService.Subscribe:input_type -> SubscribeRequest
-	3, // 4: SubscriptionService.Confirm:input_type -> ConfirmRequest
-	4, // 5: SubscriptionService.Unsubscribe:input_type -> UnsubscribeRequest
-	2, // 6: SubscriptionService.GetSubscriptionsByFrequency:input_type -> GetSubscriptionsByFrequencyRequest
-	7, // 7: SubscriptionService.Subscribe:output_type -> google.protobuf.Empty
-	7, // 8: SubscriptionService.Confirm:output_type -> google.protobuf.Empty
-	7, // 9: SubscriptionService.Unsubscribe:output_type -> google.protobuf.Empty
-	6, // 10: SubscriptionService.GetSubscriptionsByFrequency:output_type -> GetSubscriptionsByFrequencyResponse
+	0, // 0: subscription.SubscribeRequest.frequency:type_name -> subscription.Frequency
+	0, // 1: subscription.GetSubscriptionsByFrequencyRequest.frequency:type_name -> subscription.Frequency
+	5, // 2: subscription.GetSubscriptionsByFrequencyResponse.subscriptions:type_name -> subscription.Subscription
+	1, // 3: subscription.SubscriptionService.Subscribe:input_type -> subscription.SubscribeRequest
+	3, // 4: subscription.SubscriptionService.Confirm:input_type -> subscription.ConfirmRequest
+	4, // 5: subscription.SubscriptionService.Unsubscribe:input_type -> subscription.UnsubscribeRequest
+	2, // 6: subscription.SubscriptionService.GetSubscriptionsByFrequency:input_type -> subscription.GetSubscriptionsByFrequencyRequest
+	7, // 7: subscription.SubscriptionService.Subscribe:output_type -> google.protobuf.Empty
+	7, // 8: subscription.SubscriptionService.Confirm:output_type -> google.protobuf.Empty
+	7, // 9: subscription.SubscriptionService.Unsubscribe:output_type -> google.protobuf.Empty
+	6, // 10: subscription.SubscriptionService.GetSubscriptionsByFrequency:output_type -> subscription.GetSubscriptionsByFrequencyResponse
 	7, // [7:11] is the sub-list for method output_type
 	3, // [3:7] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

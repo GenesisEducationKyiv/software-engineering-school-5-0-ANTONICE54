@@ -129,16 +129,16 @@ var File_weather_proto protoreflect.FileDescriptor
 
 const file_weather_proto_rawDesc = "" +
 	"\n" +
-	"\rweather.proto\"'\n" +
+	"\rweather.proto\x12\aweather\"'\n" +
 	"\x11GetWeatherRequest\x12\x12\n" +
 	"\x04city\x18\x01 \x01(\tR\x04city\"t\n" +
 	"\x12GetWeatherResponse\x12 \n" +
 	"\vtemperature\x18\x01 \x01(\x01R\vtemperature\x12\x1a\n" +
 	"\bhumidity\x18\x02 \x01(\x05R\bhumidity\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription2G\n" +
-	"\x0eWeatherService\x125\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription2W\n" +
+	"\x0eWeatherService\x12E\n" +
 	"\n" +
-	"GetWeather\x12\x12.GetWeatherRequest\x1a\x13.GetWeatherResponseB\fZ\n" +
+	"GetWeather\x12\x1a.weather.GetWeatherRequest\x1a\x1b.weather.GetWeatherResponseB\fZ\n" +
 	"./;weatherb\x06proto3"
 
 var (
@@ -155,12 +155,12 @@ func file_weather_proto_rawDescGZIP() []byte {
 
 var file_weather_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_weather_proto_goTypes = []any{
-	(*GetWeatherRequest)(nil),  // 0: GetWeatherRequest
-	(*GetWeatherResponse)(nil), // 1: GetWeatherResponse
+	(*GetWeatherRequest)(nil),  // 0: weather.GetWeatherRequest
+	(*GetWeatherResponse)(nil), // 1: weather.GetWeatherResponse
 }
 var file_weather_proto_depIdxs = []int32{
-	0, // 0: WeatherService.GetWeather:input_type -> GetWeatherRequest
-	1, // 1: WeatherService.GetWeather:output_type -> GetWeatherResponse
+	0, // 0: weather.WeatherService.GetWeather:input_type -> weather.GetWeatherRequest
+	1, // 1: weather.WeatherService.GetWeather:output_type -> weather.GetWeatherResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

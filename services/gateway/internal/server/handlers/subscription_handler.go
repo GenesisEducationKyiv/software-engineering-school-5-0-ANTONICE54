@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 	"weather-forecast/gateway/internal/errors"
-	httperrors "weather-forecast/gateway/internal/server/http_errors"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -43,8 +41,7 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 	var req SubscribeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Debugf("Failed to unmarshal request: %s", err.Error())
-		httpErr := httperrors.New(errors.InvalidRequestError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 	log.Infof("Incoming subscription request: Email: %s, City: %s, Frequency: %s", req.Email, req.City, req.Frequency)
@@ -52,15 +49,9 @@ func (h *SubscriptionHandler) Subscribe(ctx *gin.Context) {
 	err := h.subscriptionClient.Subscribe(ctx, req)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Debugf("Subscription failed: %s", appErr.Error())
-			httpErr := httperrors.New(appErr)
-			ctx.JSON(httpErr.Status(), httpErr.JSON())
-			return
-		}
-		log.Errorf("Unexpected error during subscription: %s", err.Error())
-		httpErr := httperrors.New(apperrors.InternalServerError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		log.Debugf("Subscription failed: %s", err.Error())
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 
@@ -79,18 +70,9 @@ func (h *SubscriptionHandler) Confirm(ctx *gin.Context) {
 	err := h.subscriptionClient.Confirm(ctx, token)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Debugf("Confirmation failed: %s", appErr.Error())
-
-			httpErr := httperrors.New(appErr)
-
-			ctx.JSON(httpErr.Status(), httpErr.JSON())
-			return
-		}
-
-		log.Errorf("Unexpected error during confirmation: %s", err.Error())
-		httpErr := httperrors.New(apperrors.InternalServerError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		log.Debugf("Confirmation failed: %s", err.Error())
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 
@@ -109,18 +91,9 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 	log.Infof("Incoming unsibscribe request: Token: %s", token)
 
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Debugf("Unsubscription failed: %s", appErr.Error())
-
-			httpErr := httperrors.New(appErr)
-
-			ctx.JSON(httpErr.Status(), httpErr.JSON())
-			return
-		}
-		log.Errorf("Unexpected error during unsubscription: %s", err.Error())
-
-		httpErr := httperrors.New(apperrors.InternalServerError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		log.Debugf("Unsubscription failed: %s", err.Error())
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 

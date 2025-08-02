@@ -15,8 +15,7 @@ import (
 	"subscription-service/internal/presentation/server/handlers"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/publisher"
-
-	amqp "github.com/rabbitmq/amqp091-go"
+	"weather-forecast/pkg/rabbitmq"
 )
 
 func main() {
@@ -29,7 +28,7 @@ func main() {
 	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
 	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
-	conn, err := amqp.Dial(cfg.RabbitMQSource)
+	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to RabbitMQ: %s", err.Error())
 	}
@@ -62,7 +61,7 @@ func main() {
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
 	tokenManager := token.NewUUIDManager()
 
-	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.Exchange, logrusLog)
+	rabbitMQPublisher := publisher.NewRabbitMQPublisher(ch, cfg.RabbitMQ.Exchange, logrusLog)
 
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 

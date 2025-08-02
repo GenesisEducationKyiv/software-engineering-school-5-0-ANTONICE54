@@ -3,10 +3,8 @@ package clients
 import (
 	"context"
 	"weather-broadcast-service/internal/dto"
-	"weather-broadcast-service/internal/errors"
 	"weather-broadcast-service/internal/mappers"
 
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
 )
@@ -36,7 +34,7 @@ func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (
 
 	if err != nil {
 		log.Errorf("Weather service call failed for city %s: %v", city, err)
-		return nil, apperrors.FromGRPCError(err, errors.WeatherServiceErrorCode)
+		return nil, err
 	}
 
 	log.Infof("Weather retrieved successfully for city: %s", city)

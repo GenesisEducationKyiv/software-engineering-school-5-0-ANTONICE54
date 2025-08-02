@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"weather-forecast/pkg/logger"
 	"weather-service/internal/config"
-	"weather-service/internal/infrastructure/errors"
+	infraerrors "weather-service/internal/infrastructure/errors"
 )
 
 type (
@@ -62,7 +62,7 @@ func (c *WeatherAPIClient) GetWeather(ctx context.Context, city string) (*Weathe
 	url, err := url.Parse(c.apiURL)
 	if err != nil {
 		log.Warnf("Form url: %s", err.Error())
-		return nil, errors.GetWeatherError
+		return nil, infraerrors.ErrGetWeather
 	}
 	queryString := url.Query()
 	queryString.Set("key", c.apiKey)
@@ -75,13 +75,13 @@ func (c *WeatherAPIClient) GetWeather(ctx context.Context, city string) (*Weathe
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stringURL, nil)
 	if err != nil {
 		log.Warnf("Failed to create get weather request: %s", err.Error())
-		return nil, errors.GetWeatherError
+		return nil, infraerrors.ErrGetWeather
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
 		log.Warnf("Failed make get weather request: %s", err.Error())
-		return nil, errors.GetWeatherError
+		return nil, infraerrors.ErrGetWeather
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -94,7 +94,7 @@ func (c *WeatherAPIClient) GetWeather(ctx context.Context, city string) (*Weathe
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Warnf("Failed to read response body: %s", err.Error())
-		return nil, errors.GetWeatherError
+		return nil, infraerrors.ErrGetWeather
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -103,15 +103,15 @@ func (c *WeatherAPIClient) GetWeather(ctx context.Context, city string) (*Weathe
 
 		if err := json.Unmarshal(body, &errResponse); err != nil {
 			log.Warnf("Failed to unmarshal response body: %s", err.Error())
-			return nil, errors.GetWeatherError
+			return nil, infraerrors.ErrGetWeather
 		}
 
 		if errResponse.Error.Code == notFoundWeatherAPIErrorCode {
 			log.Warnf("City not found: %s", city)
-			return nil, errors.CityNotFoundError
+			return nil, infraerrors.ErrCityNotFound
 		} else {
 			log.Warnf("Error from weather api: %s", errResponse.Error.Message)
-			return nil, errors.GetWeatherError
+			return nil, infraerrors.ErrGetWeather
 		}
 
 	}
@@ -120,7 +120,7 @@ func (c *WeatherAPIClient) GetWeather(ctx context.Context, city string) (*Weathe
 
 	if err := json.Unmarshal(body, &weather); err != nil {
 		log.Warnf("Failed to unmarshal response body: %s", err.Error())
-		return nil, errors.GetWeatherError
+		return nil, infraerrors.ErrGetWeather
 	}
 
 	log.Infof("Successfully received weather from WeatherAPI for city: %s", city)

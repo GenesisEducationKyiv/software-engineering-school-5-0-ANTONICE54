@@ -1,73 +1,6 @@
 
 services:
 
-  gateway:
-    build:
-      context: .
-      dockerfile: services/gateway/Dockerfile
-    ports:
-      - 8080:8080
-      - 8090:8090
-
-
-      
-    restart: always
-    command: ["/app/main"]
-
-
-  redis:
-    image: "redis:8-alpine"
-    ports: 
-      - 6379:6379
-    env_file:
-      - .env
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  weather-service:
-    build:
-      context: .
-      dockerfile: services/weather/Dockerfile
-    ports:
-      - 8081:8081
-      - 8091:8091
-    volumes:
-      - ./logs:/app/logs
-
-    depends_on:
-      
-      redis:
-        condition: service_healthy
-      
-    restart: always
-    command: ["/app/main"]
-
-
-
-  postgres:
-    image: "postgres:12-alpine"
-    ports: 
-      - 5432:5432
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-    healthcheck:
-      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${DB_USER} -d ${DB_NAME}'"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
-
   rabbitmq:
     image: rabbitmq:3.12-management
     ports:
@@ -75,6 +8,7 @@ services:
       - "15672:15672"    
     env_file:
       - .env
+
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBIT_MQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBIT_MQ_PASS}
@@ -87,56 +21,6 @@ services:
     restart: unless-stopped
 
 
-  subscription-service:
-    build:
-      context: .
-      dockerfile: services/subscription/Dockerfile
-    ports:
-      - 8082:8082
-      - 8093:8093
-
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy 
-      
-    restart: always
-    command: ["/app/main"]
-
-
-
-  email-service:
-    build:
-      context: .
-      dockerfile: services/email/Dockerfile
-    
-    ports:
-      - 8092:8092
-
-
-    depends_on:
-      rabbitmq:
-        condition: service_healthy 
-      
-    restart: always
-    command: ["/app/main"]
-
-
-  weather-broadcast-service:
-    build:
-      context: .
-      dockerfile: services/weather-broadcast/Dockerfile
-    ports:
-      - 8094:8094
-
-    depends_on:
-      rabbitmq:
-        condition: service_healthy 
-      
-    restart: always
-    command: ["/app/main"]
-
 
   prometheus:
     image: prom/prometheus:latest
@@ -145,37 +29,9 @@ services:
     ports: 
       - 9090:9090
 
-    
-  loki:
-    image: grafana/loki:2.9.0
-    container_name: loki
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-    depends_on:
-      - loki
 
-  promtail:
-    image: grafana/promtail:2.9.0
-    container_name: promtail
-    volumes:
-      - /var/log:/var/log
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ./promtail-config.yaml:/etc/promtail/promtail-config.yaml
-    command: -config.file=/etc/promtail/promtail-config.yaml
-    depends_on:
-      - loki
-
-volumes:
-  grafana_data:
+networks:
+  default:
+    name: microservices-network
+    external: true

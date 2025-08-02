@@ -1,19 +1,55 @@
 package errors
 
-import "weather-forecast/pkg/apperrors"
+import (
+	"net/http"
+	"weather-forecast/pkg/logger"
 
-type GatewayErrorCode string
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
 
-func (c GatewayErrorCode) String() string {
-	return string(c)
+type (
+	HTTPResponse struct {
+		StatusCode int
+		Body       map[string]any
+	}
+)
+
+func NewHTTPFromGRPC(err error, logger logger.Logger) *HTTPResponse {
+	st, ok := status.FromError(err)
+	if !ok {
+		return &HTTPResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       map[string]any{"error": "unexpected error"},
+		}
+	}
+
+	switch st.Code() {
+
+	case codes.AlreadyExists:
+		return &HTTPResponse{
+			StatusCode: http.StatusConflict,
+			Body:       map[string]any{"error": st.Message()},
+		}
+
+	case codes.InvalidArgument:
+		return &HTTPResponse{
+			StatusCode: http.StatusBadRequest,
+			Body:       map[string]any{"error": st.Message()},
+		}
+
+	case codes.NotFound:
+		return &HTTPResponse{
+			StatusCode: http.StatusNotFound,
+			Body:       map[string]any{"error": st.Message()},
+		}
+
+	default:
+		logger.Warnf("Unexpected gRPC error: %s", err.Error())
+		return &HTTPResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       map[string]any{"error": "internal server error"},
+		}
+
+	}
 }
-
-const (
-	WeatherServiceErrorCode      GatewayErrorCode = "WEATHER_SERVICE_ERROR"
-	SubscriptionServiceErrorCode GatewayErrorCode = "SUBSCRIPTION_SERVICE_ERROR"
-	InvalidRequestErrorCode      GatewayErrorCode = "INVALID_REQUEST_ERROR"
-)
-
-var (
-	InvalidRequestError = apperrors.NewBadRequest(InvalidRequestErrorCode, "bad request")
-)

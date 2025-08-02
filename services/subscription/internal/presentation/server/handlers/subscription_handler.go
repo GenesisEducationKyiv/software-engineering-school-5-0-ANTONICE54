@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"errors"
+	domainerr "subscription-service/internal/domain/errors"
 	"subscription-service/internal/domain/models"
+	infraerror "subscription-service/internal/infrastructure/errors"
 	"subscription-service/internal/presentation/mappers"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 
 	"weather-forecast/pkg/proto/subscription"
@@ -46,18 +48,33 @@ func (h *SubscriptionHandler) Subscribe(ctx context.Context, req *subscription.S
 	result, err := h.subscriptionUsecase.Subscribe(ctx, subscription)
 
 	if err != nil {
-
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Warnf("Subscribe error: %s", appErr.Message)
-			return &emptypb.Empty{}, appErr.ToGRPCStatus()
-		}
-		log.Errorf("Subscribe unexpected error: %v", err)
-		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to create subscription: %v", err)
+		log.Warnf("Subscribe error: %s", err.Error())
+		grpcErr := h.handleSubscribeError(err)
+		return &emptypb.Empty{}, grpcErr
 	}
 
 	log.Infof("Subscription created successfully: id=%d, token=%s", result.ID, result.Token)
 	return &emptypb.Empty{}, nil
 
+}
+
+func (h *SubscriptionHandler) handleSubscribeError(err error) error {
+	switch {
+	case errors.Is(err, domainerr.ErrAlreadySubscribed):
+		return status.Error(codes.AlreadyExists, err.Error())
+
+	case errors.Is(err, infraerror.ErrDatabase):
+		h.logger.Warnf("Database error during subscription: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+
+	case errors.Is(err, infraerror.ErrInternal):
+		return status.Error(codes.Internal, err.Error())
+
+	default:
+		h.logger.Warnf("Unexpected error during subscription: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+
+	}
 }
 
 func (h *SubscriptionHandler) Confirm(ctx context.Context, req *subscription.ConfirmRequest) (*emptypb.Empty, error) {
@@ -68,16 +85,34 @@ func (h *SubscriptionHandler) Confirm(ctx context.Context, req *subscription.Con
 	err := h.subscriptionUsecase.Confirm(ctx, req.Token)
 
 	if err != nil {
-
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Warnf("Confirm  error for token %s: %s", req.Token, appErr.Message)
-			return &emptypb.Empty{}, appErr.ToGRPCStatus()
-		}
-		log.Errorf("Confirm unexpected error for token %s: %v", req.Token, err)
-		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to confirm subscription: %v", err)
+		log.Warnf("Confirm  error for token %s: %s", req.Token, err.Error())
+		grpcErr := h.handleConfirmError(err)
+		return &emptypb.Empty{}, grpcErr
 	}
 	log.Infof("Subscription confirmed successfully: token=%s", req.Token)
 	return &emptypb.Empty{}, nil
+
+}
+
+func (h *SubscriptionHandler) handleConfirmError(err error) error {
+	switch {
+	case errors.Is(err, domainerr.ErrTokenNotFound):
+		return status.Error(codes.NotFound, err.Error())
+
+	case errors.Is(err, domainerr.ErrInvalidToken):
+		return status.Error(codes.InvalidArgument, err.Error())
+
+	case errors.Is(err, infraerror.ErrDatabase):
+		h.logger.Warnf("Database error during subscription: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+
+	case errors.Is(err, infraerror.ErrInternal):
+		return status.Error(codes.Internal, err.Error())
+
+	default:
+		h.logger.Warnf("Unexpected error during confirmation: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+	}
 
 }
 
@@ -89,18 +124,36 @@ func (h *SubscriptionHandler) Unsubscribe(ctx context.Context, req *subscription
 	err := h.subscriptionUsecase.Unsubscribe(ctx, req.Token)
 
 	if err != nil {
-
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Warnf("Unsubscribe error for token %s: %s", req.Token, appErr.Message)
-			return &emptypb.Empty{}, appErr.ToGRPCStatus()
-		}
-		log.Errorf("Unsubscribe unexpected error for token %s: %v", req.Token, err)
-		return &emptypb.Empty{}, status.Errorf(codes.Internal, "failed to unsibscribe subscription: %v", err)
+		log.Warnf("Unsubscribe error for token %s: %s", req.Token, err.Error())
+		grpcErr := h.handleUnsubscribeError(err)
+		return &emptypb.Empty{}, grpcErr
 	}
 
 	log.Infof("Subscription deleted successfully: token=%s", req.Token)
 
 	return &emptypb.Empty{}, nil
+}
+
+func (h *SubscriptionHandler) handleUnsubscribeError(err error) error {
+	switch {
+	case errors.Is(err, domainerr.ErrTokenNotFound):
+		return status.Error(codes.NotFound, err.Error())
+
+	case errors.Is(err, domainerr.ErrInvalidToken):
+		return status.Error(codes.InvalidArgument, err.Error())
+
+	case errors.Is(err, infraerror.ErrDatabase):
+		h.logger.Warnf("Database error during subscription: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+
+	case errors.Is(err, infraerror.ErrInternal):
+		return status.Error(codes.Internal, err.Error())
+
+	default:
+		h.logger.Warnf("Unexpected error during canceling subscription: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+	}
+
 }
 
 func (h *SubscriptionHandler) GetSubscriptionsByFrequency(ctx context.Context, req *subscription.GetSubscriptionsByFrequencyRequest) (*subscription.GetSubscriptionsByFrequencyResponse, error) {
@@ -111,19 +164,27 @@ func (h *SubscriptionHandler) GetSubscriptionsByFrequency(ctx context.Context, r
 	query := mappers.ProtoToListQuery(req)
 
 	subscriptions, err := h.subscriptionUsecase.ListByFrequency(ctx, query)
-
 	if err != nil {
-
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Warnf("ListByFrequency error: %s", appErr.Message)
-			return nil, appErr.ToGRPCStatus()
-		}
-		log.Errorf("ListByFrequency unexpected error: %v", err)
-		return nil, status.Errorf(codes.Internal, "failed to list subscriptions: %v", err)
+		log.Warnf("ListByFrequency error: %s", err.Error())
+		grpcErr := h.handleSubscriptionsByFrequencyError(err)
+		return nil, grpcErr
 	}
 
 	log.Infof("Retrieved %d subscriptions for frequency %s", len(subscriptions), req.Frequency.String())
 
 	return mappers.SubscriptionListToProto(subscriptions), nil
+
+}
+
+func (h *SubscriptionHandler) handleSubscriptionsByFrequencyError(err error) error {
+	switch {
+	case errors.Is(err, infraerror.ErrDatabase):
+		h.logger.Warnf("Database error during subscription: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+
+	default:
+		h.logger.Warnf("Unexpected error during canceling subscription: %v", err)
+		return status.Error(codes.Internal, "internal server error")
+	}
 
 }

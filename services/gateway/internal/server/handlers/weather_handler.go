@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"weather-forecast/gateway/internal/dto"
 	"weather-forecast/gateway/internal/errors"
-	httperrors "weather-forecast/gateway/internal/server/http_errors"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -45,8 +43,7 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 	var req GetWeatherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Debugf("Failed to unmarshal request: %s", err.Error())
-		httpErr := httperrors.New(errors.InvalidRequestError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
@@ -54,17 +51,9 @@ func (h *WeatherHandler) Get(ctx *gin.Context) {
 
 	weather, err := h.weatherClient.GetWeatherByCity(ctx, req.City)
 	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			log.Debugf("Get weather failed for city %s: %s", req.City, appErr.Error())
-
-			httpErr := httperrors.New(appErr)
-			ctx.JSON(httpErr.Status(), httpErr.JSON())
-			return
-		}
-		log.Errorf("Unexpected error during get weather request: %s", err.Error())
-
-		httpErr := httperrors.New(apperrors.InternalServerError)
-		ctx.JSON(httpErr.Status(), httpErr.JSON())
+		log.Debugf("Get weather failed for city %s: %s", req.City, err.Error())
+		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
+		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
 

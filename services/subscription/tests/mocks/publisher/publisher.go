@@ -2,15 +2,12 @@ package publisher
 
 import (
 	"context"
-	"encoding/json"
 
 	"sync"
-	"weather-forecast/pkg/apperrors"
-	"weather-forecast/pkg/events"
 )
 
 type PublishedEvent struct {
-	EventType events.EventType
+	EventType string
 	RawData   []byte
 }
 
@@ -25,17 +22,12 @@ func NewMockEventPublisher() *MockEventPublisher {
 	}
 }
 
-func (m *MockEventPublisher) Publish(ctx context.Context, event events.Event) error {
+func (m *MockEventPublisher) Publish(ctx context.Context, routingKey string, body []byte) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	body, err := json.Marshal(event)
-	if err != nil {
-		return apperrors.InternalServerError
-	}
-
 	m.publishedEvents = append(m.publishedEvents, PublishedEvent{
-		EventType: event.EventType(),
+		EventType: routingKey,
 		RawData:   body,
 	})
 

@@ -5,14 +5,14 @@ import (
 	"email-service/internal/processors"
 	"email-service/internal/services"
 	"email-service/tests/mock/mailer"
-	"encoding/json"
-	"weather-forecast/pkg/events"
+	"weather-forecast/pkg/proto/events"
 
 	"testing"
 	stub_logger "weather-forecast/pkg/stubs/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 type (
@@ -43,7 +43,7 @@ func assertEmailMatches(t *testing.T, sentEmail, expectedEmail mailer.SentEmail)
 func Test_SubscriptionEvent(t *testing.T) {
 	eventProcessor, mockMailer := setupEventProcessor()
 
-	event := events.SubscriptionEvent{
+	event := &events.SubscriptionEvent{
 		Email:     "test@example.com",
 		Frequency: "daily",
 		Token:     "abc123",
@@ -55,12 +55,12 @@ func Test_SubscriptionEvent(t *testing.T) {
 		SentTo:  "test@example.com",
 	}
 
-	eventBody, err := json.Marshal(event)
+	eventBody, err := proto.Marshal(event)
 	require.NoError(t, err)
 
 	ctx := context.Background()
 
-	eventProcessor.Handle(ctx, string(events.SubsctiptionEmail), eventBody)
+	eventProcessor.Handle(ctx, "emails.subscription", eventBody)
 
 	emails := mockMailer.GetSentEmails()
 	require.Len(t, emails, 1)
@@ -71,7 +71,7 @@ func Test_SubscriptionEvent(t *testing.T) {
 func Test_ConfirmedEvent(t *testing.T) {
 	eventProcessor, mockMailer := setupEventProcessor()
 
-	event := events.ConfirmedEvent{
+	event := &events.ConfirmedEvent{
 		Email:     "test@example.com",
 		Frequency: "daily",
 		Token:     "abc123",
@@ -83,12 +83,12 @@ func Test_ConfirmedEvent(t *testing.T) {
 		SentTo:  "test@example.com",
 	}
 
-	eventBody, err := json.Marshal(event)
+	eventBody, err := proto.Marshal(event)
 	require.NoError(t, err)
 
 	ctx := context.Background()
 
-	eventProcessor.Handle(ctx, string(events.ConfirmedEmail), eventBody)
+	eventProcessor.Handle(ctx, "emails.confirmed", eventBody)
 
 	emails := mockMailer.GetSentEmails()
 	require.Len(t, emails, 1)
@@ -99,7 +99,7 @@ func Test_ConfirmedEvent(t *testing.T) {
 func Test_UnsubscribedEvent(t *testing.T) {
 	eventProcessor, mockMailer := setupEventProcessor()
 
-	event := events.UnsubscribedEvent{
+	event := &events.UnsubscribedEvent{
 		Email:     "test@example.com",
 		Frequency: "daily",
 		City:      "Kyiv",
@@ -111,12 +111,12 @@ func Test_UnsubscribedEvent(t *testing.T) {
 		SentTo:  "test@example.com",
 	}
 
-	eventBody, err := json.Marshal(event)
+	eventBody, err := proto.Marshal(event)
 	require.NoError(t, err)
 
 	ctx := context.Background()
 
-	eventProcessor.Handle(ctx, string(events.UnsubscribedEmail), eventBody)
+	eventProcessor.Handle(ctx, "emails.unsubscribed", eventBody)
 
 	emails := mockMailer.GetSentEmails()
 	require.Len(t, emails, 1)
@@ -127,13 +127,13 @@ func Test_UnsubscribedEvent(t *testing.T) {
 func Test_WeatherSuccessEvent(t *testing.T) {
 	eventProcessor, mockMailer := setupEventProcessor()
 
-	weather := events.Weather{
+	weather := &events.Weather{
 		Temperature: 54,
 		Humidity:    54,
 		Description: "Sunny",
 	}
 
-	event := events.WeatherSuccessEvent{
+	event := &events.WeatherSuccessEvent{
 		Email:   "test@example.com",
 		City:    "Kyiv",
 		Weather: weather,
@@ -145,11 +145,11 @@ func Test_WeatherSuccessEvent(t *testing.T) {
 		SentTo:  "test@example.com",
 	}
 
-	eventBody, err := json.Marshal(event)
+	eventBody, err := proto.Marshal(event)
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	eventProcessor.Handle(ctx, string(events.WeatherEmailSuccess), eventBody)
+	eventProcessor.Handle(ctx, "emails.weather.success", eventBody)
 
 	emails := mockMailer.GetSentEmails()
 	require.Len(t, emails, 1)
@@ -159,7 +159,7 @@ func Test_WeatherSuccessEvent(t *testing.T) {
 func Test_WeatherErrorEvent(t *testing.T) {
 	eventProcessor, mockMailer := setupEventProcessor()
 
-	event := events.WeatherErrorEvent{
+	event := &events.WeatherErrorEvent{
 		Email: "test@example.com",
 		City:  "Kyiv",
 	}
@@ -170,11 +170,11 @@ func Test_WeatherErrorEvent(t *testing.T) {
 		SentTo:  "test@example.com",
 	}
 
-	eventBody, err := json.Marshal(event)
+	eventBody, err := proto.Marshal(event)
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	eventProcessor.Handle(ctx, string(events.WeatherEmailError), eventBody)
+	eventProcessor.Handle(ctx, "emails.weather.error", eventBody)
 
 	emails := mockMailer.GetSentEmails()
 	require.Len(t, emails, 1)

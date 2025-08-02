@@ -3,28 +3,34 @@ package config
 import (
 	"fmt"
 	"strings"
+	"weather-forecast/pkg/rabbitmq"
 
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	GRPCPort string `mapstructure:"GRPC_PORT"`
+type (
+	DB struct {
+		Host     string `mapstructure:"DB_HOST"`
+		User     string `mapstructure:"DB_USER"`
+		Password string `mapstructure:"DB_PASSWORD"`
+		Name     string `mapstructure:"DB_NAME"`
+		Port     string `mapstructure:"DB_PORT"`
+	}
 
-	DBHost     string `mapstructure:"DB_HOST"`
-	DBUser     string `mapstructure:"DB_USER"`
-	DBPassword string `mapstructure:"DB_PASSWORD"`
-	DBName     string `mapstructure:"DB_NAME"`
-	DBPort     string `mapstructure:"DB_PORT"`
+	Config struct {
+		GRPCPort string `mapstructure:"GRPC_PORT"`
 
-	RabbitMQSource string `mapstructure:"RABBIT_MQ_SOURCE"`
-	Exchange       string `mapstructure:"EXCHANGE"`
+		ServiceName       string `mapstructure:"SERVICE_NAME"`
+		MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
 
-	ServiceName       string `mapstructure:"SERVICE_NAME"`
-	MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
+		LogLevel        string `mapstructure:"LOG_LEVEL"`
+		LogSamplingRate int    `mapstructure:"LOG_SAMPLING_RATE"`
 
-	LogLevel        string `mapstructure:"LOG_LEVEL"`
-	LogSamplingRate int    `mapstructure:"LOG_SAMPLING_RATE"`
-}
+		DB DB `mapstructure:",squash"`
+
+		RabbitMQ rabbitmq.Config `mapstructure:",squash"`
+	}
+)
 
 func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
@@ -46,6 +52,10 @@ func Load() (*Config, error) {
 }
 
 func validate(config *Config) error {
+	if err := config.RabbitMQ.Validate(); err != nil {
+		return err
+	}
+
 	required := map[string]string{
 		"GRPC_PORT":           config.GRPCPort,
 		"DB_HOST":             config.DBHost,
@@ -53,8 +63,6 @@ func validate(config *Config) error {
 		"DB_PASSWORD":         config.DBPassword,
 		"DB_NAME":             config.DBName,
 		"DB_PORT":             config.DBPort,
-		"RABBIT_MQ_SOURCE":    config.RabbitMQSource,
-		"EXCHANGE":            config.Exchange,
 		"SERVICE_NAME":        config.ServiceName,
 		"METRICS_SERVER_PORT": config.MetricsServerPort,
 		"LOG_LEVEL":           config.LogLevel,

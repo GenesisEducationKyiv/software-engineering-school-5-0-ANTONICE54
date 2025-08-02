@@ -49,11 +49,13 @@ func NewSubscriptionService(subscriptionRepo SubscriptionRepository, tokenManage
 func (s *SubscriptionService) Subscribe(ctx context.Context, subscription *models.Subscription) (*models.Subscription, error) {
 	log := s.logger.WithContext(ctx)
 
-	receivedSubsc, _ := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
-
+	receivedSubsc, err := s.subscriptionRepository.GetByEmail(ctx, subscription.Email)
+	if err != nil {
+		return nil, err
+	}
 	if receivedSubsc != nil {
 		log.Infof("Subscription attempt stopped: email %s already subscribed", subscription.Email)
-		return nil, domainerrors.AlreadySubscribedError
+		return nil, domainerrors.ErrAlreadySubscribed
 	}
 
 	log.Debugf("Generating confirmation token for email: %s", subscription.Email)
@@ -85,7 +87,7 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
 		log.Warnf("Invalid token used for confirmation: %s", token)
-		return domainerrors.InvalidTokenError
+		return domainerrors.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -94,14 +96,13 @@ func (s *SubscriptionService) Confirm(ctx context.Context, token string) error {
 	}
 	if receivedSubsc == nil {
 		log.Warnf("Token not found in database: %s", token)
-		return domainerrors.TokenNotFoundError
+		return domainerrors.ErrTokenNotFound
 	}
 
 	if !receivedSubsc.Confirmed {
 		log.Infof("Confirming subscription: email=%s, token=%s", receivedSubsc.Email, token)
 		receivedSubsc.Confirmed = true
 		updatedSubsc, err := s.subscriptionRepository.Update(ctx, *receivedSubsc)
-
 		if err != nil {
 			return err
 		}
@@ -127,7 +128,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	log.Debugf("Validating token for unsubscription: %s", token)
 	tokenIsValid := s.tokenManager.Validate(ctx, token)
 	if !tokenIsValid {
-		return domainerrors.InvalidTokenError
+		return domainerrors.ErrInvalidToken
 	}
 
 	receivedSubsc, err := s.subscriptionRepository.GetByToken(ctx, token)
@@ -136,7 +137,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 	}
 	if receivedSubsc == nil {
 		log.Warnf("Token not found in database: %s", token)
-		return domainerrors.TokenNotFoundError
+		return domainerrors.ErrTokenNotFound
 	}
 
 	err = s.subscriptionRepository.DeleteByToken(ctx, token)

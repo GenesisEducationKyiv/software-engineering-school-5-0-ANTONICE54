@@ -3,9 +3,7 @@ package clients
 import (
 	"context"
 	"weather-forecast/gateway/internal/dto"
-	"weather-forecast/gateway/internal/errors"
 	"weather-forecast/gateway/internal/mappers"
-	"weather-forecast/pkg/apperrors"
 	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
@@ -20,9 +18,9 @@ type (
 	}
 )
 
-func NewWeatherGRPCClient(weatherGRPCClinet weather.WeatherServiceClient, logger logger.Logger) *WeatherGRPCClient {
+func NewWeatherGRPCClient(weatherGRPCClient weather.WeatherServiceClient, logger logger.Logger) *WeatherGRPCClient {
 	return &WeatherGRPCClient{
-		weatherGRPC: weatherGRPCClinet,
+		weatherGRPC: weatherGRPCClient,
 		logger:      logger,
 	}
 }
@@ -39,7 +37,7 @@ func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (
 	resp, err := c.weatherGRPC.GetWeather(ctx, req)
 	if err != nil {
 		log.Warnf("Failed to get weather via GRPC: City: %s", city)
-		return nil, apperrors.FromGRPCError(err, errors.WeatherServiceErrorCode)
+		return nil, err
 	}
 
 	log.Debugf("Successfully received weather via gRPC: City %s", city)

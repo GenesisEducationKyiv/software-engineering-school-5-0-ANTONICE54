@@ -7,12 +7,10 @@ import (
 	"weather-forecast/gateway/internal/metrics"
 	"weather-forecast/gateway/internal/server"
 	"weather-forecast/gateway/internal/server/handlers"
+	grpcpkg "weather-forecast/pkg/grpc"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/subscription"
 	"weather-forecast/pkg/proto/weather"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -24,9 +22,8 @@ func main() {
 	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
 	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
-	weatherConn, err := grpc.NewClient(cfg.WeatherServiceAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)
+
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to Weather Service: %v", err)
 	}
@@ -40,9 +37,8 @@ func main() {
 	weatherClient := clients.NewWeatherGRPCClient(weatherGRPCClient, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherClient, logrusLog)
 
-	subscConn, err := grpc.NewClient(cfg.SubscriptionServiceAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	subscConn, err := grpcpkg.ConnectWithRetry(cfg.SubscriptionServiceAddress, cfg.GRPC, logrusLog)
+
 	if err != nil {
 		logrusLog.Fatalf("Failed to connect to Subscription Service: %v", err)
 	}
@@ -53,10 +49,10 @@ func main() {
 	}()
 
 	subscriptionGRPCClient := subscription.NewSubscriptionServiceClient(subscConn)
-	sunbscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
-	subsbscriptionHandler := handlers.NewSubscriptionHandler(sunbscriptionClient, logrusLog)
+	subscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
+	subscriptionHandler := handlers.NewSubscriptionHandler(subscriptionClient, logrusLog)
 
-	app := server.New(weatherHandler, subsbscriptionHandler, prometheusMetrics, logrusLog)
+	app := server.New(weatherHandler, subscriptionHandler, prometheusMetrics, logrusLog)
 
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 

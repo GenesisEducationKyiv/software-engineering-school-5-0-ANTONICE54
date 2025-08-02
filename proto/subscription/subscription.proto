@@ -1,4 +1,5 @@
 syntax = "proto3";
+package subscription;
 
 import "google/protobuf/empty.proto";
 
@@ -18,8 +19,9 @@ service SubscriptionService {
 
 
 enum Frequency {
-    DAILY = 0;
-    HOURLY = 1;
+    UNSPECIFIED = 0;
+    DAILY = 1;
+    HOURLY = 2;
 } 
 
 message SubscribeRequest {
@@ -45,8 +47,8 @@ message UnsubscribeRequest {
 
 
 message Subscription {
-  string email = 2;
-  string city = 3;
+  string email = 1;
+  string city = 2;
 }
 
 message GetSubscriptionsByFrequencyResponse {

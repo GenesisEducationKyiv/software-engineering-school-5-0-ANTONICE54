@@ -3,14 +3,14 @@ package sender
 import (
 	"context"
 	"subscription-service/internal/domain/contracts"
-	"subscription-service/internal/infrastructure/mappers"
-	"weather-forecast/pkg/events"
+	"subscription-service/internal/infrastructure/events"
+
 	"weather-forecast/pkg/logger"
 )
 
 type (
 	EventPublisher interface {
-		Publish(ctx context.Context, event events.Event) error
+		Publish(ctx context.Context, routingKey string, body []byte) error
 	}
 
 	EventSender struct {
@@ -29,24 +29,52 @@ func NewEventSender(publisher EventPublisher, logger logger.Logger) *EventSender
 func (s *EventSender) SendConfirmation(ctx context.Context, info *contracts.ConfirmationInfo) {
 	log := s.logger.WithContext(ctx)
 
+	log.Debugf("Creating confirmation event: email=%s, token=%s", info.Email, info.Token)
+	event, err := events.NewConfirmation(info)
+	if err != nil {
+		log.Errorf("Failed to create confirmation event for email %s: %v", info.Email, err)
+
+		return
+	}
+
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		log.Errorf("Failed to get confirmation event routing key for email %s: %v", info.Email, err)
+
+		return
+	}
+
 	log.Infof("Publishing confirmation event: email=%s, token=%s", info.Email, info.Token)
-	e := mappers.ConfirmationInfoToEvent(info)
-	err := s.publisher.Publish(ctx, e)
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		log.Errorf("Failed to publish confirmation event for email %s: %v", info.Email, err)
+		return
 	}
 
 	log.Debugf("Confirmation event published successfully: email=%s", info.Email)
 }
+
 func (s *EventSender) SendConfirmed(ctx context.Context, info *contracts.ConfirmedInfo) {
 	log := s.logger.WithContext(ctx)
 
-	log.Infof("Publishing confirmed event: email=%s, token=%s", info.Email, info.Token)
+	log.Debugf("Creating confirmed event: email=%s, token=%s", info.Email, info.Token)
+	event, err := events.NewConfirmed(info)
+	if err != nil {
+		log.Errorf("Failed to create confirmed event for email %s: %v", info.Email, err)
+		return
+	}
 
-	e := mappers.ConfirmedInfoToEvent(info)
-	err := s.publisher.Publish(ctx, e)
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		log.Errorf("Failed to get confirmed event routing key for email %s: %v", info.Email, err)
+		return
+	}
+
+	log.Infof("Publishing confirmed event: email=%s, token=%s", info.Email, info.Token)
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		log.Errorf("Failed to publish confirmed event for email %s: %v", info.Email, err)
+		return
 	}
 
 	log.Debugf("Confirmed event published successfully: email=%s", info.Email)
@@ -55,12 +83,24 @@ func (s *EventSender) SendConfirmed(ctx context.Context, info *contracts.Confirm
 func (s *EventSender) SendUnsubscribed(ctx context.Context, info *contracts.UnsubscribeInfo) {
 	log := s.logger.WithContext(ctx)
 
-	log.Infof("Publishing unsubscribed event: email=%s, city=%s", info.Email, info.City)
+	log.Debugf("Creating unsubscribed event: email=%s, token=%s", info.Email, info.Token)
+	event, err := events.NewUnsubscribed(info)
+	if err != nil {
+		log.Errorf("Failed to create unsubscribed event for email %s: %v", info.Email, err)
+		return
+	}
 
-	e := mappers.UnsubscribedInfoToEvent(info)
-	err := s.publisher.Publish(ctx, e)
+	routingKey, err := event.RoutingKey()
+	if err != nil {
+		log.Errorf("Failed to get unsubscribed event routing key for email %s: %v", info.Email, err)
+		return
+	}
+
+	log.Infof("Publishing unsubscribed event: email=%s, token=%s", info.Email, info.Token)
+	err = s.publisher.Publish(ctx, routingKey, event.Body)
 	if err != nil {
 		log.Errorf("Failed to publish unsubscribed event for email %s: %v", info.Email, err)
+		return
 	}
 
 	log.Debugf("Unsubscribed event published successfully: email=%s", info.Email)

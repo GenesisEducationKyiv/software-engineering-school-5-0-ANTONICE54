@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 	"weather-forecast/pkg/logger"
 	"weather-service/internal/config"
@@ -72,11 +75,20 @@ func main() {
 	weatherService := usecases.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
-	app := server.New(weatherHandler, logrusLog)
-
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	if err := app.Start(cfg.GRPCPort); err != nil {
-		logrusLog.Fatalf("Failed to start server: %v", err)
-	}
+	app := server.New(weatherHandler, logrusLog)
+	go func() {
+		if err := app.Start(cfg.GRPCPort); err != nil {
+			logrusLog.Fatalf("Failed to start gRPC server: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logrusLog.Infof("Shutting down weather service...")
+	app.Shutdown()
+	logrusLog.Infof("Service stopped gracefully")
 }

@@ -41,3 +41,7 @@ func (s *Server) Start(port string) error {
 	s.logger.Infof("gRPC server starting at port %s:", port)
 	return s.grpcServer.Serve(lis)
 }
+
+func (s *Server) Shutdown() {
+	s.grpcServer.GracefulStop()
+}

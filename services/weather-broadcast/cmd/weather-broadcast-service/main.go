@@ -90,12 +90,9 @@ func main() {
 	processIdBroadcastDecorator := decorators.NewProcessIDDecorator(weatherBroadcastService, logrusLog)
 	metricBroadcastDecorator := decorators.NewBroadcastMetricsDecorator(processIdBroadcastDecorator, prometheusMetrics, logrusLog)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	scheduler := scheduler.New(ctx, metricBroadcastDecorator, location, logrusLog)
+	scheduler := scheduler.New(context.Background(), metricBroadcastDecorator, location, logrusLog)
 	scheduler.SetUp()
 	scheduler.Run()
 
@@ -106,4 +103,5 @@ func main() {
 	<-quit
 
 	logrusLog.Infof("Shutting down weather broadcast service...")
+	scheduler.Shutdown()
 }

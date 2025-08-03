@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"net/http"
 	"time"
 	"weather-forecast/gateway/internal/server/middleware"
 	"weather-forecast/pkg/logger"
@@ -29,6 +31,7 @@ type (
 		subscrtiptionHandler SubscriptionHandler
 		metric               MetricRecorder
 		logger               logger.Logger
+		httpServer           *http.Server
 	}
 )
 
@@ -63,8 +66,23 @@ func (s *Server) setUpRoutes() {
 }
 
 func (s *Server) Run(port string) {
-	err := s.router.Run("0.0.0.0:" + port)
-	if err != nil {
-		s.logger.Fatalf("Failed to start server: %s", err.Error())
+
+	s.httpServer = &http.Server{
+		Addr:    "0.0.0.0:" + port,
+		Handler: s.router,
 	}
+
+	s.logger.Infof("Starting server on port %s", port)
+	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		s.logger.Fatalf("Failed to start server: %v", err)
+	}
+
+}
+
+func (s *Server) Shutdown() error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	return s.httpServer.Shutdown(ctx)
+
 }

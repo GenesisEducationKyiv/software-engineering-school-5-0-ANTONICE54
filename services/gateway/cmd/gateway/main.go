@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"weather-forecast/gateway/internal/clients"
 	"weather-forecast/gateway/internal/config"
 	"weather-forecast/gateway/internal/metrics"
@@ -56,5 +59,18 @@ func main() {
 
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	app.Run(cfg.ServerPort)
+	go app.Run(cfg.ServerPort)
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	err = app.Shutdown()
+
+	if err != nil {
+		logrusLog.Errorf("Server forced to shutdown: %v", err)
+	} else {
+		logrusLog.Infof("Gateway stopped gracefully")
+	}
+
 }

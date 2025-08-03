@@ -62,5 +62,7 @@ func main() {
 	<-quit
 
 	logrusLog.Infof("Shutting down email service...")
+	rabbitMQConsumer.Stop()
+	logrusLog.Infof("Email service stopped.")
 
 }

@@ -2,11 +2,14 @@ package consumer
 
 import (
 	"context"
+	"sync"
 	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
+
+const maxWorkers = 10
 
 type (
 	EventHandler interface {
@@ -17,6 +20,10 @@ type (
 		conn         *amqp.Connection
 		exchangeName string
 		handler      EventHandler
+		channel      *amqp.Channel
+		wg           *sync.WaitGroup
+		cancel       context.CancelFunc
+		semaphore    chan struct{}
 		logger       logger.Logger
 	}
 )
@@ -26,11 +33,15 @@ func NewConsumer(conn *amqp.Connection, exchange string, handler EventHandler, l
 		conn:         conn,
 		exchangeName: exchange,
 		handler:      handler,
+		wg:           &sync.WaitGroup{},
+		semaphore:    make(chan struct{}, maxWorkers),
 		logger:       logger,
 	}
 }
 
 func (c *Consumer) Start(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	c.cancel = cancel
 
 	c.logger.Infof("Starting RabbitMQ consumer for exchange: %s", c.exchangeName)
 
@@ -38,6 +49,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	c.channel = ch
 
 	c.logger.Debugf("Declaring exchange: %s", c.exchangeName)
 	err = ch.ExchangeDeclare(c.exchangeName, "topic", true, false, false, false, nil)
@@ -67,21 +79,66 @@ func (c *Consumer) Start(ctx context.Context) error {
 	go func() {
 		c.logger.Infof("RabbitMQ consumer started successfully, waiting for messages...")
 
-		for d := range msgs {
-			c.logger.Infof("Event received: %s", d.RoutingKey)
+		for {
+			select {
 
-			processID := "unknown-process"
-			if val, ok := d.Headers[ctxutil.ProcessIDKey.String()]; ok {
-				if s, ok := val.(string); ok {
-					processID = s
+			case <-ctx.Done():
+				c.logger.Infof("Shutting down consumer goroutine...")
+				return
+
+			case d, ok := <-msgs:
+				if !ok {
+					c.logger.Infof("Message channel closed")
+					return
 				}
-			}
-			//nolint:staticcheck
-			ctx = context.WithValue(context.Background(), ctxutil.ProcessIDKey.String(), processID)
 
-			c.handler.Handle(ctx, d.RoutingKey, d.Body)
+				c.semaphore <- struct{}{}
+
+				c.wg.Add(1)
+				go func(d amqp.Delivery) {
+					defer func() {
+						<-c.semaphore
+						c.wg.Done()
+					}()
+					c.handleMessage(d)
+				}(d)
+			}
 		}
 	}()
 
 	return nil
+}
+
+func (c *Consumer) handleMessage(d amqp.Delivery) {
+
+	c.logger.Infof("Event received: %s", d.RoutingKey)
+
+	processID := "unknown-process"
+	if val, ok := d.Headers[ctxutil.ProcessIDKey.String()]; ok {
+		if s, ok := val.(string); ok {
+			processID = s
+		}
+	}
+
+	//nolint:staticcheck
+	msgCtx := context.WithValue(context.Background(), ctxutil.ProcessIDKey.String(), processID)
+	c.handler.Handle(msgCtx, d.RoutingKey, d.Body)
+}
+
+func (c *Consumer) Stop() {
+	c.logger.Infof("Closing RabbitMQ channel...")
+	if c.cancel != nil {
+		c.cancel()
+	}
+
+	c.wg.Wait()
+
+	if c.channel != nil {
+		err := c.channel.Close()
+		if err != nil {
+			c.logger.Errorf("Failed to close RabbitMQ channel.")
+		}
+	}
+
+	c.logger.Infof("Consumer stopped")
 }

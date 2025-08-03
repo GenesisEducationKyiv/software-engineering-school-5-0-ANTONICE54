@@ -26,9 +26,10 @@ func (p *OpenWeatherProvider) GetWeatherByCity(ctx context.Context, city string)
 
 	log := p.logger.WithContext(ctx)
 
-	log.Debugf("Processing OpenWeather response for city: %s", city)
+	log.Debugf("Requesting weather data from OpenWeather for city: %s", city)
 
 	weatherResponse, err := p.client.GetWeather(ctx, city)
+	log.Debugf("Processing OpenWeather response for city: %s", city)
 	if err != nil {
 		return nil, err
 	}

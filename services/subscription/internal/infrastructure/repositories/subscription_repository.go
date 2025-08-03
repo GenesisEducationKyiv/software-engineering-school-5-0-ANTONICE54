@@ -168,7 +168,7 @@ func (r *SubscriptionRepository) DeleteByToken(ctx context.Context, token string
 	log.Debugf("Deleting subscription by token: %s", token)
 
 	_, err := r.runWithDeadline(ctx, func(ctx context.Context) (any, error) {
-		res := r.db.WithContext(ctx).Where("token = ?", token).Delete(&models.Subscription{})
+		res := r.db.WithContext(ctx).Where("token = ?", token).Delete(&database.Subscription{})
 
 		if res.Error != nil {
 			log.Errorf("Failed to delete subscription: %s", res.Error.Error())

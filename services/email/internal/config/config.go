@@ -82,13 +82,13 @@ func validate(config *Config) error {
 		}
 	}
 
-	if config.Retry.Delay == 0 {
+	if config.Retry.Delay < 1 {
 		missing = append(missing, "MAILER_DELAY")
 	}
-	if config.Retry.MaxRetries == 0 {
+	if config.Retry.MaxRetries < 1 {
 		missing = append(missing, "MAILER_MAX_RETRIES")
 	}
-	if config.LogSamplingRate == 0 {
+	if config.LogSamplingRate < 1 {
 		missing = append(missing, "LOG_SAMPLING_RATE")
 
 	}

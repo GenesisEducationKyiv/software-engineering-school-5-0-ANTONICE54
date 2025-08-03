@@ -65,7 +65,7 @@ func validate(config *Config) error {
 			missing = append(missing, name)
 		}
 	}
-	if config.LogSamplingRate == 0 {
+	if config.LogSamplingRate < 1 {
 		missing = append(missing, "LOG_SAMPLING_RATE")
 
 	}

@@ -13,10 +13,10 @@ type Config struct {
 func (c *Config) Validate() error {
 	var missing []string
 
-	if c.Retries == 0 {
+	if c.Retries < 1 {
 		missing = append(missing, "GRPC_RETRIES")
 	}
-	if c.RetryDelay == 0 {
+	if c.RetryDelay < 1 {
 		missing = append(missing, "GRPC_RETRY_DELAY")
 	}
 

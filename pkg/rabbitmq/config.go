@@ -23,10 +23,10 @@ func (c *Config) Validate() error {
 		missing = append(missing, "EXCHANGE")
 	}
 
-	if c.Retries == 0 {
+	if c.Retries < 1 {
 		missing = append(missing, "RABBIT_MQ_RETRIES")
 	}
-	if c.RetryDelay == 0 {
+	if c.RetryDelay < 1 {
 		missing = append(missing, "RABBIT_MQ_RETRY_DELAY")
 	}
 

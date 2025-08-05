@@ -64,7 +64,6 @@ func (c *Redis) Get(ctx context.Context, key string, value interface{}) error {
 	res, err := c.client.Get(ctx, key).Result()
 	if err != nil {
 		if err == redis.Nil {
-			log.Warnf("Cache miss for key %s", key)
 			return infraerrors.ErrCacheMiss
 		}
 

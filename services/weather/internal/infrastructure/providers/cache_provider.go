@@ -47,7 +47,6 @@ func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string
 		}
 
 		if errors.Is(err, infraerrors.ErrCacheMiss) {
-			log.Debugf("Cache miss for city: %s", city)
 			p.metrics.RecordCacheMiss()
 		}
 

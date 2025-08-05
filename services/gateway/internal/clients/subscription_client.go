@@ -4,11 +4,8 @@ import (
 	"context"
 	"weather-forecast/gateway/internal/mappers"
 	"weather-forecast/gateway/internal/server/handlers"
-	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/subscription"
-
-	"google.golang.org/grpc/metadata"
 )
 
 type (
@@ -26,11 +23,7 @@ func NewSubscriptionGRPCClient(subscriptionGRPC subscription.SubscriptionService
 }
 
 func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.SubscribeRequest) error {
-	correlationID := ctxutil.GetCorrelationID(ctx)
 	log := c.logger.WithContext(ctx)
-
-	md := metadata.Pairs(ctxutil.CorrelationIDKey.String(), correlationID)
-	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling subscribe via GRPC: Email: %s, City: %s, Frequency: %s", info.Email, info.City, info.Frequency)
 
@@ -52,11 +45,7 @@ func (c *SubscriptionGRPCClient) Subscribe(ctx context.Context, info handlers.Su
 }
 
 func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) error {
-	correlationID := ctxutil.GetCorrelationID(ctx)
 	log := c.logger.WithContext(ctx)
-
-	md := metadata.Pairs(ctxutil.CorrelationIDKey.String(), correlationID)
-	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling confirm via GRPC: Token: %s", token)
 
@@ -75,11 +64,7 @@ func (c *SubscriptionGRPCClient) Confirm(ctx context.Context, token string) erro
 }
 
 func (c *SubscriptionGRPCClient) Unsubscribe(ctx context.Context, token string) error {
-	correlationID := ctxutil.GetCorrelationID(ctx)
 	log := c.logger.WithContext(ctx)
-
-	md := metadata.Pairs(ctxutil.CorrelationIDKey.String(), correlationID)
-	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling unsubscribe via GRPC: Token: %s", token)
 

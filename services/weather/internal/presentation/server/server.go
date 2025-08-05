@@ -20,7 +20,7 @@ type (
 
 func New(weatherHandler weather.WeatherServiceServer, logger logger.Logger) *Server {
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(grpcpkg.CorrelationIDInterceptor(logger)),
+		grpc.UnaryInterceptor(grpcpkg.CorrelationIDServerInterceptor(logger)),
 	)
 	reflection.Register(grpcServer)
 

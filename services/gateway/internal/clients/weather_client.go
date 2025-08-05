@@ -4,11 +4,8 @@ import (
 	"context"
 	"weather-forecast/gateway/internal/dto"
 	"weather-forecast/gateway/internal/mappers"
-	"weather-forecast/pkg/ctxutil"
 	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/proto/weather"
-
-	"google.golang.org/grpc/metadata"
 )
 
 type (
@@ -26,11 +23,7 @@ func NewWeatherGRPCClient(weatherGRPCClient weather.WeatherServiceClient, logger
 }
 
 func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
-	correlationID := ctxutil.GetCorrelationID(ctx)
 	log := c.logger.WithContext(ctx)
-
-	md := metadata.Pairs(ctxutil.CorrelationIDKey.String(), correlationID)
-	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	log.Debugf("Calling get weather via GRPC: %s", city)
 	req := &weather.GetWeatherRequest{City: city}

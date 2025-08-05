@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func CorrelationIDInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
+func CorrelationIDServerInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
@@ -28,5 +28,23 @@ func CorrelationIDInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
 		//nolint:staticcheck
 		ctx = context.WithValue(ctx, ctxutil.CorrelationIDKey.String(), correlationID)
 		return handler(ctx, req)
+	}
+}
+
+func CorrelationIDClientInterceptor() grpc.UnaryClientInterceptor {
+	return func(
+		ctx context.Context,
+		method string,
+		req, reply interface{},
+		cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		opts ...grpc.CallOption,
+	) error {
+		correlationID := ctxutil.GetCorrelationID(ctx)
+		if correlationID != "" {
+			md := metadata.Pairs(ctxutil.CorrelationIDKey.String(), correlationID)
+			ctx = metadata.NewOutgoingContext(ctx, md)
+		}
+		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }

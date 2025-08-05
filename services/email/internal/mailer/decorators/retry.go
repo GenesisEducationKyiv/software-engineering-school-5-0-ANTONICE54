@@ -65,12 +65,12 @@ func (m *RetryMailer) Send(ctx context.Context, subject string, body, email stri
 func (m *RetryMailer) shouldRetry(err error) bool {
 	errStr := err.Error()
 
-	temporaryErrors := []string{
+	retryErrorCodes := []string{
 		"421", "450", "451", "452",
 	}
 
-	for _, pattern := range temporaryErrors {
-		if strings.Contains(errStr, pattern) {
+	for _, retryErrCode := range retryErrorCodes {
+		if strings.Contains(errStr, retryErrCode) {
 			return true
 		}
 	}

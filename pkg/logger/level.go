@@ -24,6 +24,6 @@ func toLogrusLevel(level string) (logrus.Level, error) {
 	case ErrorLevel:
 		return logrus.ErrorLevel, nil
 	default:
-		return 0, errors.New("Invalid log level")
+		return 0, errors.New("invalid log level")
 	}
 }

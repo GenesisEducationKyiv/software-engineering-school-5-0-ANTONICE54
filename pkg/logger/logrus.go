@@ -20,21 +20,21 @@ func (l *logrusWrapper) Debugf(format string, args ...interface{}) {
 }
 
 func (l *logrusWrapper) Infof(format string, args ...interface{}) {
-	if l.sampler.ShouldLog() {
-		l.entry.Infof(format, args...)
-	}
+
+	l.entry.Infof(format, args...)
+
 }
 
 func (l *logrusWrapper) Warnf(format string, args ...interface{}) {
-	if l.sampler.ShouldLog() {
-		l.entry.Warnf(format, args...)
-	}
+
+	l.entry.Warnf(format, args...)
+
 }
 
 func (l *logrusWrapper) Errorf(format string, args ...interface{}) {
-	if l.sampler.ShouldLog() {
-		l.entry.Errorf(format, args...)
-	}
+
+	l.entry.Errorf(format, args...)
+
 }
 
 func (l *logrusWrapper) Fatalf(format string, args ...interface{}) {

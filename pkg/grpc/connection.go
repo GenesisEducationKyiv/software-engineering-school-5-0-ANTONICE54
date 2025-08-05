@@ -17,7 +17,7 @@ func ConnectWithRetry(address string, cfg Config, log logger.Logger) (*grpc.Clie
 		log.Infof("Attempting to connect to gRPC service %s (attempt %d/%d)...", address, i+1, cfg.Retries)
 
 		conn, err = grpc.NewClient(address,
-			grpc.WithUnaryInterceptor(CorrelationIDClientInterceptor()),
+			grpc.WithUnaryInterceptor(CorrelationIDClientInterceptor(log)),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err == nil {

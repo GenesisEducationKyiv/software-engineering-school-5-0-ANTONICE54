@@ -18,5 +18,5 @@ func GetCorrelationID(ctx context.Context) string {
 			return id
 		}
 	}
-	return "unknown-process"
+	return ""
 }

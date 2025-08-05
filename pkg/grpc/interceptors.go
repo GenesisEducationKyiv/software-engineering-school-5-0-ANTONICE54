@@ -16,22 +16,22 @@ func CorrelationIDServerInterceptor(log logger.Logger) grpc.UnaryServerIntercept
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (resp interface{}, err error) {
-		correlationID := "unknown"
 		md, ok := metadata.FromIncomingContext(ctx)
 		if ok {
 			if ids := md.Get(ctxutil.CorrelationIDKey.String()); len(ids) > 0 {
-				correlationID = ids[0]
+				correlationID := ids[0]
+				//nolint:staticcheck
+				ctx = context.WithValue(ctx, ctxutil.CorrelationIDKey.String(), correlationID)
+
 			} else {
-				log.Warnf("correlation-id not found in metadata")
+				log.Warnf("correlation-id not found in context")
 			}
 		}
-		//nolint:staticcheck
-		ctx = context.WithValue(ctx, ctxutil.CorrelationIDKey.String(), correlationID)
 		return handler(ctx, req)
 	}
 }
 
-func CorrelationIDClientInterceptor() grpc.UnaryClientInterceptor {
+func CorrelationIDClientInterceptor(log logger.Logger) grpc.UnaryClientInterceptor {
 	return func(
 		ctx context.Context,
 		method string,
@@ -44,6 +44,8 @@ func CorrelationIDClientInterceptor() grpc.UnaryClientInterceptor {
 		if correlationID != "" {
 			md := metadata.Pairs(ctxutil.CorrelationIDKey.String(), correlationID)
 			ctx = metadata.NewOutgoingContext(ctx, md)
+		} else {
+			log.Warnf("correlation-id not found in context")
 		}
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}

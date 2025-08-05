@@ -4,6 +4,7 @@ import (
 	"context"
 	"email-service/internal/config"
 	"email-service/internal/services"
+	"strings"
 
 	"time"
 	"weather-forecast/pkg/logger"
@@ -40,19 +41,39 @@ func (m *RetryMailer) Send(ctx context.Context, subject string, body, email stri
 
 		err = m.mailer.Send(ctx, subject, body, email)
 
-		if err != nil {
-			if attempt < m.maxRetries-1 {
-				log.Warnf("Attempt %d failed for email to %s, retrying in %v. Error: %s", attempt+1, email, m.delay, err.Error())
-
-				time.Sleep(m.delay)
-			} else {
-				log.Errorf("Final attempt %d failed for email to %s. Error: %s", attempt+1, email, err.Error())
-			}
-
-			continue
+		if err == nil {
+			return nil
 		}
 
-		return nil
+		if !m.shouldRetry(err) {
+			log.Errorf("Non-retryable error for email to %s: %s", email, err.Error())
+			return err
+		}
+
+		if attempt < m.maxRetries-1 {
+			log.Warnf("Attempt %d failed for email to %s, retrying in %v. Error: %s", attempt+1, email, m.delay, err.Error())
+
+			time.Sleep(m.delay)
+		} else {
+			log.Errorf("Final attempt %d failed for email to %s. Error: %s", attempt+1, email, err.Error())
+		}
+
 	}
 	return err
+}
+
+func (m *RetryMailer) shouldRetry(err error) bool {
+	errStr := err.Error()
+
+	temporaryErrors := []string{
+		"421", "450", "451", "452",
+	}
+
+	for _, pattern := range temporaryErrors {
+		if strings.Contains(errStr, pattern) {
+			return true
+		}
+	}
+
+	return false
 }

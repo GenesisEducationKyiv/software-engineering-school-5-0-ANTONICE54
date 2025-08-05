@@ -62,7 +62,7 @@ func (s *WeatherBroadcastService) Broadcast(ctx context.Context, frequency model
 			PageSize:  PAGE_SIZE,
 		}
 
-		log.Debugf("Getting subsctiption list batch from index %d with page size=%d", query.LastID, query.PageSize)
+		log.Debugf("Getting subscription list batch from index %d with page size=%d", query.LastID, query.PageSize)
 		res, err := s.subscriptionClient.ListByFrequency(ctx, query)
 		if err != nil {
 			log.Errorf("Failed to fetch subscriptions for %s broadcast: %v", frequency, err)

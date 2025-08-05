@@ -153,7 +153,7 @@ func (s *SubscriptionService) Unsubscribe(ctx context.Context, token string) err
 		Frequency: receivedSubsc.Frequency,
 	}
 
-	log.Infof("Sending unscubscription success email: %s", receivedSubsc.Email)
+	log.Infof("Sending unsubscription success email: %s", receivedSubsc.Email)
 	s.mailer.SendUnsubscribed(ctx, &unsubscribeInfo)
 
 	return nil

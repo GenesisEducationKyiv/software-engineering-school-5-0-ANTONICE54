@@ -149,7 +149,7 @@ func (r *SubscriptionRepository) Update(ctx context.Context, subscription models
 
 		domainSubscription := mappers.DatabaseToDomain(dbSubscription)
 
-		log.Debugf("Subscription with id %s successfuly updated", subscription.ID)
+		log.Debugf("Subscription with id %s successfully updated", subscription.ID)
 
 		return &domainSubscription, nil
 	})
@@ -197,7 +197,7 @@ func (r *SubscriptionRepository) ListConfirmedByFrequency(ctx context.Context, f
 		}
 		domainSubscriptions := mappers.DatabaseSliceToDomain(dbSubscriptions)
 
-		log.Debugf("Subscriptions successfuly listed for frequency: %s", frequency)
+		log.Debugf("Subscriptions successfully listed for frequency: %s", frequency)
 		return domainSubscriptions, nil
 	})
 

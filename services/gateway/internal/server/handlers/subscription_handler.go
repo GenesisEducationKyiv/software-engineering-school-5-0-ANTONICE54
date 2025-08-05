@@ -88,7 +88,7 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 	token := ctx.Param("token")
 
 	err := h.subscriptionClient.Unsubscribe(ctx, token)
-	log.Infof("Incoming unsibscribe request: Token: %s", token)
+	log.Infof("Incoming unsubscribe request: Token: %s", token)
 
 	if err != nil {
 		log.Debugf("Unsubscription failed: %s", err.Error())
@@ -97,8 +97,8 @@ func (h *SubscriptionHandler) Unsubscribe(ctx *gin.Context) {
 		return
 	}
 
-	log.Infof("Successfuly unsubscribed: Token: %s", token)
+	log.Infof("Successfully unsubscribed: Token: %s", token)
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Unsubscribed successfuly."})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Unsubscribed successfully."})
 
 }

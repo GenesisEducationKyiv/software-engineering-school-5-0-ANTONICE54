@@ -48,7 +48,7 @@ func (h *WeatherHandler) GetWeather(ctx context.Context, req *weather.GetWeather
 		Description: weatherRes.Description,
 	}
 
-	log.Infof("Weather recieved successfully: city=%s", req.City)
+	log.Infof("Weather received successfully: city=%s", req.City)
 
 	return protoWeather, nil
 }

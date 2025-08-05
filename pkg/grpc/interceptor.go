@@ -22,7 +22,7 @@ func CorrelationIDInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
 			if ids := md.Get(ctxutil.CorrelationIDKey.String()); len(ids) > 0 {
 				correlationID = ids[0]
 			} else {
-				log.Warnf("process-id not found in metadata")
+				log.Warnf("correlation-id not found in metadata")
 			}
 		}
 		//nolint:staticcheck

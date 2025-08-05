@@ -116,14 +116,13 @@ func (c *Consumer) handleMessage(d amqp.Delivery) {
 	msgCtx := context.Background()
 	if val, ok := d.Headers[ctxutil.CorrelationIDKey.String()]; ok {
 		if correlationID, ok := val.(string); ok {
+			//nolint:staticcheck
 			msgCtx = context.WithValue(context.Background(), ctxutil.CorrelationIDKey.String(), correlationID)
-
 		}
 	} else {
 		c.logger.Warnf("correlation-id not found in headers")
 	}
 
-	//nolint:staticcheck
 	c.handler.Handle(msgCtx, d.RoutingKey, d.Body)
 }
 

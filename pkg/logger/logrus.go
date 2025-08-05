@@ -53,7 +53,7 @@ func (l *logrusWrapper) WithContext(ctx context.Context) Logger {
 	return l.WithField(ctxutil.CorrelationIDKey.String(), processID)
 }
 
-func NewLogrus(serviceName, level string, sampler Sampler) *logrusWrapper {
+func NewLogrus(serviceName, level string, sampler Sampler) (*logrusWrapper, error) {
 	if sampler == nil {
 		sampler = &NoSampler{}
 	}
@@ -61,11 +61,15 @@ func NewLogrus(serviceName, level string, sampler Sampler) *logrusWrapper {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
 	logger.SetOutput(os.Stdout)
-	logger.SetLevel(toLogrusLevel(level))
+	logrusLogLevel, err := toLogrusLevel(level)
+	if err != nil {
+		return nil, err
+	}
+	logger.SetLevel(logrusLogLevel)
 
 	entry := logger.WithField("service", serviceName)
 	return &logrusWrapper{
 		entry:   entry,
 		sampler: sampler,
-	}
+	}, nil
 }

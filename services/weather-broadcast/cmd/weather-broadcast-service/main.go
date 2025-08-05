@@ -31,7 +31,11 @@ func main() {
 		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
 	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
-	logrusLog := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	logrusLog, err := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	if err != nil {
+		log.Fatalf("Failed to initialize logger with level '%s': %v", cfg.LogLevel, err)
+	}
+
 	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)

@@ -1,6 +1,10 @@
 package logger
 
-import "github.com/sirupsen/logrus"
+import (
+	"errors"
+
+	"github.com/sirupsen/logrus"
+)
 
 const (
 	InfoLevel  = "info"
@@ -9,17 +13,17 @@ const (
 	ErrorLevel = "error"
 )
 
-func toLogrusLevel(level string) logrus.Level {
+func toLogrusLevel(level string) (logrus.Level, error) {
 	switch level {
 	case DebugLevel:
-		return logrus.DebugLevel
+		return logrus.DebugLevel, nil
 	case InfoLevel:
-		return logrus.InfoLevel
+		return logrus.InfoLevel, nil
 	case WarnLevel:
-		return logrus.WarnLevel
+		return logrus.WarnLevel, nil
 	case ErrorLevel:
-		return logrus.ErrorLevel
+		return logrus.ErrorLevel, nil
 	default:
-		return logrus.InfoLevel
+		return 0, errors.New("Invalid log level")
 	}
 }

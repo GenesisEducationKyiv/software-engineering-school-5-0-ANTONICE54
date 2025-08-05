@@ -25,7 +25,7 @@ func NewRabbitMQPublisher(ch *amqp.Channel, exchange string, logger logger.Logge
 }
 
 func (p *RabbitMQPublisher) Publish(ctx context.Context, routingKey string, body []byte) error {
-	processID := ctxutil.GetProcessID(ctx)
+	correlationID := ctxutil.GetCorrelationID(ctx)
 
 	return p.ch.PublishWithContext(
 		ctx,
@@ -37,7 +37,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, routingKey string, body
 			ContentType: "application/x-protobuf",
 			Body:        body,
 			Headers: amqp.Table{
-				ctxutil.ProcessIDKey.String(): processID,
+				ctxutil.CorrelationIDKey.String(): correlationID,
 			},
 		})
 

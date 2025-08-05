@@ -113,15 +113,15 @@ func (c *Consumer) handleMessage(d amqp.Delivery) {
 
 	c.logger.Infof("Event received: %s", d.RoutingKey)
 
-	processID := "unknown-process"
-	if val, ok := d.Headers[ctxutil.ProcessIDKey.String()]; ok {
+	correlationID := "unknown-process"
+	if val, ok := d.Headers[ctxutil.CorrelationIDKey.String()]; ok {
 		if s, ok := val.(string); ok {
-			processID = s
+			correlationID = s
 		}
 	}
 
 	//nolint:staticcheck
-	msgCtx := context.WithValue(context.Background(), ctxutil.ProcessIDKey.String(), processID)
+	msgCtx := context.WithValue(context.Background(), ctxutil.CorrelationIDKey.String(), correlationID)
 	c.handler.Handle(msgCtx, d.RoutingKey, d.Body)
 }
 

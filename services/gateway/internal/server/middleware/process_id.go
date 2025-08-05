@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 )
 
-func ProcessIDMiddleware() gin.HandlerFunc {
+func CorrelationIDMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		processID := uuid.New().String()
-		ctx.Set(ctxutil.ProcessIDKey.String(), processID)
+		correlationID := uuid.New().String()
+		ctx.Set(ctxutil.CorrelationIDKey.String(), correlationID)
 		ctx.Next()
 	}
 }

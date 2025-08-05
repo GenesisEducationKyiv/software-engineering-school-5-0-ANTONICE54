@@ -87,8 +87,8 @@ func main() {
 	}
 
 	weatherBroadcastService := services.NewWeatherBroadcastService(subscriptionClient, weatherClient, eventSender, logrusLog)
-	processIdBroadcastDecorator := decorators.NewProcessIDDecorator(weatherBroadcastService, logrusLog)
-	metricBroadcastDecorator := decorators.NewBroadcastMetricsDecorator(processIdBroadcastDecorator, prometheusMetrics, logrusLog)
+	correlationIdBroadcastDecorator := decorators.NewCorrelationIDDecorator(weatherBroadcastService, logrusLog)
+	metricBroadcastDecorator := decorators.NewBroadcastMetricsDecorator(correlationIdBroadcastDecorator, prometheusMetrics, logrusLog)
 
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 

@@ -9,24 +9,24 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func ProcessIDInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
+func CorrelationIDInterceptor(log logger.Logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (resp interface{}, err error) {
-		processID := "unknown"
+		correlationID := "unknown"
 		md, ok := metadata.FromIncomingContext(ctx)
 		if ok {
-			if ids := md.Get(ctxutil.ProcessIDKey.String()); len(ids) > 0 {
-				processID = ids[0]
+			if ids := md.Get(ctxutil.CorrelationIDKey.String()); len(ids) > 0 {
+				correlationID = ids[0]
 			} else {
 				log.Warnf("process-id not found in metadata")
 			}
 		}
 		//nolint:staticcheck
-		ctx = context.WithValue(ctx, ctxutil.ProcessIDKey.String(), processID)
+		ctx = context.WithValue(ctx, ctxutil.CorrelationIDKey.String(), correlationID)
 		return handler(ctx, req)
 	}
 }

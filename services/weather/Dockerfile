@@ -26,4 +26,3 @@ COPY services/weather/.env .
 
 
 
-EXPOSE 8081

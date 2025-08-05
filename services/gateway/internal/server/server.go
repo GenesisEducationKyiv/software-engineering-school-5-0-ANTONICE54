@@ -51,7 +51,7 @@ func New(weatherHandeler WeatherHandler, subscrtiptionHandler SubscriptionHandle
 
 func (s *Server) setUpMiddleware() {
 	s.router.Use(middleware.MetricsMiddleware(s.metric))
-	s.router.Use(middleware.ProcessIDMiddleware())
+	s.router.Use(middleware.CorrelationIDMiddleware())
 }
 
 func (s *Server) setUpRoutes() {

@@ -20,7 +20,7 @@ type (
 
 func New(subscriptionHandler subscription.SubscriptionServiceServer, logger logger.Logger) *Server {
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(grpcpkg.ProcessIDInterceptor(logger)),
+		grpc.UnaryInterceptor(grpcpkg.CorrelationIDInterceptor(logger)),
 	)
 	reflection.Register(grpcServer)
 

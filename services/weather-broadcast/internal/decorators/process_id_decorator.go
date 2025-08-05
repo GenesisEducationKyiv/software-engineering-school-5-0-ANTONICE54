@@ -10,23 +10,23 @@ import (
 	"github.com/google/uuid"
 )
 
-type ProcessIDDecorator struct {
+type CorrelationIDDecorator struct {
 	service scheduler.WeatherBroadcastService
 	logger  logger.Logger
 }
 
-func NewProcessIDDecorator(service scheduler.WeatherBroadcastService, logger logger.Logger) *ProcessIDDecorator {
-	return &ProcessIDDecorator{
+func NewCorrelationIDDecorator(service scheduler.WeatherBroadcastService, logger logger.Logger) *CorrelationIDDecorator {
+	return &CorrelationIDDecorator{
 		service: service,
 		logger:  logger,
 	}
 }
 
-func (d *ProcessIDDecorator) Broadcast(ctx context.Context, frequency models.Frequency) {
-	processID := uuid.New().String()
+func (d *CorrelationIDDecorator) Broadcast(ctx context.Context, frequency models.Frequency) {
+	correlationID := uuid.New().String()
 
 	//nolint:staticcheck
-	ctx = context.WithValue(ctx, ctxutil.ProcessIDKey.String(), processID)
+	ctx = context.WithValue(ctx, ctxutil.CorrelationIDKey.String(), correlationID)
 	d.service.Broadcast(ctx, frequency)
 
 }

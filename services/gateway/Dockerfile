@@ -27,4 +27,3 @@ COPY services/gateway/.env .
 
 
 
-EXPOSE 8080

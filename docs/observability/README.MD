@@ -33,7 +33,7 @@
 
 ### Різке збільшення кількості помилок кешу
 
-Якщо weather_cache_errors_total різко зростає - це вказує на проблеми з Redis або на проблеми в процесі кешування.
+Якщо weather_cache_errors_total різко зростає - weather_cache_errors_total / (weather_cache_errors_total + weather_cache_hits_total + weather_cache_misses_total) > 0.05, то це вказує на проблеми з Redis або на проблеми в процесі кешування.
 
 ### Високий cache miss rate
 

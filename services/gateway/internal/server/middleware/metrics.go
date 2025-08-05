@@ -16,9 +16,6 @@ func MetricsMiddleware(metric metrics.MetricRecorder) gin.HandlerFunc {
 
 		duration := time.Since(start)
 		path := c.FullPath()
-		if path == "" {
-			path = "unknown"
-		}
 
 		metric.RecordRequest(path, c.Request.Method, duration)
 	}

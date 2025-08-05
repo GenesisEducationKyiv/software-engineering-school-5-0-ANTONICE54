@@ -30,5 +30,5 @@ func ConnectWithRetry(address string, cfg Config, log logger.Logger) (*grpc.Clie
 		}
 	}
 
-	return nil, fmt.Errorf("failed to connect to gRPC service %s after %d attempts: %s", address, cfg.Retries, err.Error())
+	return nil, fmt.Errorf("failed to connect to gRPC service %s after %d attempts: %w", address, cfg.Retries, err)
 }

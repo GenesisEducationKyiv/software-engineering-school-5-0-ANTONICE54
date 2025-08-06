@@ -13,7 +13,6 @@ import (
 	"weather-service/internal/infrastructure/cache"
 	"weather-service/internal/infrastructure/clients/openweather"
 	"weather-service/internal/infrastructure/clients/weatherapi"
-	filelogger "weather-service/internal/infrastructure/logger"
 	"weather-service/internal/infrastructure/metrics"
 
 	"weather-service/internal/infrastructure/providers"
@@ -34,16 +33,6 @@ func main() {
 		log.Fatalf("Failed to initialize logger with level '%s': %v", cfg.LogLevel, err)
 	}
 
-	fileLog, err := filelogger.NewFile(cfg.LogFilePath)
-	if err != nil {
-		logrusLog.Fatalf("Failed to create file logger: %s", err.Error())
-	}
-	defer func() {
-		if err := fileLog.Close(); err != nil {
-			logrusLog.Fatalf("Failed to close log file:%s", err.Error())
-		}
-	}()
-
 	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	redisCache, err := cache.NewRedis(cfg.RedisSource, logrusLog)
@@ -51,7 +40,7 @@ func main() {
 		logrusLog.Fatalf("Connect to redis: %s", err.Error())
 	}
 
-	providerRoundTrip := roundtrip.New(logrusLog, logrusLog)
+	providerRoundTrip := roundtrip.New(logrusLog)
 
 	client := http.Client{
 		Timeout:   time.Second * 5,

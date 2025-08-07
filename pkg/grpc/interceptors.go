@@ -26,6 +26,9 @@ func CorrelationIDServerInterceptor(log logger.Logger) grpc.UnaryServerIntercept
 			} else {
 				log.Warnf("correlation-id not found in context")
 			}
+		} else {
+			log.Errorf("Missing gRPC metadata for method %s - potential client misconfiguration", info.FullMethod)
+
 		}
 		return handler(ctx, req)
 	}

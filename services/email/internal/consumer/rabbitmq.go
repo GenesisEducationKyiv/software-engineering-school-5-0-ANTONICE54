@@ -120,7 +120,7 @@ func (c *Consumer) handleMessage(d amqp.Delivery) {
 			msgCtx = context.WithValue(context.Background(), ctxutil.CorrelationIDKey.String(), correlationID)
 		}
 	} else {
-		c.logger.Warnf("correlation-id not found in headers")
+		c.logger.Errorf("correlation-id not found in headers")
 	}
 
 	c.handler.Handle(msgCtx, d.RoutingKey, d.Body)

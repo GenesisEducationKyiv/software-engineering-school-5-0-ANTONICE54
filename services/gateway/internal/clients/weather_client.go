@@ -23,11 +23,17 @@ func NewWeatherGRPCClient(weatherGRPCClient weather.WeatherServiceClient, logger
 }
 
 func (c *WeatherGRPCClient) GetWeatherByCity(ctx context.Context, city string) (*dto.Weather, error) {
+	log := c.logger.WithContext(ctx)
+
+	log.Debugf("Calling get weather via GRPC: %s", city)
 	req := &weather.GetWeatherRequest{City: city}
 	resp, err := c.weatherGRPC.GetWeather(ctx, req)
 	if err != nil {
+		log.Warnf("Failed to get weather via GRPC: City: %s", city)
 		return nil, err
 	}
+
+	log.Debugf("Successfully received weather via gRPC: City %s", city)
 
 	return mappers.MapProtoToWeatherDTO(resp), nil
 }

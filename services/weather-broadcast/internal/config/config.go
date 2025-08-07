@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	grpcpkg "weather-forecast/pkg/grpc"
-	"weather-forecast/pkg/logger"
 	"weather-forecast/pkg/rabbitmq"
 
 	"github.com/spf13/viper"
@@ -19,9 +18,15 @@ type Config struct {
 	GRPC grpcpkg.Config `mapstructure:",squash"`
 
 	Timezone string `mapstructure:"TIMEZONE"`
+
+	ServiceName       string `mapstructure:"SERVICE_NAME"`
+	MetricsServerPort string `mapstructure:"METRICS_SERVER_PORT"`
+
+	LogLevel        string `mapstructure:"LOG_LEVEL"`
+	LogSamplingRate int    `mapstructure:"LOG_SAMPLING_RATE"`
 }
 
-func Load(log logger.Logger) (*Config, error) {
+func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -53,6 +58,9 @@ func validate(config *Config) error {
 		"WEATHER_SERVICE_ADDRESS":      config.WeatherServiceAddress,
 		"SUBSCRIPTION_SERVICE_ADDRESS": config.SubscriptionServiceAddress,
 		"TIMEZONE":                     config.Timezone,
+		"SERVICE_NAME":                 config.ServiceName,
+		"METRICS_SERVER_PORT":          config.MetricsServerPort,
+		"LOG_LEVEL":                    config.LogLevel,
 	}
 
 	var missing []string
@@ -60,6 +68,11 @@ func validate(config *Config) error {
 		if value == "" {
 			missing = append(missing, name)
 		}
+	}
+
+	if config.LogSamplingRate < 1 {
+		missing = append(missing, "LOG_SAMPLING_RATE")
+
 	}
 
 	if len(missing) > 0 {

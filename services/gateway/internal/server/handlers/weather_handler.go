@@ -38,19 +38,26 @@ func NewWeatherHandler(weatherClient WeatherClient, logger logger.Logger) *Weath
 }
 
 func (h *WeatherHandler) Get(ctx *gin.Context) {
+	log := h.logger.WithContext(ctx)
+
 	var req GetWeatherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		h.logger.Warnf("Failed to unmarshal request: %s", err.Error())
+		log.Debugf("Failed to unmarshal request: %s", err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
+	log.Infof("Incoming get weather request: City: %s", req.City)
+
 	weather, err := h.weatherClient.GetWeatherByCity(ctx, req.City)
 	if err != nil {
+		log.Debugf("Get weather failed for city %s: %s", req.City, err.Error())
 		httpErr := errors.NewHTTPFromGRPC(err, h.logger)
 		ctx.JSON(httpErr.StatusCode, httpErr.Body)
 		return
 	}
+
+	log.Infof("Weather successfully retrieved: City: %s", req.City)
 
 	response := GetWeatherResponse{
 		Temperature: weather.Temperature,

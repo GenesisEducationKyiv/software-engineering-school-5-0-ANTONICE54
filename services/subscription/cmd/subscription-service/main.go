@@ -2,11 +2,17 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
 	"subscription-service/internal/config"
 	"subscription-service/internal/domain/usecases"
 	"subscription-service/internal/infrastructure/database"
+	"subscription-service/internal/infrastructure/decorators"
+	"subscription-service/internal/infrastructure/metrics"
 	"subscription-service/internal/infrastructure/repositories"
 	"subscription-service/internal/infrastructure/sender"
+	"syscall"
+
 	"subscription-service/internal/infrastructure/token"
 	"subscription-service/internal/presentation/server"
 	"subscription-service/internal/presentation/server/handlers"
@@ -17,12 +23,16 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog, err := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	if err != nil {
+		log.Fatalf("Failed to initialize logger with level '%s': %v", cfg.LogLevel, err)
+	}
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	conn, err := rabbitmq.ConnectWithRetry(cfg.RabbitMQ, logrusLog)
 	if err != nil {
@@ -44,8 +54,15 @@ func main() {
 		}
 	}()
 
-	db := database.Connect(&cfg.DB)
-	database.RunMigration(db)
+	db, err := database.Connect(&cfg.DB)
+	if err != nil {
+		logrusLog.Fatalf("Failed to establish connection with database: %s", err.Error())
+	}
+
+	err = database.RunMigration(db)
+	if err != nil {
+		logrusLog.Fatalf("Failed to migrate database: %s", err.Error())
+	}
 
 	subscRepo := repositories.NewSubscriptionRepository(db, logrusLog)
 	tokenManager := token.NewUUIDManager()
@@ -55,11 +72,24 @@ func main() {
 	eventSender := sender.NewEventSender(rabbitMQPublisher, logrusLog)
 
 	subscUseCase := usecases.NewSubscriptionService(subscRepo, tokenManager, eventSender, logrusLog)
-	subscHandler := handlers.NewSubscriptionHandler(subscUseCase, logrusLog)
+	metricSubscUseCase := decorators.NewSubscriptionServiceMetricsDecorator(*subscUseCase, prometheusMetrics, logrusLog)
+	subscHandler := handlers.NewSubscriptionHandler(metricSubscUseCase, logrusLog)
+
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
 	app := server.New(subscHandler, logrusLog)
+	go func() {
+		if err := app.Start(cfg.GRPCPort); err != nil {
+			logrusLog.Fatalf("Failed to start gRPC server: %v", err)
+		}
+	}()
 
-	if err := app.Start(cfg.GRPCPort); err != nil {
-		logrusLog.Fatalf("Failed to start server: %v", err)
-	}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logrusLog.Infof("Shutting down subscription service...")
+	app.Shutdown()
+	logrusLog.Infof("Service stopped gracefully")
+
 }

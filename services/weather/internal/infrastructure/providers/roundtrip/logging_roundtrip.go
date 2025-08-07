@@ -9,37 +9,36 @@ import (
 
 type (
 	LoggingRoundTripper struct {
-		transport     http.RoundTripper
-		fileLogger    logger.Logger
-		consoleLogger logger.Logger
+		transport http.RoundTripper
+		logger    logger.Logger
 	}
 )
 
-func New(fileLog, consoleLog logger.Logger) *LoggingRoundTripper {
+func New(logger logger.Logger) *LoggingRoundTripper {
 	return &LoggingRoundTripper{
-		transport:     http.DefaultTransport,
-		fileLogger:    fileLog,
-		consoleLogger: consoleLog,
+		transport: http.DefaultTransport,
+		logger:    logger,
 	}
 }
 
 func (rt *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	log := rt.logger.WithContext(req.Context())
 
 	resp, err := rt.transport.RoundTrip(req)
 	if err != nil {
-		rt.consoleLogger.Warnf("Request to %s failed: %v", req.URL.String(), err)
+		log.Warnf("Request to %s failed: %v", req.URL.String(), err)
 		return nil, err
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		rt.consoleLogger.Warnf("Failed to read response body from %s: %v", req.URL.String(), err)
+		log.Warnf("Failed to read response body from %s: %v", req.URL.String(), err)
 		return resp, err
 	}
 
 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-	rt.fileLogger.Infof("%s - Response: %s", req.URL.Host, string(bodyBytes))
+	log.Infof("%s - Response: %s", req.URL.Host, string(bodyBytes))
 
 	return resp, nil
 

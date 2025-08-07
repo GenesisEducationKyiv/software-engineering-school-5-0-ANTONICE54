@@ -9,6 +9,8 @@ import (
 	"time"
 	"weather-broadcast-service/internal/clients"
 	"weather-broadcast-service/internal/config"
+	"weather-broadcast-service/internal/decorators"
+	"weather-broadcast-service/internal/metrics"
 	"weather-broadcast-service/internal/scheduler"
 	"weather-broadcast-service/internal/sender"
 	"weather-broadcast-service/internal/services"
@@ -24,12 +26,17 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog, err := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	if err != nil {
+		log.Fatalf("Failed to initialize logger with level '%s': %v", cfg.LogLevel, err)
+	}
+
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)
 	if err != nil {
@@ -84,19 +91,21 @@ func main() {
 	}
 
 	weatherBroadcastService := services.NewWeatherBroadcastService(subscriptionClient, weatherClient, eventSender, logrusLog)
+	correlationIdBroadcastDecorator := decorators.NewCorrelationIDDecorator(weatherBroadcastService, logrusLog)
+	metricBroadcastDecorator := decorators.NewBroadcastMetricsDecorator(correlationIdBroadcastDecorator, prometheusMetrics, logrusLog)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	scheduler := scheduler.New(ctx, weatherBroadcastService, location, logrusLog)
+	scheduler := scheduler.New(context.Background(), metricBroadcastDecorator, location, logrusLog)
 	scheduler.SetUp()
 	scheduler.Run()
 
-	logrusLog.Info("Weather broadcast service started successfully")
+	logrusLog.Infof("Weather broadcast service started successfully")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logrusLog.Info("Shutting down weather broadcast service...")
+	logrusLog.Infof("Shutting down weather broadcast service...")
+	scheduler.Shutdown()
 }

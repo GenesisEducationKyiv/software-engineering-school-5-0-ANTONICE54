@@ -2,7 +2,9 @@ package server
 
 import (
 	"net"
+	grpcpkg "weather-forecast/pkg/grpc"
 	"weather-forecast/pkg/logger"
+
 	"weather-forecast/pkg/proto/subscription"
 
 	"google.golang.org/grpc"
@@ -17,7 +19,9 @@ type (
 )
 
 func New(subscriptionHandler subscription.SubscriptionServiceServer, logger logger.Logger) *Server {
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(grpcpkg.CorrelationIDServerInterceptor(logger)),
+	)
 	reflection.Register(grpcServer)
 
 	subscription.RegisterSubscriptionServiceServer(grpcServer, subscriptionHandler)
@@ -36,4 +40,8 @@ func (s *Server) Start(port string) error {
 
 	s.logger.Infof("gRPC server starting at port %s:", port)
 	return s.grpcServer.Serve(lis)
+}
+
+func (s *Server) Shutdown() {
+	s.grpcServer.GracefulStop()
 }

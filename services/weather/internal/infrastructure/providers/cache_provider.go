@@ -35,12 +35,14 @@ func NewCacheWeather(cache CacheReader, metrics MetricsRecorder, logger logger.L
 }
 
 func (p *CacheWeatherProvider) GetWeatherByCity(ctx context.Context, city string) (*models.Weather, error) {
+	log := p.logger.WithContext(ctx)
 
 	cachedWeather := &models.Weather{}
 	err := p.cache.Get(ctx, city, cachedWeather)
 	if err != nil {
 
 		if errors.Is(err, infraerrors.ErrCache) {
+			log.Errorf("Cache error for city %s: %v", city, err)
 			p.metrics.RecordCacheError()
 		}
 

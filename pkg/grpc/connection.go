@@ -16,7 +16,10 @@ func ConnectWithRetry(address string, cfg Config, log logger.Logger) (*grpc.Clie
 	for i := 0; i < cfg.Retries; i++ {
 		log.Infof("Attempting to connect to gRPC service %s (attempt %d/%d)...", address, i+1, cfg.Retries)
 
-		conn, err = grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err = grpc.NewClient(address,
+			grpc.WithUnaryInterceptor(CorrelationIDClientInterceptor(log)),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
 		if err == nil {
 			log.Infof("Successfully connected to gRPC service: %s", address)
 			return conn, nil
@@ -30,5 +33,5 @@ func ConnectWithRetry(address string, cfg Config, log logger.Logger) (*grpc.Clie
 		}
 	}
 
-	return nil, fmt.Errorf("failed to connect to gRPC service %s after %d attempts: %s", address, cfg.Retries, err.Error())
+	return nil, fmt.Errorf("failed to connect to gRPC service %s after %d attempts: %w", address, cfg.Retries, err)
 }

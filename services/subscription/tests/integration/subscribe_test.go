@@ -33,10 +33,10 @@ func setupDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-
 	require.NoError(t, err)
 
-	database.RunMigration(db)
+	err = database.RunMigration(db)
+	require.NoError(t, err)
 
 	return db
 }

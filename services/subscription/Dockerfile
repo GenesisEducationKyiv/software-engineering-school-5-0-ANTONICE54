@@ -26,4 +26,3 @@ COPY services/subscription/.env .
 
 
 
-EXPOSE 8082

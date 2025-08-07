@@ -1,7 +1,11 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 	"weather-forecast/pkg/logger"
 	"weather-service/internal/config"
@@ -9,7 +13,6 @@ import (
 	"weather-service/internal/infrastructure/cache"
 	"weather-service/internal/infrastructure/clients/openweather"
 	"weather-service/internal/infrastructure/clients/weatherapi"
-	filelogger "weather-service/internal/infrastructure/logger"
 	"weather-service/internal/infrastructure/metrics"
 
 	"weather-service/internal/infrastructure/providers"
@@ -20,22 +23,15 @@ import (
 
 func main() {
 
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
-
-	fileLog, err := filelogger.NewFile(cfg.LogFilePath)
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog, err := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
 	if err != nil {
-		logrusLog.Fatalf("Failed to create file logger: %s", err.Error())
+		log.Fatalf("Failed to initialize logger with level '%s': %v", cfg.LogLevel, err)
 	}
-	defer func() {
-		if err := fileLog.Close(); err != nil {
-			logrusLog.Fatalf("Failed to close log file:%s", err.Error())
-		}
-	}()
 
 	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
@@ -44,7 +40,7 @@ func main() {
 		logrusLog.Fatalf("Connect to redis: %s", err.Error())
 	}
 
-	providerRoundTrip := roundtrip.New(fileLog, logrusLog)
+	providerRoundTrip := roundtrip.New(logrusLog)
 
 	client := http.Client{
 		Timeout:   time.Second * 5,
@@ -71,11 +67,20 @@ func main() {
 	weatherService := usecases.NewWeatherService(cacheWeatherProviderChainSection, logrusLog)
 	weatherHandler := handlers.NewWeatherHandler(weatherService, logrusLog)
 
-	app := server.New(weatherHandler, logrusLog)
-
 	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
 
-	if err := app.Start(cfg.GRPCPort); err != nil {
-		logrusLog.Fatalf("Failed to start server: %v", err)
-	}
+	app := server.New(weatherHandler, logrusLog)
+	go func() {
+		if err := app.Start(cfg.GRPCPort); err != nil {
+			logrusLog.Fatalf("Failed to start gRPC server: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logrusLog.Infof("Shutting down weather service...")
+	app.Shutdown()
+	logrusLog.Infof("Service stopped gracefully")
 }

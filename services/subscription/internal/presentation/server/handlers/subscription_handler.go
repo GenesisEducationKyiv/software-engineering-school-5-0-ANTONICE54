@@ -8,6 +8,7 @@ import (
 	infraerror "subscription-service/internal/infrastructure/errors"
 	"subscription-service/internal/presentation/mappers"
 	"weather-forecast/pkg/logger"
+
 	"weather-forecast/pkg/proto/subscription"
 
 	"google.golang.org/grpc/codes"
@@ -38,16 +39,21 @@ func NewSubscriptionHandler(subscriptionUsecase SubscriptionUsecase, logger logg
 }
 
 func (h *SubscriptionHandler) Subscribe(ctx context.Context, req *subscription.SubscribeRequest) (*emptypb.Empty, error) {
+	log := h.logger.WithContext(ctx)
+
+	log.Infof("GRPC Subscribe called: email=%s, city=%s, frequency=%s", req.Email, req.City, req.Frequency.String())
 
 	subscription := mappers.SubscribeRequestToSubscribe(req)
 
-	_, err := h.subscriptionUsecase.Subscribe(ctx, subscription)
+	result, err := h.subscriptionUsecase.Subscribe(ctx, subscription)
 
 	if err != nil {
+		log.Warnf("Subscribe error: %s", err.Error())
 		grpcErr := h.handleSubscribeError(err)
 		return &emptypb.Empty{}, grpcErr
 	}
 
+	log.Infof("Subscription created successfully: id=%d, token=%s", result.ID, result.Token)
 	return &emptypb.Empty{}, nil
 
 }
@@ -72,14 +78,18 @@ func (h *SubscriptionHandler) handleSubscribeError(err error) error {
 }
 
 func (h *SubscriptionHandler) Confirm(ctx context.Context, req *subscription.ConfirmRequest) (*emptypb.Empty, error) {
+	log := h.logger.WithContext(ctx)
+
+	log.Infof("GRPC Confirm called: token=%s", req.Token)
 
 	err := h.subscriptionUsecase.Confirm(ctx, req.Token)
 
 	if err != nil {
+		log.Warnf("Confirm  error for token %s: %s", req.Token, err.Error())
 		grpcErr := h.handleConfirmError(err)
 		return &emptypb.Empty{}, grpcErr
 	}
-
+	log.Infof("Subscription confirmed successfully: token=%s", req.Token)
 	return &emptypb.Empty{}, nil
 
 }
@@ -107,12 +117,19 @@ func (h *SubscriptionHandler) handleConfirmError(err error) error {
 }
 
 func (h *SubscriptionHandler) Unsubscribe(ctx context.Context, req *subscription.UnsubscribeRequest) (*emptypb.Empty, error) {
+	log := h.logger.WithContext(ctx)
+
+	log.Infof("GRPC Unsubscribe called: token=%s", req.Token)
+
 	err := h.subscriptionUsecase.Unsubscribe(ctx, req.Token)
 
 	if err != nil {
+		log.Warnf("Unsubscribe error for token %s: %s", req.Token, err.Error())
 		grpcErr := h.handleUnsubscribeError(err)
 		return &emptypb.Empty{}, grpcErr
 	}
+
+	log.Infof("Subscription deleted successfully: token=%s", req.Token)
 
 	return &emptypb.Empty{}, nil
 }
@@ -140,14 +157,20 @@ func (h *SubscriptionHandler) handleUnsubscribeError(err error) error {
 }
 
 func (h *SubscriptionHandler) GetSubscriptionsByFrequency(ctx context.Context, req *subscription.GetSubscriptionsByFrequencyRequest) (*subscription.GetSubscriptionsByFrequencyResponse, error) {
+	log := h.logger.WithContext(ctx)
+
+	log.Infof("GRPC GetSubscriptionsByFrequency called: frequency=%s, lastID=%d, pageSize=%d", req.Frequency.String(), req.PageToken, req.PageSize)
 
 	query := mappers.ProtoToListQuery(req)
 
 	subscriptions, err := h.subscriptionUsecase.ListByFrequency(ctx, query)
 	if err != nil {
+		log.Warnf("ListByFrequency error: %s", err.Error())
 		grpcErr := h.handleSubscriptionsByFrequencyError(err)
 		return nil, grpcErr
 	}
+
+	log.Infof("Retrieved %d subscriptions for frequency %s", len(subscriptions), req.Frequency.String())
 
 	return mappers.SubscriptionListToProto(subscriptions), nil
 

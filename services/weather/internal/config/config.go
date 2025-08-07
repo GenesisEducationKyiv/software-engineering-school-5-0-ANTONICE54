@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"strings"
-	"weather-forecast/pkg/logger"
 
 	"github.com/spf13/viper"
 )
@@ -21,9 +20,13 @@ type Config struct {
 	OpenWeatherKey string `mapstructure:"OPEN_WEATHER_KEY"`
 
 	LogFilePath string `mapstructure:"LOG_FILE_PATH"`
+	ServiceName string `mapstructure:"SERVICE_NAME"`
+
+	LogLevel        string `mapstructure:"LOG_LEVEL"`
+	LogSamplingRate int    `mapstructure:"LOG_SAMPLING_RATE"`
 }
 
-func Load(log logger.Logger) (*Config, error) {
+func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -52,6 +55,8 @@ func validate(config *Config) error {
 		"OPEN_WEATHER_URL":    config.OpenWeatherURL,
 		"OPEN_WEATHER_KEY":    config.OpenWeatherKey,
 		"LOG_FILE_PATH":       config.LogFilePath,
+		"SERVICE_NAME":        config.ServiceName,
+		"LOG_LEVEL":           config.LogLevel,
 	}
 
 	var missing []string
@@ -59,6 +64,10 @@ func validate(config *Config) error {
 		if value == "" {
 			missing = append(missing, name)
 		}
+	}
+	if config.LogSamplingRate < 1 {
+		missing = append(missing, "LOG_SAMPLING_RATE")
+
 	}
 
 	if len(missing) > 0 {

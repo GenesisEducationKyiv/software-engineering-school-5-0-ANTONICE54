@@ -1,8 +1,13 @@
 package main
 
 import (
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"weather-forecast/gateway/internal/clients"
 	"weather-forecast/gateway/internal/config"
+	"weather-forecast/gateway/internal/metrics"
 	"weather-forecast/gateway/internal/server"
 	"weather-forecast/gateway/internal/server/handlers"
 	grpcpkg "weather-forecast/pkg/grpc"
@@ -12,12 +17,16 @@ import (
 )
 
 func main() {
-	logrusLog := logger.NewLogrus()
-
-	cfg, err := config.Load(logrusLog)
+	cfg, err := config.Load()
 	if err != nil {
-		logrusLog.Fatalf("Failed to read from config: %s", err.Error())
+		log.Fatalf("Failed to read from config: %s", err.Error())
 	}
+	logSampler := logger.NewRateSampler(cfg.LogSamplingRate)
+	logrusLog, err := logger.NewLogrus(cfg.ServiceName, cfg.LogLevel, logSampler)
+	if err != nil {
+		log.Fatalf("Failed to initialize logger with level '%s': %v", cfg.LogLevel, err)
+	}
+	prometheusMetrics := metrics.NewPrometheus(logrusLog)
 
 	weatherConn, err := grpcpkg.ConnectWithRetry(cfg.WeatherServiceAddress, cfg.GRPC, logrusLog)
 
@@ -49,6 +58,22 @@ func main() {
 	subscriptionClient := clients.NewSubscriptionGRPCClient(subscriptionGRPCClient, logrusLog)
 	subscriptionHandler := handlers.NewSubscriptionHandler(subscriptionClient, logrusLog)
 
-	app := server.New(weatherHandler, subscriptionHandler, logrusLog)
-	app.Run(cfg.ServerPort)
+	app := server.New(weatherHandler, subscriptionHandler, prometheusMetrics, logrusLog)
+
+	go prometheusMetrics.StartMetricsServer(cfg.MetricsServerPort)
+
+	go app.Run(cfg.ServerPort)
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	err = app.Shutdown()
+
+	if err != nil {
+		logrusLog.Errorf("Server forced to shutdown: %v", err)
+	} else {
+		logrusLog.Infof("Gateway stopped gracefully")
+	}
+
 }

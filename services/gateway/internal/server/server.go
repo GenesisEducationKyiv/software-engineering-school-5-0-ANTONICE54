@@ -1,6 +1,10 @@
 package server
 
 import (
+	"context"
+	"net/http"
+	"time"
+	"weather-forecast/gateway/internal/server/middleware"
 	"weather-forecast/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -17,24 +21,37 @@ type (
 		Unsubscribe(ctx *gin.Context)
 	}
 
+	MetricRecorder interface {
+		RecordRequest(path, method string, duration time.Duration)
+	}
+
 	Server struct {
 		router               *gin.Engine
 		weatherHandler       WeatherHandler
 		subscrtiptionHandler SubscriptionHandler
+		metric               MetricRecorder
 		logger               logger.Logger
+		httpServer           *http.Server
 	}
 )
 
-func New(weatherHandeler WeatherHandler, subscrtiptionHandler SubscriptionHandler, logger logger.Logger) *Server {
+func New(weatherHandeler WeatherHandler, subscrtiptionHandler SubscriptionHandler, metricRecorder MetricRecorder, logger logger.Logger) *Server {
 
 	s := &Server{
 		router:               gin.Default(),
 		weatherHandler:       weatherHandeler,
 		subscrtiptionHandler: subscrtiptionHandler,
+		metric:               metricRecorder,
 		logger:               logger,
 	}
+	s.setUpMiddleware()
 	s.setUpRoutes()
 	return s
+}
+
+func (s *Server) setUpMiddleware() {
+	s.router.Use(middleware.MetricsMiddleware(s.metric))
+	s.router.Use(middleware.CorrelationIDMiddleware())
 }
 
 func (s *Server) setUpRoutes() {
@@ -49,8 +66,23 @@ func (s *Server) setUpRoutes() {
 }
 
 func (s *Server) Run(port string) {
-	err := s.router.Run("0.0.0.0:" + port)
-	if err != nil {
-		s.logger.Fatalf("Failed to start server: %s", err.Error())
+
+	s.httpServer = &http.Server{
+		Addr:    "0.0.0.0:" + port,
+		Handler: s.router,
 	}
+
+	s.logger.Infof("Starting server on port %s", port)
+	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		s.logger.Fatalf("Failed to start server: %v", err)
+	}
+
+}
+
+func (s *Server) Shutdown() error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	return s.httpServer.Shutdown(ctx)
+
 }
